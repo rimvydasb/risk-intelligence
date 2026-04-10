@@ -1,8 +1,8 @@
 # Entity Details Panel — GUI Specification
 
-**Version:** 1.0-DRAFT  
+**Version:** 1.0  
 **Date:** 2026-04-10  
-**Status:** Draft  
+**Status:** Approved for Implementation  
 **Relates to:
 ** [ARCHITECTURE.md §4 Use Cases](./ARCHITECTURE.md#4-use-cases), [§5 Risk Scoring Model](./ARCHITECTURE.md#5-risk-scoring-model-the-inference-engine), [§10 Cytoscape.js Visualization Layer](./ARCHITECTURE.md#10-cytoscapejs-visualization-layer)
 
@@ -473,3 +473,131 @@ placeholder.
 - Legal disclaimer per [ARCHITECTURE.md §13](./ARCHITECTURE.md#13-security-and-legal-considerations): all risk scores
   are probabilistic signals, not legal findings. Display a footer note on both surfaces: *"Risk scores are based on
   publicly available data (CC BY 4.0). They are probabilistic indicators, not legal determinations."*
+
+---
+
+## 9. Implementation Plan
+
+Current state as of 2026-04-10: the entity detail surfaces exist as scaffolding — basic name/score/contracts/relationships only. All sections defined in §1–§7 require new schema fields, ETL enrichment, API expansions, and UI builds.
+
+Phases are ordered by dependency. A phase must not begin until the schema or API work it depends on is complete.
+
+---
+
+### Phase 1 — Prisma Schema: New Fields & Models
+
+- [ ] **1.1** Add enrichment fields to `Company` model: `legalForm String?`, `address String?`, `registeredAt DateTime?`, `status String?`, `statusSince DateTime?`, `dataAsOf DateTime?`, `employeeCount Int?`, `avgSalary Float?`, `monthlyContributions Float?`, `totalSalaryExpenses Float?`, `vehicleCount Int?`
+- [ ] **1.2** Add `SodraHistory` model: `id`, `companyId` (FK → Company), `month DateTime`, `employees Int`, `avgSalary Float`, `contributions Float`. Unique on `(companyId, month)`. Source: `sodra.duomenys[]`.
+- [ ] **1.3** Add `CourtRecord` model: `id`, `companyId` (FK → Company), `caseNumber String`, `caseType String`, `date DateTime`, `court String`, `roleInCase String` (`"Atsakovas"` / `"Ieškovas"` / `"Trečiasis asmuo"`), `citationCount Int`, `documentUrl String?`. Source: `teismoNuosprendziai`.
+- [ ] **1.4** Add `ProcurementYear` model: `id`, `companyId` (FK → Company), `year Int`, `asBuyerEur Float`, `asSupplierEur Float`. Unique on `(companyId, year)`. Source: `sutartys.pirkimaiKasMetus[]` / `tiekimaiKasMetus[]`.
+- [ ] **1.5** Add `TopCounterparty` model: `id`, `companyId` (FK → Company), `counterpartyJar String`, `counterpartyName String`, `totalEur Float`, `contractCount Int`, `role String` (`"buyer"` / `"supplier"`). Source: `sutartys.topPirkejai[]`.
+- [ ] **1.6** Run `npx prisma migrate dev --name entity-enrichment` and verify the migration applies cleanly against the local Docker DB
+- [ ] **1.7** Run `npx prisma generate` and confirm TypeScript client types are updated
+
+---
+
+### Phase 2 — ETL Enrichment Script
+
+New script `scripts/enrich-entities.ts` that calls `GET /asmuo/{jarKodas}.json` for each company already in the DB and upserts all enrichment fields and related records. Respects 1 req/sec per [ARCHITECTURE.md §9.3](./ARCHITECTURE.md#93-rate-limiting-strategy).
+
+- [ ] **2.1** Create `scripts/enrich-entities.ts` — iterate all `Company` rows, fetch `https://viespirkiai.org/asmuo/{jarKodas}.json`, apply 1 req/sec throttle
+- [ ] **2.2** Upsert `Company` enrichment fields from `jar.*` and `sodra.*` (Phase 1.1 fields)
+- [ ] **2.3** Upsert `SodraHistory` rows from `sodra.duomenys[]` — idempotent on `(companyId, month)`
+- [ ] **2.4** Upsert `CourtRecord` rows from `teismoNuosprendziai.nuosprendziai[]` — dedup on `(companyId, caseNumber)`
+- [ ] **2.5** Upsert `ProcurementYear` rows from `sutartys.pirkimaiKasMetus[]` (buyer) and `tiekimaiKasMetus[]` (supplier)
+- [ ] **2.6** Upsert `TopCounterparty` rows from `sutartys.topPirkejai[]`
+- [ ] **2.7** Add `"db:enrich": "ts-node scripts/enrich-entities.ts"` to `package.json` scripts
+- [ ] **2.8** Run `npm run db:enrich` against the local seeded DB and spot-check all new tables have data
+
+---
+
+### Phase 3 — Risk Engine: Flag System
+
+Replaces the current single `detectShellAnomalies()` integer return with a structured `RiskFlag[]` array, enabling the flag breakdown panel in the UI.
+
+- [ ] **3.1** Define `RiskFlag` interface in `src/types/risk.ts`: `{ id: string; score: number; severity: 'critical'|'high'|'medium'; description: string; }`
+- [ ] **3.2** Implement `CRITICAL_WORKFORCE` flag: `employeeCount < 2` → +50 (requires Phase 1.1)
+- [ ] **3.3** Implement `DISPROPORTIONATE_VALUE` flag: `employeeCount < 5 AND totalContractValue > 500_000` → +30
+- [ ] **3.4** Implement `FRESHLY_REGISTERED` flag: company age at first contract date < 6 months → +80 (requires `registeredAt` from Phase 1.1)
+- [ ] **3.5** Implement `NON_ADVERTISED_WIN` flag: any contract with `status` matching non-advertised type → +80
+- [ ] **3.6** Implement `NO_SODRA_DATA` flag: zero `SodraHistory` rows exist for this company → +40 (requires Phase 1.2)
+- [ ] **3.7** Implement `BLACKLISTED` flag: placeholder returning `false` until a blacklist table is added — +100 when true
+- [ ] **3.8** Compute `substanceRatio = totalContractValue / (employeeCount * avgSalary * 12)` in `RiskEngine`; return as a numeric field alongside flags (not a scored flag)
+- [ ] **3.9** Add `getRiskFlags(companyId: string): Promise<RiskFlag[]>` public method to `RiskEngine`
+- [ ] **3.10** Update `updateCompanyRisk()` to derive total score by summing all active flag scores
+- [ ] **3.11** Write Jest unit tests in `src/lib/__tests__/risk-engine.test.ts` — one test per flag, covering the trigger boundary and the zero-risk case
+
+---
+
+### Phase 4 — API Route: `/api/entities/[id]` Enrichment
+
+Expands the response to serve all data needed by both UI surfaces. No breaking changes to existing shape — only additions.
+
+- [ ] **4.1** Include new `Company` enrichment fields in response (Phase 1.1 additions)
+- [ ] **4.2** Include last 24 months of `SodraHistory` rows sorted ascending by `month`
+- [ ] **4.3** Include all `ProcurementYear` rows (both buyer and supplier totals, all years)
+- [ ] **4.4** Include top 5 `TopCounterparty` rows sorted descending by `totalEur`
+- [ ] **4.5** Include `courtSummary: { total, asDefendant, asPlaintiff, asThirdParty }` + array of 10 most recent `CourtRecord` rows
+- [ ] **4.6** Call `RiskEngine.getRiskFlags(id)` and include `riskFlags: RiskFlag[]` in response
+- [ ] **4.7** Include `substanceRatio: number | null` from `RiskEngine`
+- [ ] **4.8** Define `EntityDetailResponse` TypeScript interface in `src/types/api.ts` covering the complete response shape
+- [ ] **4.9** Write Jest tests for the route in `src/app/api/entities/[id]/__tests__/route.test.ts` — mock Prisma, verify all new fields are present in response
+
+---
+
+### Phase 5 — Install Charting Library
+
+Prerequisite for the trend chart and procurement bar chart in Phases 6–7.
+
+- [ ] **5.1** Install `recharts`: `npm install recharts`
+- [ ] **5.2** Create `src/components/charts/SparkLine.tsx` — minimal line chart (no axes, no legend), accepts `data: { month: string; value: number }[]`, used in slide-out panel
+- [ ] **5.3** Create `src/components/charts/EmployeeTrendChart.tsx` — `recharts LineChart` with X = month, Y = employee count; annotate months where count drops > 50% with a `⚠` `ReferenceLine`; loaded via `next/dynamic` to avoid SSR issues
+- [ ] **5.4** Create `src/components/charts/ProcurementBarChart.tsx` — `recharts BarChart` grouped by year, two `Bar` series (buyer in blue, supplier in orange); loaded via `next/dynamic`
+
+---
+
+### Phase 6 — Slide-Out Panel (`src/app/page.tsx`)
+
+Replaces the current minimal sidebar with the compact 400px panel from the wireframe in §5.
+
+- [ ] **6.1** Refactor sidebar `useEffect` fetch to use `EntityDetailResponse` type from Phase 4.8
+- [ ] **6.2** **Identity header**: legal name (bold), JAR code badge, legal form `Chip`, `"Registered: {date} ({N} yrs)"` line, status `Chip` (green if active, red if liquidated, grey otherwise), address line. Add `data-testid="sidebar-identity-header"`.
+- [ ] **6.3** **Risk score row**: display score as large number with background colour matching risk band, raw score small text, flag count badge or `"No flags ✓"` text
+- [ ] **6.4** **Active flag chips**: map `riskFlags` → MUI `Chip` with colour per severity (red = critical, orange = high, yellow = medium); show max 3, then `"+N more"` chip
+- [ ] **6.5** **Substance snapshot**: employee count coloured red if `< 5`, avg salary in EUR, monthly contributions in EUR, `SparkLine` component (last 12 `SodraHistory` points)
+- [ ] **6.6** **Procurement KPIs**: two side-by-side `Box` blocks — "Lifetime Buyer: €X" and "Lifetime Supplier: €X", each with a small trend arrow (current year vs. prior year from `ProcurementYear`)
+- [ ] **6.7** **Top counterparty line**: `"Top buyer: {name} (€{amount})"` from `topCounterparties[0]`
+- [ ] **6.8** **Legal exposure line**: `"{total} court records | Defendant: {n}"` + most recent `CourtRecord.caseNumber` and court name
+- [ ] **6.9** **Fleet line**: `"Fleet: {vehicleCount} vehicles"` — omit if `vehicleCount` is null
+- [ ] **6.10** **Action buttons**: `[Expand in Graph]` (existing behaviour), `[Find Path to…]` (placeholder — alert for now), `[Flag for Review]` (local boolean toggle), `[View Full Profile →]` (link to `/entities/{jarKodas}`)
+- [ ] **6.11** Legal disclaimer in sidebar footer: *"Risk scores are probabilistic indicators, not legal determinations."*
+- [ ] **6.12** Add Cypress assertions to `cypress/e2e/flow.cy.ts`: after opening a node's sidebar, assert `data-testid="sidebar-identity-header"` is visible and contains a JAR code
+
+---
+
+### Phase 7 — 360° Full Profile Page (`src/app/entities/[id]/page.tsx`)
+
+Full rewrite of the current scaffold to match the wireframe in §6 and sections §1–§7 of this spec.
+
+- [ ] **7.1** Replace all `any` types with `EntityDetailResponse` (Phase 4.8)
+- [ ] **7.2** **Identity header**: all §4 Section 1 fields, `[← Back to Graph]` button calling `router.back()`, `[viespirkiai.org ↗]` external link, `[Export JSON]` button downloading raw API response
+- [ ] **7.3** **Risk score section**: styled score display with colour band, `riskFlags` table (severity chip, score contribution, description column), total raw score and display score
+- [ ] **7.4** **Substance section**: `EmployeeTrendChart` (full history), workforce-drop annotations, metrics grid — employees, avg salary, contributions, total salary expenses, substance ratio with `"⚠ {N}× above payroll"` if > 10×
+- [ ] **7.5** **Procurement footprint section**: `ProcurementBarChart` (all years), lifetime KPI totals, contract type breakdown chips (advertised / non-advertised / small-value)
+- [ ] **7.6** **Top counterparties table**: rank, name, total EUR, contract count, `[Expand in Graph]` button per row — button calls `router.push('/?expand={counterpartyJar}')`
+- [ ] **7.7** **Legal exposure section**: summary chips (`{total}`, `Civil: N`, `Admin: N`, `Defendant: N`), paginated MUI `Table` of `CourtRecord` rows (20 per page via `useState` offset), defendant rows in orange background, `[↗ Document]` link if `documentUrl` present
+- [ ] **7.8** **Ownership & relationships section**: list `relationships` with role badges (OWNER / CEO / UBO as MUI `Chip` colours), PEP badge placeholder, `[View Ownership Network]` button loading embedded `GraphView` via `next/dynamic`
+- [ ] **7.9** **Fleet section**: `"{vehicleCount} registered vehicles"` header — omit section if null; placeholder note: *"Full vehicle list requires ETL enrichment."*
+- [ ] **7.10** Legal disclaimer footer
+- [ ] **7.11** Create `cypress/e2e/entity-profile.cy.ts` — navigate to `/entities/110053842`, assert identity header visible, risk score is a number, at least one procurement year row rendered, at least one court record row rendered
+
+---
+
+### Cross-Cutting
+
+- [ ] **X.1** All new UI components must have `'use client'` at the top
+- [ ] **X.2** All `recharts` components must use `next/dynamic` with `{ ssr: false }` — same pattern as `GraphView.tsx`
+- [ ] **X.3** All new API routes must follow the error pattern: `NextResponse.json({ error: '...' }, { status: 500 })` with `console.error`
+- [ ] **X.4** Run `npm run lint` clean before completing each phase
+- [ ] **X.5** Run `npm test` clean before completing each phase
+- [ ] **X.6** Run `bash ./bin/run-cypress-tests.sh` after Phase 6 and Phase 7 to confirm no regressions in the main graph flow test
