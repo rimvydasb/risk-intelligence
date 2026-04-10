@@ -28,9 +28,85 @@ model Company {
     displayScore Float   @default(0) // log2(riskScore + 1) * 10
     updatedAt   DateTime @updatedAt
 
+    // Enrichment fields (populated by db:enrich from /asmuo/{jar}.json)
+    legalForm           String?
+    address             String?
+    registeredAt        DateTime?
+    status              String?   // e.g. "Veikianti", "Likviduota"
+    statusSince         DateTime?
+    dataAsOf            DateTime? // jar.duomenuData — freshness indicator
+    employeeCount       Int?      // sodra.draustieji
+    avgSalary           Float?    // sodra.vidutinisAtlyginimas (EUR)
+    monthlyContributions Float?   // sodra.imokuSuma (EUR)
+    totalSalaryExpenses  Float?   // sodra.atlyginimuIslaidos (EUR)
+    vehicleCount        Int?      // regitra.rows
+
     // Edges
-    contracts     Contract[] @relation("Supplier")
-    relationships PersonRelationship[]
+    contracts        Contract[]           @relation("Supplier")
+    relationships    PersonRelationship[]
+    sodraHistory     SodraHistory[]
+    courtRecords     CourtRecord[]
+    procurementYears ProcurementYear[]
+    topCounterparties TopCounterparty[]
+}
+
+// Monthly SODRA (social insurance) history — from sodra.duomenys[]
+model SodraHistory {
+    id            String   @id @default(uuid())
+    companyId     String
+    month         DateTime // first day of the month (e.g. 2024-01-01)
+    employees     Int
+    avgSalary     Float
+    contributions Float
+
+    company       Company  @relation(fields: [companyId], references: [jarKodas], onDelete: Cascade)
+
+    @@unique([companyId, month])
+}
+
+// Court records — from teismoNuosprendziai.nuosprendziai[]
+model CourtRecord {
+    id           String   @id @default(uuid())
+    companyId    String
+    caseNumber   String
+    caseType     String   // e.g. "Civilinė byla", "Administracinė byla"
+    date         DateTime
+    court        String
+    roleInCase   String   // "Atsakovas", "Ieškovas", "Trečiasis asmuo"
+    citationCount Int     @default(0)
+    documentUrl  String?
+
+    company      Company  @relation(fields: [companyId], references: [jarKodas], onDelete: Cascade)
+
+    @@unique([companyId, caseNumber])
+}
+
+// Annual procurement totals — from sutartys.pirkimaiKasMetus[] and tiekimaiKasMetus[]
+model ProcurementYear {
+    id            String  @id @default(uuid())
+    companyId     String
+    year          Int
+    asBuyerEur    Float   @default(0)
+    asSupplierEur Float   @default(0)
+
+    company       Company @relation(fields: [companyId], references: [jarKodas], onDelete: Cascade)
+
+    @@unique([companyId, year])
+}
+
+// Top contract counterparties — from sutartys.topPirkejai[] / topTiekejai[]
+model TopCounterparty {
+    id                String  @id @default(uuid())
+    companyId         String
+    counterpartyJar   String
+    counterpartyName  String
+    totalEur          Float
+    contractCount     Int
+    role              String  // "buyer" (they bought from us) or "supplier" (they sold to us)
+
+    company           Company @relation(fields: [companyId], references: [jarKodas], onDelete: Cascade)
+
+    @@unique([companyId, counterpartyJar, role])
 }
 
 model Person {
