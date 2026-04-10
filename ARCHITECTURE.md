@@ -299,63 +299,33 @@ use case may require direct CVP IS integration or manual enrichment.
 
 ---
 
-## 5. Risk Scoring Model
+## 5. Risk Scoring Model (The Inference Engine)
 
-### 5.1 Design Philosophy
+### 5.1 Design Philosophy: Calculation on Write (CoW)
+To prevent stale risk scores, the system implements the **Calculation on Write (CoW)** principle. Whenever a metadata field is updated (e.g., `employees` or `flags`), the `riskScore` is recalculated for that node and its immediately connected edges during the ETL process.
 
-Scores are **additive and weighted**, not a binary pass/fail. Each node (Company, Person, Contract) carries a cumulative
-`riskScore`. Edges carry their own `edgeRiskScore`. The system surfaces nodes and subgraphs above a configurable
-threshold.
+### 5.2 Scoring Rules & Multipliers
+Scores utilize logarithmic-weighted scaling to prevent "Flag Fatigue."
 
-Scores are **probabilistic signals**, not determinations. The display layer must communicate this clearly.
+| Signal Type | Base Weight | Scaling Multiplier | Rationale |
+|---|---|---|---|
+| **Critical** (Blacklist, Direct Conflict) | 100 | x2.0 | Immediate high-priority alert |
+| **High** (Shell Co, Win Rotation) | 80 | x1.5 | Strong behavioral signal |
+| **Moderate** (Low Emp, No Tax) | 50 | x1.0 | Statistical anomaly |
 
-### 5.2 Node Risk Score Components
-
-**Company node:**
-
-| Signal                                          | Score | Data Source               |
-|-------------------------------------------------|-------|---------------------------|
-| Blacklisted supplier (VPT)                      | +100  | viespirkiai.org blacklist |
-| Employees < 2                                   | +50   | SODRA via /asmuo          |
-| Company age < 6 months at contract              | +80   | JADIS registravimoData    |
-| Non-advertised negotiation win                  | +80   | VPT neskelbiamos          |
-| No tax payments (VMI = 0)                       | +60   | VMI via /asmuo            |
-| Court bankruptcy proceedings                    | +70   | LITEKO via /asmuo         |
-| Shareholder is also a shareholder of competitor | +50   | JADIS cross-reference     |
-| Foreign registration + LT contract              | +20   | tiekejasSalis field       |
-| Missing VTEK declaration (for officials)        | +40   | VTEK cross-reference      |
-
-**Person node (PEP):**
-
-| Signal                                   | Score |
-|------------------------------------------|-------|
-| Official directly owns winning company   | +100  |
-| Spouse owns winning company              | +90   |
-| 1st degree relative owns winning company | +70   |
-| Sits on board of winning company         | +80   |
-
-### 5.3 Edge Risk Score Components
-
-| Signal                                     | Score |
-|--------------------------------------------|-------|
-| Rotational win with co-bidder (confirmed)  | +60   |
-| Subcontractor receives >80% of prime value | +70   |
-| Shareholder link between co-bidders        | +50   |
-| Contract awarded without advertisement     | +80   |
-
-### 5.4 Composite Score
-
+### 5.3 Composite Scoring Formula
 ```
-entityRiskScore = sum(all applicable node signals)
-edgeRiskScore   = sum(all applicable edge signals)
-graphPathScore  = sum(edgeRiskScores along path) / path_length
+NodeRiskScore = sum(SignalWeights * Multipliers)
+EdgeRiskScore = sum(EdgeSignals * Multipliers)
+
+-- Visual Highlight Formula (Logarithmic dampen)
+DisplayScore = log2(NodeRiskScore + 1) * 10
 ```
 
 Threshold recommendations (configurable):
-
-- `>= 100`: Display in Cytoscape with yellow highlight
-- `>= 150`: Orange highlight, alert generated
-- `>= 200`: Red highlight, high-priority alert
+- **DisplayScore >= 100:** Yellow (Review required)
+- **DisplayScore >= 150:** Orange (Alert triggered)
+- **DisplayScore >= 200:** Red (Critical/Escalate)
 
 ---
 
@@ -469,65 +439,59 @@ erDiagram
 
 ---
 
-## 7. System Architecture
+## 7. System Architecture & Environment Parity
+
+The system follows a **Two-Pronged Runtime Model** to ensure high-velocity local development and resilient production deployment.
 
 ```mermaid
 graph TB
-    subgraph PRESENTATION["PRESENTATION LAYER (Vercel)"]
+    subgraph LOCAL["LOCAL DEVELOPMENT (Docker Compose)"]
+        direction TB
+        NH["Host Node.js<br/>(Next.js / Scraper)"]
+        LD["Docker Postgres<br/>(Local DB)"]
+    end
+
+    subgraph PROD["PRODUCTION (Vercel / Supabase)"]
+        direction TB
+        VH["Vercel Serverless<br/>(Next.js)"]
+        GA["GitHub Actions<br/>(ETL Runner)"]
+        SD["Supabase Postgres<br/>(Prod DB)"]
+    end
+
+    subgraph PRESENTATION["PRESENTATION LAYER"]
         direction LR
-        GV["360 View Dashboard<br/>(MUI + Cytoscape.js)"]
+        GV["360 View Dashboard<br/>(Cytoscape.js)"]
         RF["Risk Filter"]
         ED["Entity Profile"]
     end
 
-    subgraph NEXTJS["NEXT.JS 16 (Vercel)"]
+    subgraph CORE_SERVICES["CORE SERVICES"]
         direction TB
-        subgraph PAGES["React Server + Client Components"]
-            P1["Entity Profile Pages"]
-            P2["Interactive Network View"]
-        end
-        subgraph API["API Route Handlers"]
-            A1["/api/entities/{jarKodas} (360 View)"]
-            A2["/api/entities/{jarKodas}/network (Lazy Loading)"]
-            A3["/api/search (Supabase FTS)"]
-        end
-        subgraph SERVICES["Business Logic (Prisma)"]
-            RS["Risk Scoring Engine"]
-            PE["Path Engine (Recursive CTEs)"]
-        end
+        A1["/api/entities/{jarKodas}"]
+        A2["/api/entities/{jarKodas}/network"]
+        RS["Risk Engine<br/>(Business Logic)"]
+        PE["Path Engine<br/>(Recursive CTEs)"]
     end
 
-    subgraph DATA["DATA LAYER (Supabase)"]
-        PG["PostgreSQL<br/>(Relational)"]
-        FTS["pg_trgm / FTS<br/>(Search)"]
-    end
+    PRESENTATION --> VH
+    PRESENTATION --> NH
+    VH --> CORE_SERVICES
+    NH --> CORE_SERVICES
+    GA --> SD
+    SD --> CORE_SERVICES
+    LD --> CORE_SERVICES
 
-    subgraph INGESTION["INGESTION (GitHub Actions)"]
-        direction LR
-        SC["Scraper Script<br/>(Node.js)"]
-        EN["Enricher"]
-        RSC["Risk Scorer"]
-    end
-
-    subgraph EXTERNAL["EXTERNAL DATA SOURCES"]
-        VP1["viespirkiai.org API"]
-    end
-
-    PRESENTATION --> NEXTJS
-    PAGES --> API
-    API --> SERVICES
-    SERVICES --> DATA
-    INGESTION --> DATA
-    EXTERNAL --> INGESTION
-
-    style PRESENTATION fill: #e3f2fd, stroke: #1565c0
-    style NEXTJS fill: #f3e5f5, stroke: #7b1fa2
-    style DATA fill: #e8f5e9, stroke: #2e7d32
-    style INGESTION fill: #fff3e0, stroke: #ef6c00
-    style EXTERNAL fill: #fce4ec, stroke: #c62828
+    style LOCAL fill:#e1f5fe,stroke:#01579b
+    style PROD fill:#e8f5e9,stroke:#1b5e20
+    style CORE_SERVICES fill:#f3e5f5,stroke:#7b1fa2
 ```
 
-The system is designed as an **Entity-Centric 360 View**. Instead of a global graph database, we treat the relationship network as a set of traversals starting from a specific entity (Company, Person, or Contract). This allows for a simplified deployment on serverless infrastructure.
+### 7.1 Environment Configuration Strategy
+- **Local Dev:** `DATABASE_URL` points to the Docker Compose PostgreSQL instance. The Node.js application runs directly on the host (e.g., `npm run dev`) for native debugging.
+- **Production:** `DATABASE_URL` points to Supabase. Next.js Route Handlers (Vercel) execute transactional and analytical queries (FTS, CTEs).
+
+### 7.2 The RAGp (Relational-as-Graph) Mental Model
+Instead of a separate graph database, the system uses **Projected Graphs**. Data is stored in normalized relational tables (Supabase), and relationships are projected into memory (Cytoscape.js) on-demand. This eliminates the "Double Storage" problem and ensures ACID compliance for risk scores.
 
 
 ---
@@ -549,41 +513,47 @@ The system is designed as an **Entity-Centric 360 View**. Instead of a global gr
 
 ---
 
-## 9. Data Ingestion Pipeline
+## 9. Data Ingestion Pipeline (The ETL State Machine)
+
+To address the "803" foreign entity ambiguity and natural person surname variation, the pipeline implements a **Deterministic Entity Resolver**.
 
 ```mermaid
-flowchart LR
-    subgraph Sources["External Sources"]
+flowchart TD
+    subgraph SOURCE["EXTERNAL SOURCE"]
         VP["viespirkiai.org API"]
     end
 
-    subgraph Pipeline["Ingestion Pipeline (GitHub Actions)"]
-        direction LR
-        S["Scraper Script<br/>1 req/sec"]
-        E["Enricher<br/>(Prisma Upsert)"]
-        R["Risk Scorer<br/>(Business Logic)"]
+    subgraph ETL["ETL RUNNER (GitHub Actions)"]
+        direction TB
+        S["Fetcher<br/>(Track Scrape Log)"]
+        R["Entity Resolver<br/>(Normalize ID/Name)"]
+        E["Prisma Enricher<br/>(Upsert Logic)"]
+        RS["Score Computer<br/>(Recalculate affected)"]
     end
 
-    subgraph Storage["Data Layer"]
-        PG["Supabase (PostgreSQL)"]
-        FTS["Supabase FTS Index"]
+    subgraph PROVENANCE["DATA PROVENANCE"]
+        EL["Scrape Log Table"]
     end
 
-    VP -->|"GET /sutartis/{id}.json<br/>GET /asmuo/{jar}.json"| S
-    S --> E --> R
-    R --> PG
-    R --> FTS
+    VP --> S
+    S --> R
+    R --> E
+    E --> RS
+    S -.-> EL
 
-    style Sources fill: #fce4ec, stroke: #c62828
-    style Pipeline fill: #fff3e0, stroke: #ef6c00
-    style Storage fill: #e8f5e9, stroke: #2e7d32
+    style ETL fill:#fff3e0,stroke:#ef6c00
+    style PROVENANCE fill:#fce4ec,stroke:#c62828
 ```
 
-### 9.1 Phase 1 — Seed (one-time)
+### 9.1 Deterministic Entity Resolution Logic
+1. **Foreign Entities (803):** Instead of a name join, a **Synthetic UID** is generated: `H(country + normalized_name)`. This prevents "803" collisions.
+2. **Lithuanian Surnames:** The system uses **Soundex/Metaphone** normalization for natural persons in VTEK declarations to link potential relatives across gendered surname variations (e.g., *Bingelis* ↔ *Bingelienė*).
 
-1. Request bulk data export from viespirkiai.org.
-2. Load contracts and entities into Supabase using Prisma.
-3. Compute initial risk scores using serverless logic.
+### 9.2 Stateful Ingestion & Data Provenance
+The `scrape_log` table tracks every `(entity_type, entity_id, status, last_fetched)`. This allows the ETL runner to:
+- Recover from 429 Rate Limits.
+- Identify "Data Gaps" (nodes referenced in contracts but missing `/asmuo` profiles).
+- Force re-calculating risk scores for entities with stale metadata.
 
 ### 9.2 Phase 2 — Incremental Sync
 
