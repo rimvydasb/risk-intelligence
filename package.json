@@ -1,0 +1,37 @@
+{
+  "name": "risk-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint src",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "dependencies": {
+    "next": "16.2.3",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "@mui/material": "5.18.0",
+    "@emotion/react": "11.14.0",
+    "@emotion/styled": "11.14.1",
+    "cytoscape": "3.33.2"
+  },
+  "devDependencies": {
+    "typescript": "6.0.2",
+    "@types/node": "25.6.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "jest": "30.3.0",
+    "@types/jest": "30.0.0",
+    "ts-jest": "29.4.9",
+    "jest-environment-jsdom": "30.3.0",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/jest-dom": "6.9.1",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.3"
+  }
+}
