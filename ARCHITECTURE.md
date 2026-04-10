@@ -500,16 +500,60 @@ Instead of a separate graph database, the system uses **Projected Graphs**. Data
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Frontend framework | Next.js 16 (App Router) + React 19 + TypeScript | Existing codebase stack; SSR + API routes in one deployment |
-| Hosting | Vercel | Scalable serverless hosting for Next.js |
+| Frontend framework | Next.js 16 (App Router) + React 19 + TypeScript | Strictly Client Components (SPA); enables Static Export to S3 + Node if moved off Vercel. |
+| Hosting | Vercel (Current) / S3 + Node (Portable) | Frontend cleanly decoupled from API Route Handlers. |
 | Graph visualization | Cytoscape.js 3.x | Specified requirement; handles on-demand expansion of network |
 | UI components | MUI v5 (Material UI) + Emotion | Existing codebase dependency; rich component library |
-| Backend API | Next.js API Routes (Route Handlers) | Serverless API layer collocated with frontend |
+| Backend API | Next.js API Routes (Route Handlers) / Node.js | Built as stateless endpoints, easily extractable to a standalone Node.js server. |
 | Database | Supabase (PostgreSQL) | Managed PostgreSQL with built-in auth and edge functions |
 | ORM | Prisma or Drizzle | Type-safe database access and migrations |
 | Search | Supabase FTS (pg_trgm) | Leverages PostgreSQL native capabilities for text search |
 | Ingestion | Node.js + GitHub Actions | Runs scraper nightly; avoids Vercel timeout limits |
 | Containerization | Docker Compose (local dev only) | Local database parity |
+
+---
+
+## 8.1 Repository Structure (Monolithic but Decoupled)
+
+To enforce the separation between the SPA Frontend and the Node.js API, the GitHub repository must be structured to strictly decouple client-side code from server-side logic. This guarantees that the Next.js app can be deployed as a Static Export (`output: 'export'`) to an S3 bucket, while the API is deployed to a Node.js runtime (or Vercel).
+
+```text
+risk-intelligence/
+├── apps/
+│   ├── web/                     # Next.js Frontend (Strictly SPA / Static Export)
+│   │   ├── src/
+│   │   │   ├── app/             # App Router (Client Components only using 'use client')
+│   │   │   ├── components/      # MUI + Cytoscape UI components
+│   │   │   └── lib/             # API client services (fetch wrappers)
+│   │   ├── next.config.ts       # Configured for output: 'export' (if not Vercel native)
+│   │   └── package.json
+│   │
+│   └── api/                     # Node.js API (Next.js Route Handlers OR standalone Express)
+│       ├── src/
+│       │   ├── app/api/         # API Route Handlers (if using Next.js backend)
+│       │   ├── services/        # Core business logic (Risk Scorer, Path Engine)
+│       │   └── prisma/          # Database schema and migrations
+│       ├── Dockerfile           # For local or non-Vercel containerized deployments
+│       └── package.json
+│
+├── packages/
+│   ├── config/                  # Shared ESLint, TypeScript, Jest configurations
+│   └── types/                   # Shared TypeScript interfaces (DTOs, DB models)
+│
+├── .github/
+│   └── workflows/
+│       ├── etl-scraper.yml      # Nightly ETL Stateful runner
+│       └── ci-cd.yml            # CI/CD pipelines
+│
+├── docker-compose.yml           # Local Postgres and environment parity setup
+├── package.json                 # Monorepo root (Turborepo or npm workspaces)
+└── ARCHITECTURE.md              # This document
+```
+
+### 8.1.1 Key Principles of this Structure
+- **No SSR:** `apps/web` must not use Next.js Server Components for data fetching. All data must be fetched client-side from `apps/api`.
+- **Portability:** While Vercel is the current target, building the backend in `apps/api` (even if implemented via Next.js Route Handlers initially) ensures it can be instantly swapped to an Express/Fastify Node.js server without touching the UI code.
+- **Shared Types:** The `packages/types` workspace ensures the Frontend and Backend share the exact same API Contracts.
 
 ---
 
@@ -1140,4 +1184,4 @@ This section documents contradictions found during the review of the original v0
 | 1 | Section 10.2 vs Appendix A | Section 10.2 mapped `green` to `<100` (a single band), while Appendix A correctly splits into `Grey (0–49)` and `Green (50–99)` — two distinct severity bands. | Aligned Section 10.2 with Appendix A: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200). |
 | 2 | Section 12.2 vs Section 6.2 | The SQL example in 12.2 had inconsistent edge naming compared to Section 6.2. | Fixed SQL example to match the `Institution → Company` edge definition. |
 | 3 | Section 8 vs Codebase | Document listed `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `MUI v5 + Emotion` for the component library. | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers. |
-| 4 | Section 7 Architecture | Next.js with App Router is a full-stack framework (SSR + API routes), not a SPA + separate backend. | Replaced ASCII diagram with Mermaid diagram showing the unified Next.js architecture. |
+| 4 | Section 7 Architecture | Next.js with App Router is typically a full-stack framework (SSR + API routes), but this system strictly enforces a Decoupled SPA model. | Replaced ASCII diagram and updated Tech Stack to enforce SPA + decoupled API, suitable for static export. |

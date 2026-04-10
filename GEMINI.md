@@ -13,17 +13,17 @@ rigging, shell companies, and conflicts of interest.
     - **PEP / Conflict of Interest:** Linking decision-makers to winning suppliers.
 - **Data Foundation:** Aggregated Lithuanian government data from [viespirkiai.org](https://viespirkiai.org) (CC BY
   4.0).
-- **Architecture:** Next.js full-stack application with a 360 View approach (Supabase + Prisma).
+- **Architecture:** Strictly Decoupled SPA (Next.js Static Export) with Node.js API (Supabase + Prisma).
 
 ## Technology Stack
 
-- **Frontend:** Next.js 16 (App Router), React 19, TypeScript.
+- **Frontend:** Next.js 16 (App Router as SPA), React 19, TypeScript.
 - **UI Components:** Material UI (MUI) v5 with Emotion.
 - **Graph Visualization:** Cytoscape.js (Lazy Loading).
 - **Testing:** Jest and React Testing Library.
 - **Database:** Supabase (PostgreSQL) with Prisma ORM.
 - **Search:** Supabase Full-Text Search (pg_trgm).
-- **Ingestion:** GitHub Actions (Node.js).
+- **Ingestion:** GitHub Actions (Node.js Stateful ETL).
 
 ## Building and Running
 
@@ -52,7 +52,7 @@ rigging, shell companies, and conflicts of interest.
 - **App Router:** All pages and layouts are located in `src/app`.
 - **Components:** Reusable UI components are in `src/components`.
 - **Graph Logic:** Visualization logic is encapsulated in `GraphView.tsx` using Cytoscape.js.
-- **SAD Document:** Refer to `risk-intelligence-sad.md` for the detailed system and architecture design.
+- **SAD Document:** Refer to `ARCHITECTURE.md` for the detailed system and architecture design.
 
 ### Testing Practices
 
@@ -64,7 +64,7 @@ rigging, shell companies, and conflicts of interest.
 ## Key Files
 
 - `package.json`: Project dependencies and scripts.
-- `risk-intelligence-sad.md`: The primary source of truth for architecture and implementation plans.
+- `ARCHITECTURE.md`: The primary source of truth for architecture and implementation plans.
 - `src/app/page.tsx`: The main entry point of the application.
 - `src/components/GraphView.tsx`: The core graph visualization component.
 - `tsconfig.json`: TypeScript configuration.
