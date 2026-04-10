@@ -488,8 +488,6 @@ graph TB
     style EXTERNAL fill:#fce4ec,stroke:#c62828
 ```
 
-> **Note:** The previous draft showed a separate Spring Boot API layer. The architecture now reflects the actual Next.js 16 App Router setup, where API Route Handlers serve the same role — eliminating a separate backend deployment.
-
 ---
 
 ## 8. Technology Stack
@@ -507,8 +505,6 @@ graph TB
 | Queue | Bull (Redis-backed) or plain cron | Rate-limited ingestion scheduling |
 | Containerization | Docker Compose | Local + prod parity |
 | Hosting | Any Ubuntu VPS (same as VP: Ubuntu 24.04 LTS) | Operational simplicity |
-
-> **Note on previous draft:** An earlier version of this document listed Spring Boot (Java 21) as the backend and TailwindCSS + shadcn/ui for UI components. These have been corrected to match the actual project setup: Next.js 16 with App Router for both frontend and API layer, and MUI v5 for the component library.
 
 **Graph DB decision note:** PostgreSQL + Apache AGE is a pragmatic choice — you avoid running two separate databases and AGE gives you Cypher query syntax. The trade-off is that AGE is less mature than Neo4j for complex traversals. If query complexity grows (e.g., multi-hop path finding across 500k nodes), migrating to Neo4j Community is a valid escalation path.
 
@@ -1142,5 +1138,5 @@ This section documents contradictions found during the review of the original v0
 |---|---|---|---|
 | 1 | Section 10.2 vs Appendix A | Section 10.2 mapped `green` to `<100` (a single band), while Appendix A correctly splits into `Grey (0–49)` and `Green (50–99)` — two distinct severity bands. | Aligned Section 10.2 with Appendix A: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200). |
 | 2 | Section 12.2 vs Section 6.2 | The Cypher example in 12.2 created `AWARDED_TO` as `(Company)→(Company)`, but Section 6.2 defines it as `Institution → Company`. | Fixed Cypher example to use `(i:Institution)-[:AWARDED_TO]->(s:Company)` matching the edge definition. |
-| 3 | Section 8 vs Codebase | Document listed `Spring Boot (Java 21)` as the backend API and `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `Next.js 16 (App Router)` for both frontend and API routes, and `MUI v5 + Emotion` for the component library. | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers. |
-| 4 | Section 7 Architecture | ASCII diagram showed a separate `Spring Boot` API layer and labeled the frontend as "Browser SPA". Next.js with App Router is a full-stack framework (SSR + API routes), not a SPA + separate backend. | Replaced ASCII diagram with Mermaid diagram showing the unified Next.js architecture. |
+| 3 | Section 8 vs Codebase | Document listed `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `MUI v5 + Emotion` for the component library. | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers. |
+| 4 | Section 7 Architecture | Next.js with App Router is a full-stack framework (SSR + API routes), not a SPA + separate backend. | Replaced ASCII diagram with Mermaid diagram showing the unified Next.js architecture. |
