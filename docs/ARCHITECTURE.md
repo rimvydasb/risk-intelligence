@@ -44,7 +44,10 @@ The system targets three core fraud typologies:
 The primary data foundation is viespirkiai.org, which acts as an aggregator of ~15 Lithuanian government data sources
 under open CC BY 4.0 licenses. It exposes per-contract and per-entity JSON APIs directly usable for graph construction.
 
-**Graph-First UX Paradigm:** The system features a graph-first user experience, employing Node-Link Diagrams to visualize a "Biological Interaction Network." This approach treats the procurement ecosystem as an organic entity, allowing investigators to intuitively spot structural anomalies (dense "inflamed" clusters). The front page immediately immerses the user in the graph canvas, beginning with the critical anchor node "geležinkeliai".
+**Graph-First UX Paradigm:** The system features a graph-first user experience, employing Node-Link Diagrams to
+visualize a "Biological Interaction Network." This approach treats the procurement ecosystem as an organic entity,
+allowing investigators to intuitively spot structural anomalies (dense "inflamed" clusters). The front page immediately
+immerses the user in the graph canvas, beginning with the critical anchor node "geležinkeliai".
 
 ---
 
@@ -304,18 +307,23 @@ use case may require direct CVP IS integration or manual enrichment.
 ## 5. Risk Scoring Model (The Inference Engine)
 
 ### 5.1 Design Philosophy: Calculation on Write (CoW)
-To prevent stale risk scores, the system implements the **Calculation on Write (CoW)** principle. Whenever a metadata field is updated (e.g., `employees` or `flags`), the `riskScore` is recalculated for that node and its immediately connected edges during the ETL process.
+
+To prevent stale risk scores, the system implements the **Calculation on Write (CoW)** principle. Whenever a metadata
+field is updated (e.g., `employees` or `flags`), the `riskScore` is recalculated for that node and its immediately
+connected edges during the ETL process.
 
 ### 5.2 Scoring Rules & Multipliers
+
 Scores utilize logarithmic-weighted scaling to prevent "Flag Fatigue."
 
-| Signal Type | Base Weight | Scaling Multiplier | Rationale |
-|---|---|---|---|
-| **Critical** (Blacklist, Direct Conflict) | 100 | x2.0 | Immediate high-priority alert |
-| **High** (Shell Co, Win Rotation) | 80 | x1.5 | Strong behavioral signal |
-| **Moderate** (Low Emp, No Tax) | 50 | x1.0 | Statistical anomaly |
+| Signal Type                               | Base Weight | Scaling Multiplier | Rationale                     |
+|-------------------------------------------|-------------|--------------------|-------------------------------|
+| **Critical** (Blacklist, Direct Conflict) | 100         | x2.0               | Immediate high-priority alert |
+| **High** (Shell Co, Win Rotation)         | 80          | x1.5               | Strong behavioral signal      |
+| **Moderate** (Low Emp, No Tax)            | 50          | x1.0               | Statistical anomaly           |
 
 ### 5.3 Composite Scoring Formula
+
 ```
 NodeRiskScore = sum(SignalWeights * Multipliers)
 EdgeRiskScore = sum(EdgeSignals * Multipliers)
@@ -325,6 +333,7 @@ DisplayScore = log2(NodeRiskScore + 1) * 10
 ```
 
 Threshold recommendations (configurable):
+
 - **DisplayScore >= 100:** Yellow (Review required)
 - **DisplayScore >= 150:** Orange (Alert triggered)
 - **DisplayScore >= 200:** Red (Critical/Escalate)
@@ -443,7 +452,8 @@ erDiagram
 
 ## 7. System Architecture & Environment Parity
 
-The system follows a **Host-First Development Model**. To maximize debugging visibility and minimize abstraction overhead, Node.js runs directly on the developer's host machine.
+The system follows a **Host-First Development Model**. To maximize debugging visibility and minimize abstraction
+overhead, Node.js runs directly on the developer's host machine.
 
 ```mermaid
 graph TB
@@ -464,6 +474,7 @@ graph TB
         direction LR
         GV["Front Page Graph View<br/>(Biological Network Canvas)<br/>#/"]
         SEARCH["Top-Bar Search<br/>(Global Discovery)"]
+        FILTERS["Top-Bar Filters<br/>(Year From/To, Min Value)"]
         ED["Entity Detail View<br/>(360° Profile)<br/>#/entities/:id"]
         HR["useHashRouter Hook<br/>(Client-Side Navigation)"]
     end
@@ -482,29 +493,30 @@ graph TB
     GA --> SD
     SD --> CORE_SERVICES
     LD --> CORE_SERVICES
-
-    style LOCAL fill:#e1f5fe,stroke:#01579b
-    style PROD fill:#e8f5e9,stroke:#1b5e20
-    style CORE_SERVICES fill:#f3e5f5,stroke:#7b1fa2
+    style LOCAL fill: #e1f5fe, stroke: #01579b
+    style PROD fill: #e8f5e9, stroke: #1b5e20
+    style CORE_SERVICES fill: #f3e5f5, stroke: #7b1fa2
 ```
 
 ### 7.1 Operational Strategy
-- **Local Dev:** `docker-compose.yml` is used **exclusively** for the PostgreSQL database. Node.js is executed on the host. No Dockerfile is required for the application during development.
+
+- **Local Dev:** `docker-compose.yml` is used **exclusively** for the PostgreSQL database. Node.js is executed on the
+  host. No Dockerfile is required for the application during development.
 - **Single Package Management:** The project uses a single root `package.json`. No monorepo/workspace overhead.
 
 ---
 
 ## 8. Technology Stack
 
-| Layer | Technology | Rationale |
-|---|---|---|
-| Frontend framework | Next.js 16 (App Router) + React 19 | Client-side logic ONLY. Portable to S3 + Node if required. |
-| Hosting | Vercel (Production) | Managed hosting for Next.js endpoints and static assets. |
-| Database | Supabase (PostgreSQL) | Managed storage with standard Postgres compatibility. |
-| ORM | Prisma or Drizzle | Type-safe access via single root configuration. |
-| Ingestion | Node.js + GitHub Actions | Stateful ETL runner executing on host/runner Node.js. |
-| Testing (Unit) | Jest | Used for logic, services, and non-GUI code only. |
-| Testing (E2E/GUI) | Cypress | Primary tool for UI, interactivity, and integration testing. |
+| Layer              | Technology                         | Rationale                                                    |
+|--------------------|------------------------------------|--------------------------------------------------------------|
+| Frontend framework | Next.js 16 (App Router) + React 19 | Client-side logic ONLY. Portable to S3 + Node if required.   |
+| Hosting            | Vercel (Production)                | Managed hosting for Next.js endpoints and static assets.     |
+| Database           | Supabase (PostgreSQL)              | Managed storage with standard Postgres compatibility.        |
+| ORM                | Prisma or Drizzle                  | Type-safe access via single root configuration.              |
+| Ingestion          | Node.js + GitHub Actions           | Stateful ETL runner executing on host/runner Node.js.        |
+| Testing (Unit)     | Jest                               | Used for logic, services, and non-GUI code only.             |
+| Testing (E2E/GUI)  | Cypress                            | Primary tool for UI, interactivity, and integration testing. |
 
 ---
 
@@ -542,15 +554,22 @@ risk-intelligence/
 ```
 
 ### 8.1.1 Logical Separation Rules
-- **Physical Monolith, Mental Decoupling:** All UI code in `src/app` must remain agnostic of the backend implementation. It communicates with `/api/*` solely via standard `fetch` calls.
-- **API Statelessness:** API Route Handlers must not rely on Vercel-specific state. They should be pure Node.js functions that can be easily ported to an Express or Fastify server.
-- **Hash-Based SPA Routing:** The application uses a single Next.js page (`src/app/page.tsx`). All client-side navigation is managed by the `useHashRouter` hook via `window.location.hash`. No additional Next.js page routes exist under `src/app/` for UI views. The URL pattern is `/#/` (graph) and `/#/entities/:id` (entity detail). This preserves the Cytoscape graph instance across view transitions and enables true deep-linking without server round-trips.
+
+- **Physical Monolith, Mental Decoupling:** All UI code in `src/app` must remain agnostic of the backend implementation.
+  It communicates with `/api/*` solely via standard `fetch` calls.
+- **API Statelessness:** API Route Handlers must not rely on Vercel-specific state. They should be pure Node.js
+  functions that can be easily ported to an Express or Fastify server.
+- **Hash-Based SPA Routing:** The application uses a single Next.js page (`src/app/page.tsx`). All client-side
+  navigation is managed by the `useHashRouter` hook via `window.location.hash`. No additional Next.js page routes exist
+  under `src/app/` for UI views. The URL pattern is `/#/` (graph) and `/#/entities/:id` (entity detail). This preserves
+  the Cytoscape graph instance across view transitions and enables true deep-linking without server round-trips.
 
 ---
 
 ## 9. Data Ingestion Pipeline (The ETL State Machine)
 
-To address the "803" foreign entity ambiguity and natural person surname variation, the pipeline implements a **Deterministic Entity Resolver**.
+To address the "803" foreign entity ambiguity and natural person surname variation, the pipeline implements a *
+*Deterministic Entity Resolver**.
 
 ```mermaid
 flowchart TD
@@ -575,17 +594,21 @@ flowchart TD
     R --> E
     E --> RS
     S -.-> EL
-
-    style ETL fill:#fff3e0,stroke:#ef6c00
-    style PROVENANCE fill:#fce4ec,stroke:#c62828
+    style ETL fill: #fff3e0, stroke: #ef6c00
+    style PROVENANCE fill: #fce4ec, stroke: #c62828
 ```
 
 ### 9.1 Deterministic Entity Resolution Logic
-1. **Foreign Entities (803):** Instead of a name join, a **Synthetic UID** is generated: `H(country + normalized_name)`. This prevents "803" collisions.
-2. **Lithuanian Surnames:** The system uses **Soundex/Metaphone** normalization for natural persons in VTEK declarations to link potential relatives across gendered surname variations (e.g., *Bingelis* ↔ *Bingelienė*).
+
+1. **Foreign Entities (803):** Instead of a name join, a **Synthetic UID** is generated: `H(country + normalized_name)`.
+   This prevents "803" collisions.
+2. **Lithuanian Surnames:** The system uses **Soundex/Metaphone** normalization for natural persons in VTEK declarations
+   to link potential relatives across gendered surname variations (e.g., *Bingelis* ↔ *Bingelienė*).
 
 ### 9.2 Stateful Ingestion & Data Provenance
+
 The `scrape_log` table tracks every `(entity_type, entity_id, status, last_fetched)`. This allows the ETL runner to:
+
 - Recover from 429 Rate Limits.
 - Identify "Data Gaps" (nodes referenced in contracts but missing `/asmuo` profiles).
 - Force re-calculating risk scores for entities with stale metadata.
@@ -628,17 +651,19 @@ jobs:
 
 ## 10. Cytoscape.js Visualization Layer (Biological Interaction Network)
 
-The front page is exclusively a graph view—this is the central and most important asset of the system. By employing Node-Link Diagrams with Force-Directed layouts, the UI mimics a "Biological Interaction Network," rendering organic clusters and highlighting risk patterns visually before the user reads any data tables.
+The front page is exclusively a graph view—this is the central and most important asset of the system. By employing
+Node-Link Diagrams with Force-Directed layouts, the UI mimics a "Biological Interaction Network," rendering organic
+clusters and highlighting risk patterns visually before the user reads any data tables.
 
 ### 10.1 Layouts
 
-| Use Case                 | Recommended Layout             | Reason                                |
-|--------------------------|--------------------------------|---------------------------------------|
+| Use Case                 | Recommended Layout             | Reason                                                   |
+|--------------------------|--------------------------------|----------------------------------------------------------|
 | **Front Page (Default)** | **Force-Directed (fCoSE)**     | **Creates a biological cell-like clustering structure.** |
-| Cartel cluster detection | CoSE-Bilkent                   | Reveals tight clusters naturally      |
-| PEP path traversal       | Breadth-First from Person node | Shows hop distance to winning company |
-| Subcontractor money flow | Dagre (DAG layout)             | Directed flow is readable top-down    |
-| General overview         | Concentric (by risk score)     | Highest risk at center                |
+| Cartel cluster detection | CoSE-Bilkent                   | Reveals tight clusters naturally                         |
+| PEP path traversal       | Breadth-First from Person node | Shows hop distance to winning company                    |
+| Subcontractor money flow | Dagre (DAG layout)             | Directed flow is readable top-down                       |
+| General overview         | Concentric (by risk score)     | Highest risk at center                                   |
 
 ### 10.2 Visual Encoding
 
@@ -653,12 +678,20 @@ Edge style       → dashed = inferred/indirect relationship; solid = direct/doc
 
 ### 10.3 Interaction Design
 
-- **Graph-First Landing:** The application loads directly into the "Biological Interaction Network" canvas. There is no separate text-based search page.
-- **Default Anchor:** As the first entity, the graph automatically renders **"geležinkeliai"** (Railways) and its immediate connections, providing an instant, high-value structural context.
-- **Top-Bar Search:** The search bar is located at the top of the page, overlaid on the graph. Searching for a new entity refocuses the graph canvas on that entity.
-- **Click Node (Inspection):** When a user clicks on a node (e.g., "geležinkeliai"), it shows a detailed view of that node in a slide-out side panel (entity detail, risk score breakdown, source links), without leaving the graph.
-- **Double-click (Expansion):** Expanding a node loads and renders its 1-hop neighbors from the API, pulsing the network organically.
+- **Graph-First Landing:** The application loads directly into the "Biological Interaction Network" canvas. There is no
+  separate text-based search page.
+- **Default Anchor:** As the first entity, the graph automatically renders **"geležinkeliai"** (Railways) and its
+  immediate connections, providing an instant, high-value structural context.
+- **Top-Bar Search:** The search bar is located at the top of the page, overlaid on the graph. Searching for a new
+  entity refocuses the graph canvas on that entity.
+- **Click Node (Inspection):** When a user clicks on a node (e.g., "geležinkeliai"), it shows a detailed view of that
+  node in a slide-out side panel (entity detail, risk score breakdown, source links), without leaving the graph.
+- **Double-click (Expansion):** Expanding a node loads and renders its 1-hop neighbors from the API, pulsing the network
+  organically.
 - **Risk threshold slider** → hide nodes below threshold (server-side filter or client-side `cy.filter()`).
+- **Year range filter** (`yearFrom` / `yearTo`) → filter contract edges by `Contract.signedAt`; passed as query params
+  to `/api/entities/initial` and `/api/entities/{id}/network`; orphaned buyer nodes are pruned server-side.
+- **Procurement value filter** (`minValue`) → hide low-value contract edges; passed alongside year params.
 - **Path finder** → "Find path between A and B" using Cytoscape's built-in BFS or Dijkstra.
 - **Alert overlay** → pulsing animation on nodes that triggered alerts in the last 24h.
 
@@ -676,15 +709,18 @@ Edge style       → dashed = inferred/indirect relationship; solid = direct/doc
 ### Core endpoints
 
 ```
-GET  /api/entities/initial
+GET  /api/entities/initial?yearFrom=2020&yearTo=2024&minValue=100000
      → Returns the default "geležinkeliai" subgraph (nodes + edges) to populate the front page graph canvas.
+     → Optional filter params: yearFrom, yearTo (Contract.signedAt year), minValue (Contract.value in EUR).
+     → Orphaned buyer nodes (no remaining contract edges after filtering) are excluded.
 
 GET  /api/entities/{jarKodas}
      → 360 View: Entity profile + risk score breakdown + direct relationship counts
 
-GET  /api/entities/{jarKodas}/network?depth=1&minRisk=100
+GET  /api/entities/{jarKodas}/network?depth=1&minRisk=100&yearFrom=2020&yearTo=2024&minValue=100000
      → Lazy Loading: Subgraph (nodes + edges) for immediate neighbors
      → Returns Cytoscape.js-compatible JSON
+     → Supports same year/value filter params as /api/entities/initial
 
 GET  /api/search?q={term}&type={company|person|contract}
      → Supabase-backed FTS search (feeds the Top-Bar Search)
@@ -772,28 +808,28 @@ Instead of Cypher, multi-hop traversals use PostgreSQL Recursive CTEs. This is e
 ```sql
 -- Find paths from Company A to Company B through shareholder links
 WITH RECURSIVE path_finder AS (
-  -- Base case: direct shareholders
-  SELECT 
-    source_id, 
-    target_id, 
-    1 as depth,
-    ARRAY[source_id, target_id] as path
-  FROM shareholders
-  WHERE source_id = 'START_JAR'
+    -- Base case: direct shareholders
+    SELECT source_id,
+           target_id,
+           1 as depth,
+           ARRAY[source_id, target_id] as path
+    FROM shareholders
+    WHERE source_id = 'START_JAR'
 
-  UNION ALL
+    UNION ALL
 
-  -- Recursive step
-  SELECT 
-    s.source_id, 
-    s.target_id, 
-    pf.depth + 1,
-    pf.path || s.target_id
-  FROM shareholders s
-  JOIN path_finder pf ON s.source_id = pf.target_id
-  WHERE pf.depth < 5 AND NOT s.target_id = ANY(pf.path)
-)
-SELECT * FROM path_finder WHERE target_id = 'END_JAR';
+    -- Recursive step
+    SELECT s.source_id,
+           s.target_id,
+           pf.depth + 1,
+           pf.path || s.target_id
+    FROM shareholders s
+             JOIN path_finder pf ON s.source_id = pf.target_id
+    WHERE pf.depth < 5
+      AND NOT s.target_id = ANY(pf.path))
+SELECT *
+FROM path_finder
+WHERE target_id = 'END_JAR';
 ```
 
 ---
@@ -826,7 +862,7 @@ SELECT * FROM path_finder WHERE target_id = 'END_JAR';
 | 1 | Can we get bulk data export from viespirkiai.org?                      | Phase 1 seeding relies on scraping ~millions of IDs without a seed list          | Contact viespirkiai.org     |
 | 2 | Are tender participant lists (co-bidders) available via API?           | UC-01 (cartel detection) is blocked without participant data                     | Verify VPT CVP IS data      |
 | 3 | Is VTEK interest declaration data machine-readable in the /asmuo JSON? | UC-03 (PEP) needs structured VTEK data                                           | Test against sample JARs    |
-| 4 | Does PostgreSQL handle 500k+ relationship traversals efficiently? | May need to optimize Recursive CTEs or use caching | Benchmark at 100k nodes |
+| 4 | Does PostgreSQL handle 500k+ relationship traversals efficiently?      | May need to optimize Recursive CTEs or use caching                               | Benchmark at 100k nodes     |
 | 5 | Rate limit policy of viespirkiai.org                                   | Pipeline could get blocked without a known limit                                 | Contact or empirically test |
 | 6 | Subcontractor data completeness in SABIS                               | UC-04 (AML path) is only partially implementable                                 | Assess SABIS coverage       |
 | 7 | GDPR DPA notification                                                  | If storing PEP natural person data, may require registering as a data controller | Legal review                |
