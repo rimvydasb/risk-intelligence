@@ -13,26 +13,31 @@ rigging, shell companies, and conflicts of interest.
     - **PEP / Conflict of Interest:** Linking decision-makers to winning suppliers.
 - **Data Foundation:** Aggregated Lithuanian government data from [viespirkiai.org](https://viespirkiai.org) (CC BY
   4.0).
-- **Architecture:** Single-Root Modular Monolith (Next.js as SPA + Stateless Node API).
-- **Environment Parity:** Docker Compose for PostgreSQL only; Host Node.js for application runtime.
+- **Architecture:** Single-Root Modular Monolith (Next.js SPA + Stateless Node API).
+- **Strategy:** Local-First Proof-of-Concept (POC) with synthetic data generation. Cloud deployment is deferred.
 
 ## Technology Stack
 
 - **Frontend:** Next.js 16 (App Router as SPA), React 19, TypeScript.
-- **UI Components:** Material UI (MUI) v5 with Emotion.
+- **UI Components:** MUI v5 with Emotion.
 - **Graph Visualization:** Cytoscape.js (Lazy Loading).
-- **Database:** Supabase (PostgreSQL) with Prisma ORM.
-- **Search:** Supabase Full-Text Search (pg_trgm).
-- **Ingestion:** GitHub Actions (Node.js Stateful ETL).
+- **Database:** PostgreSQL (Local Docker) / Supabase (Future Target).
+- **ORM:** Prisma.
+- **Synthesis:** Custom Node.js Synthesizer (Faker-based) for local dataset expansion.
 
-## Building and Running
+## POC Workflow: Building the Local Sandbox
 
-### Key Commands
+### Key Commands (Active Development)
 
-- `docker-compose up -d`: Starts the local PostgreSQL database.
-- `npm run dev`: Starts the Next.js development server on the host.
-- `npm run build`: Builds the application for production.
-- `npm run start`: Starts the production server.
+1. `docker-compose up -d`: Starts the local PostgreSQL database.
+2. `npm run db:setup`: Initializes the schema and seeds the two real data samples.
+3. `npm run db:synthesize`: Expands the database with ~1,000 synthetic entities for testing.
+4. `npm run dev`: Starts the Next.js development server on the host.
+
+### Deferred Automation (Future State)
+- **GitHub Actions:** Nightly ETL runner is documented but not active.
+- **Vercel/Supabase:** Cloud targets are configured but not currently used for deployment.
+
 
 ## Development Conventions
 

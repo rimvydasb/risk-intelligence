@@ -500,6 +500,8 @@ graph TB
 | Database | Supabase (PostgreSQL) | Managed storage with standard Postgres compatibility. |
 | ORM | Prisma or Drizzle | Type-safe access via single root configuration. |
 | Ingestion | Node.js + GitHub Actions | Stateful ETL runner executing on host/runner Node.js. |
+| Testing (Unit) | Jest | Used for logic, services, and non-GUI code only. |
+| Testing (E2E/GUI) | Cypress | Primary tool for UI, interactivity, and integration testing. |
 
 ---
 
@@ -512,6 +514,7 @@ risk-intelligence/
 ├── .github/
 │   └── workflows/
 │       └── etl-scraper.yml      # Nightly ETL Runner
+├── cypress/                     # E2E & GUI Testing (Specs, Screenshots, Videos)
 ├── prisma/                      # Database Schema & Migrations
 ├── public/                      # Static Assets
 ├── src/
@@ -1087,61 +1090,42 @@ graph TD
 
 ---
 
-## 16. Implementation Plan
+## 16. Implementation Plan (POC-First Strategy)
 
-### Phase 1 — Foundation & Data Layer
+### Phase 1 — Foundation & Local Sandbox
+> **Goal:** Establish a functional local environment with a "seed" database.
+- [ ] Set up local PostgreSQL via `docker-compose.yml` (DB only).
+- [ ] Initialize Prisma with the core schema (Company, Contract, Person).
+- [ ] Implement `npm run db:setup`: Script to initialize schema and run basic health checks.
+- [ ] Implement `Fetcher` POC: Successfully ingest and parse the two known `viespirkiai` sample endpoints.
 
-> **Goal:** Establish the data pipeline and storage layer using Supabase and Prisma.
+### Phase 2 — Data Synthesis Engine
+> **Goal:** Expand the 2-node graph into a meaningful network for risk analysis.
+- [ ] **Build Synthesizer:** Create a Node.js utility to generate ~1,000 synthetic Companies and ~5,000 Contracts.
+- [ ] **Relational Logic:** Ensure synthesized data follows real-world distributions (e.g., Pareto distribution for contract values).
+- [ ] **Identity Normalization:** Implement the `Entity Resolver` logic locally to handle synthetic name variations.
+- [ ] **Seed Local DB:** Create a rich local dataset for testing the "360 View."
 
-- [ ] Set up Supabase project and connect Prisma ORM
-- [ ] Define Prisma schema for entities and relationships
-- [ ] Build Node.js scraper script for viespirkiai.org
-- [ ] Set up GitHub Action for nightly incremental ingestion
-- [ ] Implement Prisma upsert logic for Company/Contract nodes
-- [ ] Configure Supabase Full-Text Search (pg_trgm) for entity searching
+### Phase 3 — Risk Scoring & Pathfinding POC
+> **Goal:** Implement the business logic (Inference Engine) on the synthesized data.
+- [ ] Implement the **Calculation on Write (CoW)** risk scorer locally.
+- [ ] Write and optimize the **Recursive CTEs** for multi-hop pathfinding.
+- [ ] Verify UC-1 (Cartel) and UC-2 (Shell) detection logic against synthesized anomalies.
+- [ ] Implement the `DisplayScore` (Logarithmic) calculation.
 
-### Phase 2 — Risk Scoring & Pathfinding
+### Phase 4 — UI & Visualization POC (The "GUI")
+> **Goal:** Build the interactive dashboard against the local Node.js API.
+- [ ] Build the Next.js App Router shell (Strictly SPA mode).
+- [ ] Implement the `360 View` Entity Profile page.
+- [ ] Integrate Cytoscape.js for the **Lazy Loading Network** view.
+- [ ] Implement the "View Network" expansion logic using local API handlers.
 
-> **Goal:** Implement the scoring logic and relational traversals.
-
-- [ ] Implement node risk scoring service using Prisma
-- [ ] Write Recursive CTEs for multi-hop pathfinding (UBO/PEP chains)
-- [ ] Implement UC-1 (Cartel) and UC-2 (Shell) detection logic in SQL/TypeScript
-- [ ] Implement alert generator as a background task
-- [ ] Create risk explanation service for the 360 View
-
-### Phase 3 — API & Frontend Foundation
-
-> **Goal:** Build the Entity Profile (360 View) and Next.js routes.
-
-- [ ] Implement `GET /api/entities/{jarKodas}` (360 View endpoint)
-- [ ] Build the Entity Profile page with MUI components
-- [ ] Implement search UI using Supabase FTS API
-- [ ] Set up Vercel deployment with necessary environment variables
-
-### Phase 4 — Lazy Loading Visualization (Cytoscape.js)
-
-> **Goal:** Implement the interactive relationship network.
-
-- [ ] Implement `GET /api/entities/{jarKodas}/network` (Neighbor expansion endpoint)
-- [ ] Integrate Cytoscape.js into the Entity Profile page
-- [ ] Implement "View Network" button to lazily load and render neighbors
-- [ ] Add visual encoding (node size/color) based on risk scores
-- [ ] Implement path finder UI using server-side Recursive CTEs
-
-### Phase 5 — Incremental Sync & Ops
-
-> **Goal:** Automate ongoing data updates and production readiness.
-
-- [ ] Implement nightly incremental sync (02:00 EET cron schedule)
-- [ ] Implement delta risk score recomputation on new ingestion
-- [ ] Implement ingestion logging and error tracking (`ingestion_log` table)
-- [ ] Set up Supabase Full-Text Search index
-- [ ] Configure GitHub Actions for production deployment
-- [ ] Benchmark PostgreSQL relationship traversals at 100k nodes
-- [ ] Implement GDPR compliance: no public Person name exposure, data correction contact mechanism
-- [ ] Add monitoring and health checks for ingestion pipeline
-- [ ] Write Cypress E2E tests for critical UI flows
+### Phase 5 — Cloud Transition (Deferred)
+> **Goal:** Move the verified POC to production-grade infrastructure.
+- [ ] Migrate local PostgreSQL schema to Supabase.
+- [ ] Configure Vercel for serverless deployment of the Next.js API/Frontend.
+- [ ] Port the Fetcher/Synthesizer logic into a stateful GitHub Action ETL runner.
+- [ ] Implement production-grade rate limiting and monitoring.
 
 ### Phase 6 — Advanced Detection & Hardening
 
