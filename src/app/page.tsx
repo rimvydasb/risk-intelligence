@@ -11,6 +11,8 @@ import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import GraphView from '@/components/GraphView';
+import EntityDetailView from '@/components/entity/EntityDetailView';
+import { useHashRouter, parseRoute } from '@/lib/useHashRouter';
 import type { EntityDetailResponse } from '@/types/api';
 
 const SparkLine = dynamic(() => import('@/components/charts/SparkLine'), { ssr: false });
@@ -67,6 +69,10 @@ function statusChipColor(status: string | null): 'success' | 'error' | 'default'
 // ── component ─────────────────────────────────────────────────────────────────
 
 export default function GraphExplorer() {
+    const { route, navigate } = useHashRouter();
+    const parsedRoute = parseRoute(route);
+    const isEntityView = parsedRoute.view === 'entity';
+
     const [selectedNode, setSelectedNode] = useState<any>(null);
     const [entityDetail, setEntityDetail] = useState<EntityDetailResponse | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -134,6 +140,23 @@ export default function GraphExplorer() {
 
     return (
         <Box sx={{ flexGrow: 1 }}>
+            {/* Entity Detail View (hash route: /entities/:id) */}
+            {isEntityView && parsedRoute.view === 'entity' && (
+                <EntityDetailView
+                    jarKodas={parsedRoute.id}
+                    onBack={() => {
+                        navigate('/');
+                        setSidebarOpen(false);
+                    }}
+                    onExpandInGraph={(jar) => {
+                        navigate('/');
+                        handleNodeClick({ id: jar, type: 'company' });
+                    }}
+                />
+            )}
+
+            {/* Graph Dashboard (always mounted; hidden when on entity route to preserve Cytoscape state) */}
+            <Box sx={{ display: isEntityView ? 'none' : 'block' }}>
             {/* Top Bar */}
             <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, bgcolor: 'rgba(255,255,255,0.9)', color: 'text.primary' }}>
                 <Toolbar>
@@ -408,8 +431,10 @@ export default function GraphExplorer() {
                                     variant="outlined"
                                     size="small"
                                     fullWidth
-                                    href={`/entities/${entityDetail.jarKodas}`}
-                                    component={MuiLink}
+                                    onClick={() => {
+                                        setSidebarOpen(false);
+                                        navigate(`/entities/${entityDetail.jarKodas}`);
+                                    }}
                                     endIcon={<OpenInNewIcon fontSize="small" />}
                                 >
                                     View Full Profile
@@ -459,6 +484,7 @@ export default function GraphExplorer() {
                     )}
                 </Box>
             </Drawer>
+            </Box> {/* end graph dashboard wrapper */}
         </Box>
     );
 }
