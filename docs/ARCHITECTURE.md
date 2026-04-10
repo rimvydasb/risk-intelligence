@@ -460,11 +460,12 @@ graph TB
         SD["Supabase Postgres<br/>(Prod DB)"]
     end
 
-    subgraph PRESENTATION["PRESENTATION LAYER (Strictly SPA)"]
+    subgraph PRESENTATION["PRESENTATION LAYER (Strictly SPA — Hash Routing)"]
         direction LR
-        GV["Front Page Graph View<br/>(Biological Network Canvas)"]
+        GV["Front Page Graph View<br/>(Biological Network Canvas)<br/>#/"]
         SEARCH["Top-Bar Search<br/>(Global Discovery)"]
-        ED["Node Detail Panel<br/>(360 View Overlay)"]
+        ED["Entity Detail View<br/>(360° Profile)<br/>#/entities/:id"]
+        HR["useHashRouter Hook<br/>(Client-Side Navigation)"]
     end
 
     subgraph CORE_SERVICES["CORE SERVICES (Stateless API)"]
@@ -525,12 +526,13 @@ risk-intelligence/
 │   │   │   ├── entities/        # [GET] 360 View / Network
 │   │   │   └── risk/            # [GET] Risk explanations
 │   │   ├── layout.tsx           # Global Shell & Theme Provider
-│   │   ├── page.tsx             # Main Dashboard Entry (SPA)
+│   │   ├── page.tsx             # SINGLE UI ENTRY POINT — manages hash routing
 │   │   └── globals.css          # Global Styles
 │   ├── components/              # Modular Client UI Components
 │   │   ├── graph/               # Cytoscape.js Logic
-│   │   └── entity/              # Profile & List components
+│   │   └── entity/              # EntityDetailView component (rendered via hash route)
 │   ├── lib/                     # Business Logic (Risk Rules, DB Client)
+│   │   └── useHashRouter.ts     # Hash-based routing hook (SSR-safe)
 │   ├── types/                   # Shared TypeScript Interfaces
 │   └── services/                # API Client Wrappers
 ├── docker-compose.yml           # Local Postgres ONLY
@@ -542,6 +544,7 @@ risk-intelligence/
 ### 8.1.1 Logical Separation Rules
 - **Physical Monolith, Mental Decoupling:** All UI code in `src/app` must remain agnostic of the backend implementation. It communicates with `/api/*` solely via standard `fetch` calls.
 - **API Statelessness:** API Route Handlers must not rely on Vercel-specific state. They should be pure Node.js functions that can be easily ported to an Express or Fastify server.
+- **Hash-Based SPA Routing:** The application uses a single Next.js page (`src/app/page.tsx`). All client-side navigation is managed by the `useHashRouter` hook via `window.location.hash`. No additional Next.js page routes exist under `src/app/` for UI views. The URL pattern is `/#/` (graph) and `/#/entities/:id` (entity detail). This preserves the Cytoscape graph instance across view transitions and enables true deep-linking without server round-trips.
 
 ---
 
