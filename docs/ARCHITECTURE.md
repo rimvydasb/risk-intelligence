@@ -1,8 +1,8 @@
 # Risk Intelligence System — System and Architecture Design Document
 
-**Version:** 0.1-DRAFT  
+**Version:** 0.2-DRAFT (Biological Interaction UX)  
 **Date:** 2026-04-10  
-**Author:** [Author]  
+**Author:** Senior Principal Architect  
 **Status:** Draft
 
 ---
@@ -43,6 +43,8 @@ The system targets three core fraud typologies:
 
 The primary data foundation is viespirkiai.org, which acts as an aggregator of ~15 Lithuanian government data sources
 under open CC BY 4.0 licenses. It exposes per-contract and per-entity JSON APIs directly usable for graph construction.
+
+**Graph-First UX Paradigm:** The system features a graph-first user experience, employing Node-Link Diagrams to visualize a "Biological Interaction Network." This approach treats the procurement ecosystem as an organic entity, allowing investigators to intuitively spot structural anomalies (dense "inflamed" clusters). The front page immediately immerses the user in the graph canvas, beginning with the critical anchor node "geležinkeliai".
 
 ---
 
@@ -460,9 +462,9 @@ graph TB
 
     subgraph PRESENTATION["PRESENTATION LAYER (Strictly SPA)"]
         direction LR
-        GV["360 View Dashboard<br/>(Cytoscape.js)"]
-        RF["Risk Filter"]
-        ED["Entity Profile"]
+        GV["Front Page Graph View<br/>(Biological Network Canvas)"]
+        SEARCH["Top-Bar Search<br/>(Global Discovery)"]
+        ED["Node Detail Panel<br/>(360 View Overlay)"]
     end
 
     subgraph CORE_SERVICES["CORE SERVICES (Stateless API)"]
@@ -598,7 +600,7 @@ jobs:
   ingest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout @v4
       - run: npm install
       - run: npm run ingest
         env:
@@ -621,12 +623,15 @@ jobs:
 
 ---
 
-## 10. Cytoscape.js Visualization Layer
+## 10. Cytoscape.js Visualization Layer (Biological Interaction Network)
+
+The front page is exclusively a graph view—this is the central and most important asset of the system. By employing Node-Link Diagrams with Force-Directed layouts, the UI mimics a "Biological Interaction Network," rendering organic clusters and highlighting risk patterns visually before the user reads any data tables.
 
 ### 10.1 Layouts
 
 | Use Case                 | Recommended Layout             | Reason                                |
 |--------------------------|--------------------------------|---------------------------------------|
+| **Front Page (Default)** | **Force-Directed (fCoSE)**     | **Creates a biological cell-like clustering structure.** |
 | Cartel cluster detection | CoSE-Bilkent                   | Reveals tight clusters naturally      |
 | PEP path traversal       | Breadth-First from Person node | Shows hop distance to winning company |
 | Subcontractor money flow | Dagre (DAG layout)             | Directed flow is readable top-down    |
@@ -645,8 +650,11 @@ Edge style       → dashed = inferred/indirect relationship; solid = direct/doc
 
 ### 10.3 Interaction Design
 
-- **Click node** → side panel shows entity detail, risk score breakdown, source links.
-- **Double-click** → expand node (load and render 1-hop neighbors from API).
+- **Graph-First Landing:** The application loads directly into the "Biological Interaction Network" canvas. There is no separate text-based search page.
+- **Default Anchor:** As the first entity, the graph automatically renders **"geležinkeliai"** (Railways) and its immediate connections, providing an instant, high-value structural context.
+- **Top-Bar Search:** The search bar is located at the top of the page, overlaid on the graph. Searching for a new entity refocuses the graph canvas on that entity.
+- **Click Node (Inspection):** When a user clicks on a node (e.g., "geležinkeliai"), it shows a detailed view of that node in a slide-out side panel (entity detail, risk score breakdown, source links), without leaving the graph.
+- **Double-click (Expansion):** Expanding a node loads and renders its 1-hop neighbors from the API, pulsing the network organically.
 - **Risk threshold slider** → hide nodes below threshold (server-side filter or client-side `cy.filter()`).
 - **Path finder** → "Find path between A and B" using Cytoscape's built-in BFS or Dijkstra.
 - **Alert overlay** → pulsing animation on nodes that triggered alerts in the last 24h.
@@ -665,6 +673,9 @@ Edge style       → dashed = inferred/indirect relationship; solid = direct/doc
 ### Core endpoints
 
 ```
+GET  /api/entities/initial
+     → Returns the default "geležinkeliai" subgraph (nodes + edges) to populate the front page graph canvas.
+
 GET  /api/entities/{jarKodas}
      → 360 View: Entity profile + risk score breakdown + direct relationship counts
 
@@ -673,7 +684,7 @@ GET  /api/entities/{jarKodas}/network?depth=1&minRisk=100
      → Returns Cytoscape.js-compatible JSON
 
 GET  /api/search?q={term}&type={company|person|contract}
-     → Supabase-backed FTS search
+     → Supabase-backed FTS search (feeds the Top-Bar Search)
 
 GET  /api/alerts?since={iso_date}&minRisk=150
      → Recent alerts
@@ -734,7 +745,7 @@ POST /api/graph/path
 model Company {
   jarKodas        String    @id
   pavadinimas     String
-  riskScore       Int       @default(0)
+  riskScore       Int       @.idea/inspectionProfiles/Project_Default.xml(0)
   employees       Int?
   avgSalary       Decimal?
   contractsAsBuyer Contract[] @relation("Buyer")
@@ -813,7 +824,6 @@ SELECT * FROM path_finder WHERE target_id = 'END_JAR';
 | 2 | Are tender participant lists (co-bidders) available via API?           | UC-01 (cartel detection) is blocked without participant data                     | Verify VPT CVP IS data      |
 | 3 | Is VTEK interest declaration data machine-readable in the /asmuo JSON? | UC-03 (PEP) needs structured VTEK data                                           | Test against sample JARs    |
 | 4 | Does PostgreSQL handle 500k+ relationship traversals efficiently? | May need to optimize Recursive CTEs or use caching | Benchmark at 100k nodes |
-
 | 5 | Rate limit policy of viespirkiai.org                                   | Pipeline could get blocked without a known limit                                 | Contact or empirically test |
 | 6 | Subcontractor data completeness in SABIS                               | UC-04 (AML path) is only partially implementable                                 | Assess SABIS coverage       |
 | 7 | GDPR DPA notification                                                  | If storing PEP natural person data, may require registering as a data controller | Legal review                |
@@ -1087,69 +1097,3 @@ graph TD
 - **Cycle highlight:** If circular ownership or money cycle detected, edges forming the cycle are rendered in dashed red
   with animation.
 - **Edge labels** show absolute amount and percentage of prime contract value.
-
----
-
-## 16. Implementation Plan (POC-First Strategy)
-
-### Phase 1 — Foundation & Local Sandbox
-> **Goal:** Establish a functional local environment with a "seed" database.
-- [x] Set up local PostgreSQL via `docker-compose.yml` (DB only).
-- [x] Initialize Prisma with the core schema (Company, Contract, Person).
-- [x] Implement `npm run db:setup`: Script to initialize schema and run basic health checks.
-- [x] Implement `Fetcher` POC: Successfully ingest and parse the two known `viespirkiai` sample endpoints.
-
-### Phase 2 — Data Synthesis Engine
-> **Goal:** Expand the 2-node graph into a meaningful network for risk analysis.
-- [x] **Build Synthesizer:** Create a Node.js utility to generate ~1,000 synthetic Companies and ~5,000 Contracts.
-- [x] **Relational Logic:** Ensure synthesized data follows real-world distributions (e.g., Pareto distribution for contract values).
-- [x] **Identity Normalization:** Implement the `Entity Resolver` logic locally to handle synthetic name variations.
-- [x] **Seed Local DB:** Create a rich local dataset for testing the "360 View."
-
-### Phase 3 — Risk Scoring & Pathfinding POC
-> **Goal:** Implement the business logic (Inference Engine) on the synthesized data.
-- [x] Implement the **Calculation on Write (CoW)** risk scorer locally.
-- [x] Write and optimize the **Recursive CTEs** for multi-hop pathfinding.
-- [x] Verify UC-1 (Cartel) and UC-2 (Shell) detection logic against synthesized anomalies.
-- [x] Implement the `DisplayScore` (Logarithmic) calculation.
-
-### Phase 4 — UI & Visualization POC (The "GUI")
-> **Goal:** Build the interactive dashboard against the local Node.js API.
-- [x] Build the Next.js App Router shell (Strictly SPA mode).
-- [x] Implement the `360 View` Entity Profile page.
-- [x] Integrate Cytoscape.js for the **Lazy Loading Network** view.
-- [x] Implement the "View Network" expansion logic using local API handlers.
-- [x] **E2E/GUI Testing:** Implement Cypress test suite for critical user flows (Search -> Profile -> Graph).
-
-### Phase 5 — Cloud Transition (Deferred)
-> **Goal:** Move the verified POC to production-grade infrastructure.
-- [ ] Migrate local PostgreSQL schema to Supabase.
-- [ ] Configure Vercel for serverless deployment of the Next.js API/Frontend.
-- [ ] Port the Fetcher/Synthesizer logic into a stateful GitHub Action ETL runner.
-- [ ] Implement production-grade rate limiting and monitoring.
-
-### Phase 6 — Advanced Detection & Hardening
-
-> **Goal:** Mature the detection algorithms and harden for real-world use.
-
-- [ ] Verify tender participant list availability in CVP IS data (Open Question #2)
-- [ ] Verify VTEK machine-readable data in `/asmuo` JSON (Open Question #3)
-- [ ] Assess SABIS subcontractor data completeness (Open Question #6)
-- [ ] Implement WebGL renderer fallback for graphs exceeding 1,000 nodes
-- [ ] Add TED (EU) cross-border tender data for transnational bid rigging detection
-- [ ] Add CPVA/esinvesticijos.lt integration for EU fund double-dipping
-- [ ] Legal review: GDPR DPA notification if storing PEP natural person data (Open Question #7)
-- [ ] Performance test: relationship traversals at 500k+ nodes, optimize Recursive CTEs
-
----
-
-## 17. Contradictions Resolved
-
-This section documents contradictions found during the review of the original v0.1-DRAFT and how they were resolved.
-
-| # | Location | Contradiction | Resolution |
-|---|---|---|---|
-| 1 | Section 10.2 vs Appendix A | Section 10.2 mapped `green` to `<100` (a single band), while Appendix A correctly splits into `Grey (0–49)` and `Green (50–99)` — two distinct severity bands. | Aligned Section 10.2 with Appendix A: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200). |
-| 2 | Section 12.2 vs Section 6.2 | The SQL example in 12.2 had inconsistent edge naming compared to Section 6.2. | Fixed SQL example to match the `Institution → Company` edge definition. |
-| 3 | Section 8 vs Codebase | Document listed `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `MUI v5 + Emotion` for the component library. | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers. |
-| 4 | Section 7 Architecture | Next.js with App Router is typically a full-stack framework (SSR + API routes), but this system strictly enforces a Decoupled SPA model. | Replaced ASCII diagram and updated Tech Stack to enforce SPA + decoupled API, suitable for static export. |
