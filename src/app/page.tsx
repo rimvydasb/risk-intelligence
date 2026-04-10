@@ -1,18 +1,23 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import {
     Box, AppBar, Toolbar, Typography, TextField, Autocomplete,
     Drawer, IconButton, Divider, CircularProgress, Stack, Chip,
-    Button, Skeleton, Link as MuiLink,
+    Button, Skeleton, Link as MuiLink, Select, MenuItem, Badge,
+    Tooltip,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import GraphView from '@/components/GraphView';
 import EntityDetailView from '@/components/entity/EntityDetailView';
-import { useHashRouter, parseRoute } from '@/lib/useHashRouter';
+import {
+    useHashRouter, parseRoute, buildGraphUrl, activeFilterCount,
+    FILTER_DEFAULTS, type GraphFilterParams,
+} from '@/lib/useHashRouter';
 import type { EntityDetailResponse } from '@/types/api';
 
 const SparkLine = dynamic(() => import('@/components/charts/SparkLine'), { ssr: false });
@@ -69,10 +74,41 @@ function statusChipColor(status: string | null): 'success' | 'error' | 'default'
 // ── component ─────────────────────────────────────────────────────────────────
 
 export default function GraphExplorer() {
-    const { route, navigate } = useHashRouter();
+    const { route, navigate, queryParams, setQueryParams } = useHashRouter();
     const parsedRoute = parseRoute(route);
     const isEntityView = parsedRoute.view === 'entity';
 
+    // ── Filter state ──────────────────────────────────────────────────────────
+    // Use module-level constant to avoid SSR/CSR hydration mismatch
+    const yearOptions = Array.from({ length: FILTER_DEFAULTS.yearTo - 2009 }, (_, i) => 2010 + i);
+
+    // Applied filters (drive the actual graph fetch)
+    const [appliedFilters, setAppliedFilters] = useState<GraphFilterParams>(() => ({
+        yearFrom: Number(queryParams.yearFrom) || FILTER_DEFAULTS.yearFrom,
+        yearTo: Number(queryParams.yearTo) || FILTER_DEFAULTS.yearTo,
+        minValue: Number(queryParams.minValue) || FILTER_DEFAULTS.minValue,
+    }));
+
+    // Pending filters (what the user has typed but not yet applied)
+    const [pendingFilters, setPendingFilters] = useState<GraphFilterParams>(appliedFilters);
+
+    const graphDataUrl = useMemo(
+        () => buildGraphUrl('/api/entities/initial', appliedFilters),
+        [appliedFilters],
+    );
+
+    const filterBadgeCount = activeFilterCount(appliedFilters);
+
+    const handleApplyFilters = () => {
+        setAppliedFilters({ ...pendingFilters });
+        setQueryParams({
+            ...(pendingFilters.yearFrom !== FILTER_DEFAULTS.yearFrom ? { yearFrom: pendingFilters.yearFrom } : {}),
+            ...(pendingFilters.yearTo !== FILTER_DEFAULTS.yearTo ? { yearTo: pendingFilters.yearTo } : {}),
+            ...(pendingFilters.minValue !== FILTER_DEFAULTS.minValue ? { minValue: pendingFilters.minValue } : {}),
+        });
+    };
+
+    // ── Search + graph interaction state ─────────────────────────────────────
     const [selectedNode, setSelectedNode] = useState<any>(null);
     const [entityDetail, setEntityDetail] = useState<EntityDetailResponse | null>(null);
     const [detailLoading, setDetailLoading] = useState(false);
@@ -205,11 +241,80 @@ export default function GraphExplorer() {
                             }
                         }}
                     />
+
+                    {/* ── Toolbar Filters ──────────────────────────────────── */}
+                    <Stack direction="row" sx={{ gap: 1, alignItems: 'center', ml: 2 }}>
+                        <Tooltip title="Year From">
+                            <Select
+                                size="small"
+                                value={pendingFilters.yearFrom}
+                                onChange={(e) => setPendingFilters(f => ({ ...f, yearFrom: Number(e.target.value) }))}
+                                sx={{ minWidth: 90, fontSize: 13 }}
+                                inputProps={{ 'aria-label': 'Year From', 'data-testid': 'filter-year-from' }}
+                            >
+                                {yearOptions.map(y => (
+                                    <MenuItem key={y} value={y}>{y}</MenuItem>
+                                ))}
+                            </Select>
+                        </Tooltip>
+                        <Typography variant="caption" color="text.secondary">–</Typography>
+                        <Tooltip title="Year To">
+                            <Select
+                                size="small"
+                                value={pendingFilters.yearTo}
+                                onChange={(e) => setPendingFilters(f => ({ ...f, yearTo: Number(e.target.value) }))}
+                                sx={{ minWidth: 90, fontSize: 13 }}
+                                inputProps={{ 'aria-label': 'Year To', 'data-testid': 'filter-year-to' }}
+                            >
+                                {yearOptions.map(y => (
+                                    <MenuItem key={y} value={y}>{y}</MenuItem>
+                                ))}
+                            </Select>
+                        </Tooltip>
+                        <Tooltip title="Minimum contract value (EUR)">
+                            <TextField
+                                size="small"
+                                type="number"
+                                label="Min €"
+                                value={pendingFilters.minValue === 0 ? '' : pendingFilters.minValue}
+                                onChange={(e) => setPendingFilters(f => ({ ...f, minValue: Number(e.target.value) || 0 }))}
+                                sx={{ width: 110 }}
+                                slotProps={{ htmlInput: { min: 0, step: 10000, 'data-testid': 'filter-min-value' } }}
+                            />
+                        </Tooltip>
+                        <Badge badgeContent={filterBadgeCount} color="primary">
+                            <Button
+                                size="small"
+                                variant="contained"
+                                disableElevation
+                                startIcon={<FilterListIcon />}
+                                onClick={handleApplyFilters}
+                                data-testid="filter-apply"
+                            >
+                                Apply
+                            </Button>
+                        </Badge>
+                        {filterBadgeCount > 0 && (
+                            <Tooltip title="Reset filters">
+                                <IconButton
+                                    size="small"
+                                    onClick={() => {
+                                        setPendingFilters(FILTER_DEFAULTS);
+                                        setAppliedFilters(FILTER_DEFAULTS);
+                                        setQueryParams({});
+                                    }}
+                                    data-testid="filter-reset"
+                                >
+                                    <CloseIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                    </Stack>
                 </Toolbar>
             </AppBar>
 
             {/* Graph Canvas */}
-            <GraphView onNodeClick={handleNodeClick} />
+            <GraphView onNodeClick={handleNodeClick} dataUrl={graphDataUrl} />
 
             {/* Slide-out Sidebar */}
             <Drawer

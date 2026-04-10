@@ -132,20 +132,20 @@ from the hash portion.
 
 ## Next Steps
 
-- [ ] Ensure project compiles and existing tests are passing
-- [ ] Extend `useHashRouter` (or add `useHashQuery` utility) to parse/serialise filter params from the hash query string
-- [ ] Add `filterParams` state and `buildGraphUrl(filters)` helper to `src/app/page.tsx`
-- [ ] Add `Year From`, `Year To`, and `Min Value` controls to the `AppBar` toolbar in `src/app/page.tsx`
-- [ ] Add Apply button with active-filter count badge indicating non-default filter state
-- [ ] Update `GraphView` to accept a `dataUrl` prop and use it for data fetching instead of the hardcoded URL
-- [ ] Update `src/app/api/entities/initial/route.ts` to accept and apply `yearFrom`, `yearTo`, `minValue` query params (
+- [x] Ensure project compiles and existing tests are passing
+- [x] Extend `useHashRouter` (or add `useHashQuery` utility) to parse/serialise filter params from the hash query string
+- [x] Add `filterParams` state and `buildGraphUrl(filters)` helper to `src/app/page.tsx`
+- [x] Add `Year From`, `Year To`, and `Min Value` controls to the `AppBar` toolbar in `src/app/page.tsx`
+- [x] Add Apply button with active-filter count badge indicating non-default filter state
+- [x] Update `GraphView` to accept a `dataUrl` prop and use it for data fetching instead of the hardcoded URL
+- [x] Update `src/app/api/entities/initial/route.ts` to accept and apply `yearFrom`, `yearTo`, `minValue` query params (
   Prisma `where` on `Contract.signedAt` and `Contract.value`; prune orphaned buyer nodes)
-- [ ] Update `src/app/api/entities/[id]/network/route.ts` to accept and apply the same filter params
-- [ ] Write Jest unit tests for the URL builder utility and API filter parsing logic
-- [ ] Write Cypress test verifying that applying a year filter visibly changes the graph (edge count or node count
+- [x] Update `src/app/api/entities/[id]/network/route.ts` to accept and apply the same filter params
+- [x] Write Jest unit tests for the URL builder utility and API filter parsing logic
+- [x] Write Cypress test verifying that applying a year filter visibly changes the graph (edge count or node count
   assertion)
-- [ ] Update required documentation after the implementation is complete
-- [ ] Ensure new tests are added for the new feature and all tests are passing
-- [ ] Perform linting and formatting to maintain code quality and consistency
-- [ ] Review the implementation to ensure it meets the requirements and follows best practices
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Update required documentation after the implementation is complete
+- [x] Ensure new tests are added for the new feature and all tests are passing
+- [x] Perform linting and formatting to maintain code quality and consistency
+- [x] Review the implementation to ensure it meets the requirements and follows best practices
+- [x] Mark all checkboxes as done in this document once verified

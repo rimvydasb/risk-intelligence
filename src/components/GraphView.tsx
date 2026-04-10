@@ -7,9 +7,10 @@ import type {Core, ElementDefinition} from 'cytoscape';
 export interface GraphViewProps {
     onNodeClick?: (nodeData: any) => void;
     elements?: ElementDefinition[];
+    dataUrl?: string;
 }
 
-export default function GraphView({onNodeClick, elements: passedElements}: GraphViewProps) {
+export default function GraphView({onNodeClick, elements: passedElements, dataUrl}: GraphViewProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const cyRef = useRef<Core | null>(null);
     const [elements, setElements] = useState<ElementDefinition[]>([]);
@@ -20,12 +21,13 @@ export default function GraphView({onNodeClick, elements: passedElements}: Graph
             return;
         }
         async function fetchInitialData() {
-            const res = await fetch('/api/entities/initial');
+            const url = dataUrl ?? '/api/entities/initial';
+            const res = await fetch(url);
             const data = await res.json();
             setElements(data);
         }
         fetchInitialData();
-    }, [passedElements]);
+    }, [passedElements, dataUrl]);
 
     useEffect(() => {
         let cy: Core | null = null;
