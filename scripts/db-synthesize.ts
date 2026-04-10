@@ -50,12 +50,45 @@ async function main() {
             skipDuplicates: true,
         });
 
+        // 2a. Specific Anchor: Lietuvos Geležinkeliai
+        const anchorCompany = {
+            jarKodas: '110053842',
+            name: 'AB "Lietuvos geležinkeliai"',
+            normalized: 'LIETUVOS GELEZINKELIAI',
+            riskScore: 25.5,
+            displayScore: Math.log2(25.5 + 1) * 10,
+        };
+        await prisma.company.upsert({
+            where: { jarKodas: anchorCompany.jarKodas },
+            update: anchorCompany,
+            create: anchorCompany,
+        });
+
         const allCompanies = await prisma.company.findMany({ select: { jarKodas: true } });
         const companyIds = allCompanies.map(c => c.jarKodas);
 
         // 3. Generate Relationships (CEOs, Owners)
         console.log('Generating relationships...');
         const relationships = [];
+        
+        // Specific Relationships for Anchor
+        const anchorPerson = {
+            uid: 'lg-ceo-uid',
+            fullName: 'Vardenis Pavardenis (LG CEO)',
+            normalized: 'VARDENIS PAVARDENIS',
+        };
+        await prisma.person.upsert({
+            where: { uid: anchorPerson.uid },
+            update: anchorPerson,
+            create: anchorPerson,
+        });
+        relationships.push({
+            personId: anchorPerson.uid,
+            companyId: anchorCompany.jarKodas,
+            role: 'CEO',
+            since: new Date('2020-01-01'),
+        });
+
         for (const companyId of companyIds) {
             // Assign 1-2 persons per company
             const numRels = faker.number.int({ min: 1, max: 2 });
@@ -97,6 +130,36 @@ async function main() {
 
         await prisma.contract.createMany({
             data: contracts,
+            skipDuplicates: true,
+        });
+
+        // 4a. Specific Contracts for Anchor
+        const anchorContracts = [
+            {
+                contractId: 'lg-contract-1',
+                title: 'Traukinių priežiūra',
+                value: 1200000,
+                currency: 'EUR',
+                status: 'Signed',
+                signedAt: new Date('2023-01-01'),
+                buyerName: 'Susisiekimo Ministerija',
+                buyerCode: '188603515',
+                supplierId: anchorCompany.jarKodas,
+            },
+            {
+                contractId: 'lg-contract-2',
+                title: 'IT infrastruktūros nuoma',
+                value: 450000,
+                currency: 'EUR',
+                status: 'Signed',
+                signedAt: new Date('2024-06-01'),
+                buyerName: 'Susisiekimo Ministerija',
+                buyerCode: '188603515',
+                supplierId: anchorCompany.jarKodas,
+            }
+        ];
+        await prisma.contract.createMany({
+            data: anchorContracts,
             skipDuplicates: true,
         });
 

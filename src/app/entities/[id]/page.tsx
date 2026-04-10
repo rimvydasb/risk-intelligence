@@ -55,7 +55,7 @@ export default function EntityProfile({ params }: { params: Promise<{ id: string
 
     return (
         <Container maxWidth="lg" sx={{ mt: 4 }}>
-            <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
                 <Box>
                     <Typography variant="h4">{company.name}</Typography>
                     <Typography color="text.secondary">Jar Code: {company.jarKodas}</Typography>
@@ -67,12 +67,12 @@ export default function EntityProfile({ params }: { params: Promise<{ id: string
             </Box>
 
             <Grid container spacing={3}>
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 3, height: '100%' }}>
                         <Typography variant="h6" gutterBottom>Management & Ownership</Typography>
                         <Divider sx={{ mb: 2 }} />
                         {company.relationships.map((rel: any) => (
-                            <Box key={rel.id} mb={1}>
+                            <Box key={rel.id} sx={{ mb: 1 }}>
                                 <Typography variant="subtitle1">{rel.person.fullName}</Typography>
                                 <Typography variant="body2" color="text.secondary">{rel.role}</Typography>
                             </Box>
@@ -83,7 +83,7 @@ export default function EntityProfile({ params }: { params: Promise<{ id: string
                     </Paper>
                 </Grid>
 
-                <Grid item xs={12} md={6}>
+                <Grid size={{ xs: 12, md: 6 }}>
                     <Paper sx={{ p: 3, height: '100%' }}>
                         <Typography variant="h6" gutterBottom>Recent Contracts</Typography>
                         <Divider sx={{ mb: 2 }} />
@@ -107,7 +107,7 @@ export default function EntityProfile({ params }: { params: Promise<{ id: string
                 </Grid>
 
                 {showGraph && (
-                    <Grid item xs={12}>
+                    <Grid size={12}>
                         <Paper sx={{ p: 3 }}>
                             <Typography variant="h6">Network Topology</Typography>
                             <GraphView elements={graphElements} />

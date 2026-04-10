@@ -12,17 +12,25 @@ export async function GET(request: Request) {
     }
 
     try {
-        const results = await prisma.company.findMany({
-            where: {
-                OR: [
-                    { name: { contains: query, mode: 'insensitive' } },
-                    { jarKodas: { contains: query } },
-                ],
-            },
-            take: 20,
-        });
+        const [companies, persons] = await Promise.all([
+            prisma.company.findMany({
+                where: {
+                    OR: [
+                        { name: { contains: query, mode: 'insensitive' } },
+                        { jarKodas: { contains: query } },
+                    ],
+                },
+                take: 10,
+            }),
+            prisma.person.findMany({
+                where: {
+                    fullName: { contains: query, mode: 'insensitive' },
+                },
+                take: 10,
+            }),
+        ]);
 
-        return NextResponse.json(results);
+        return NextResponse.json([...companies, ...persons]);
     } catch (error) {
         console.error('Search API Error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });

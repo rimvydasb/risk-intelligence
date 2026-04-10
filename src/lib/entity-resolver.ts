@@ -2,7 +2,7 @@ import { SoundEx, Metaphone } from 'natural';
 
 export class EntityResolver {
     private static soundex = SoundEx;
-    private static metaphone = Metaphone;
+    private static metaphone = new Metaphone();
 
     /**
      * Normalizes a Lithuanian name by removing common gendered suffixes 
