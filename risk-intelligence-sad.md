@@ -376,11 +376,11 @@ Edge: EMPLOYED_AT         (Person → Institution)
 ```mermaid
 erDiagram
     Institution ||--o{ Contract : "publishes tender for"
-    Contract }o--|| Company : "AWARDED_TO"
-    Company ||--o{ Tender : "PARTICIPATED_IN"
-    Company ||--o{ Tender : "WON"
-    Company ||--o{ Company : "SUBCONTRACTED_TO"
-    Company ||--o{ Company : "CO_BIDDER"
+    Institution }o--o{ Company : "AWARDED_TO (via Contract)"
+    Company }o--o{ Tender : "PARTICIPATED_IN"
+    Company }o--o{ Tender : "WON"
+    Company }o--o{ Company : "SUBCONTRACTED_TO"
+    Company }o--o{ Company : "CO_BIDDER"
     Person ||--o{ Company : "SHAREHOLDER_OF"
     Person ||--o{ Company : "DIRECTOR_OF"
     Person ||--o{ Company : "DECLARED_INTEREST"
@@ -722,7 +722,9 @@ ingestion_log (id, entity_type, entity_id, status, attempted_at, error_detail)
 -- Create graph
 SELECT create_graph('risk_graph');
 
--- Create edges (Institution → Company, matching Section 6.2 edge definition)
+-- Create edges (simplified: Institution → Company, per Section 6.2.
+-- In practice, AWARDED_TO is mediated by a Contract node; this shorthand
+-- is used for direct graph traversal queries where the Contract is implicit.)
 SELECT * FROM cypher('risk_graph', $$
   MATCH (i:Institution {jarKodas: '188704927'}), (s:Company {jarKodas: '110053842'})
   CREATE (i)-[:AWARDED_TO {contractId: '2007700250', value: 32670}]->(s)
@@ -829,7 +831,9 @@ Input: CO_BIDDER subgraph
 2. Run connected component analysis on the filtered subgraph.
 3. For each connected component with ≥3 companies:
    a. Compute win distribution: wins_per_company / total_tenders_in_cluster.
-   b. If distribution is roughly uniform (stddev < 0.15):
+   b. If normalized win distribution is roughly uniform (stddev of win_ratio < 0.15,
+      where win_ratio = wins_per_company / total_tenders; threshold based on
+      expectation that random allocation yields stddev ≈ 0.1 for N=3):
       → FLAG as rotational win pattern (cartel signal).
    c. Compute spoiler bid ratio:
       For each losing bid, if bid_amount > winner_amount * 1.20:
@@ -999,11 +1003,11 @@ Input: Contract C with prime contractor P and subcontractor data
    P --[value_2]--> Sub2
    Sub1 --[value_3]--> Sub1a  (if nested subcontracting exists)
 
-2. Compute pass-through ratio for each subcontractor:
-   passThrough = subcontract_value / prime_contract_value
+2. Compute subcontract ratio for each subcontractor:
+   subcontractRatio = subcontract_value / prime_contract_value
 
 3. Flag conditions:
-   IF passThrough > 0.80 for any single subcontractor  → +70
+   IF subcontractRatio > 0.80 for any single subcontractor  → +70
    IF subcontractor shareholders ∩ prime shareholders ≠ ∅ → +90 (circular ownership)
    IF subcontractor is on VPT blacklist                → +100
    IF subcontractor has employees < 2                  → +50 (shell sub)
