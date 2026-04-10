@@ -13,16 +13,17 @@ rigging, shell companies, and conflicts of interest.
     - **PEP / Conflict of Interest:** Linking decision-makers to winning suppliers.
 - **Data Foundation:** Aggregated Lithuanian government data from [viespirkiai.org](https://viespirkiai.org) (CC BY
   4.0).
-- **Architecture:** Next.js full-stack application with a graph-based data model (PostgreSQL + Apache AGE).
+- **Architecture:** Next.js full-stack application with a 360 View approach (Supabase + Prisma).
 
 ## Technology Stack
 
 - **Frontend:** Next.js 16 (App Router), React 19, TypeScript.
 - **UI Components:** Material UI (MUI) v5 with Emotion.
-- **Graph Visualization:** Cytoscape.js.
+- **Graph Visualization:** Cytoscape.js (Lazy Loading).
 - **Testing:** Jest and React Testing Library.
-- **Database (Planned):** PostgreSQL with Apache AGE extension for graph queries.
-- **Search (Planned):** Typesense for fast faceted filtering.
+- **Database:** Supabase (PostgreSQL) with Prisma ORM.
+- **Search:** Supabase Full-Text Search (pg_trgm).
+- **Ingestion:** GitHub Actions (Node.js).
 
 ## Building and Running
 

@@ -473,51 +473,44 @@ erDiagram
 
 ```mermaid
 graph TB
-    subgraph PRESENTATION["PRESENTATION LAYER"]
+    subgraph PRESENTATION["PRESENTATION LAYER (Vercel)"]
         direction LR
-        GV["Graph View<br/>(Cytoscape.js)"]
+        GV["360 View Dashboard<br/>(MUI + Cytoscape.js)"]
         RF["Risk Filter"]
-        ED["Entity Detail"]
-        AD["Alert Dashboard"]
+        ED["Entity Profile"]
     end
 
-    subgraph NEXTJS["NEXT.JS 16 (App Router)"]
+    subgraph NEXTJS["NEXT.JS 16 (Vercel)"]
         direction TB
         subgraph PAGES["React Server + Client Components"]
-            P1["pages / layouts"]
-            P2["MUI v5 themed components"]
+            P1["Entity Profile Pages"]
+            P2["Interactive Network View"]
         end
         subgraph API["API Route Handlers"]
-            A1["/api/entities/{jarKodas}"]
-            A2["/api/entities/{jarKodas}/graph"]
-            A3["/api/alerts"]
-            A4["/api/graph/path"]
-            A5["/api/risk/explain/{jarKodas}"]
+            A1["/api/entities/{jarKodas} (360 View)"]
+            A2["/api/entities/{jarKodas}/network (Lazy Loading)"]
+            A3["/api/search (Supabase FTS)"]
         end
-        subgraph SERVICES["Server-Side Services"]
+        subgraph SERVICES["Business Logic (Prisma)"]
             RS["Risk Scoring Engine"]
-            GQ["Graph Query Engine"]
+            PE["Path Engine (Recursive CTEs)"]
         end
     end
 
-    subgraph DATA["DATA LAYER"]
-        PG["PostgreSQL<br/>(relational + AGE graph)"]
-        TS["Typesense<br/>(full-text search)"]
+    subgraph DATA["DATA LAYER (Supabase)"]
+        PG["PostgreSQL<br/>(Relational)"]
+        FTS["pg_trgm / FTS<br/>(Search)"]
     end
 
-    subgraph INGESTION["INGESTION PIPELINE"]
+    subgraph INGESTION["INGESTION (GitHub Actions)"]
         direction LR
-        SC["Scraper<br/>(Node.js)"]
+        SC["Scraper Script<br/>(Node.js)"]
         EN["Enricher"]
-        GB["Graph Builder"]
         RSC["Risk Scorer"]
-        AG["Alert Generator"]
     end
 
     subgraph EXTERNAL["EXTERNAL DATA SOURCES"]
-        VP1["viespirkiai.org<br/>/sutartis/{id}.json"]
-        VP2["viespirkiai.org<br/>/asmuo/{jar}.json"]
-        FUT["Future: VPT, VTEK,<br/>LITEKO direct APIs"]
+        VP1["viespirkiai.org API"]
     end
 
     PRESENTATION --> NEXTJS
@@ -526,6 +519,7 @@ graph TB
     SERVICES --> DATA
     INGESTION --> DATA
     EXTERNAL --> INGESTION
+
     style PRESENTATION fill: #e3f2fd, stroke: #1565c0
     style NEXTJS fill: #f3e5f5, stroke: #7b1fa2
     style DATA fill: #e8f5e9, stroke: #2e7d32
@@ -533,28 +527,25 @@ graph TB
     style EXTERNAL fill: #fce4ec, stroke: #c62828
 ```
 
+The system is designed as an **Entity-Centric 360 View**. Instead of a global graph database, we treat the relationship network as a set of traversals starting from a specific entity (Company, Person, or Contract). This allows for a simplified deployment on serverless infrastructure.
+
+
 ---
 
 ## 8. Technology Stack
 
-| Layer               | Technology                                      | Rationale                                                                     |
-|---------------------|-------------------------------------------------|-------------------------------------------------------------------------------|
-| Frontend framework  | Next.js 16 (App Router) + React 19 + TypeScript | Existing codebase stack; SSR + API routes in one deployment                   |
-| Graph visualization | Cytoscape.js 3.x                                | Specified requirement; handles 10k+ nodes                                     |
-| UI components       | MUI v5 (Material UI) + Emotion                  | Existing codebase dependency; rich component library                          |
-| Backend API         | Next.js API Routes (Route Handlers)             | Eliminates separate backend service; collocated with frontend                 |
-| Graph storage       | PostgreSQL + Apache AGE                         | Avoids introducing Neo4j; AGE adds Cypher on top of PG                        |
-| Relational storage  | PostgreSQL                                      | Shared instance with AGE                                                      |
-| Search              | Typesense                                       | Same as viespirkiai.org itself; fast faceted filtering                        |
-| Ingestion           | Node.js (matches Next.js runtime)               | Lightweight scraper/transformer; can run as Next.js cron or standalone script |
-| Queue               | Bull (Redis-backed) or plain cron               | Rate-limited ingestion scheduling                                             |
-| Containerization    | Docker Compose                                  | Local + prod parity                                                           |
-| Hosting             | Any Ubuntu VPS (same as VP: Ubuntu 24.04 LTS)   | Operational simplicity                                                        |
-
-**Graph DB decision note:** PostgreSQL + Apache AGE is a pragmatic choice — you avoid running two separate databases and
-AGE gives you Cypher query syntax. The trade-off is that AGE is less mature than Neo4j for complex traversals. If query
-complexity grows (e.g., multi-hop path finding across 500k nodes), migrating to Neo4j Community is a valid escalation
-path.
+| Layer | Technology | Rationale |
+|---|---|---|
+| Frontend framework | Next.js 16 (App Router) + React 19 + TypeScript | Existing codebase stack; SSR + API routes in one deployment |
+| Hosting | Vercel | Scalable serverless hosting for Next.js |
+| Graph visualization | Cytoscape.js 3.x | Specified requirement; handles on-demand expansion of network |
+| UI components | MUI v5 (Material UI) + Emotion | Existing codebase dependency; rich component library |
+| Backend API | Next.js API Routes (Route Handlers) | Serverless API layer collocated with frontend |
+| Database | Supabase (PostgreSQL) | Managed PostgreSQL with built-in auth and edge functions |
+| ORM | Prisma or Drizzle | Type-safe database access and migrations |
+| Search | Supabase FTS (pg_trgm) | Leverages PostgreSQL native capabilities for text search |
+| Ingestion | Node.js + GitHub Actions | Runs scraper nightly; avoids Vercel timeout limits |
+| Containerization | Docker Compose (local dev only) | Local database parity |
 
 ---
 
@@ -566,24 +557,23 @@ flowchart LR
         VP["viespirkiai.org API"]
     end
 
-    subgraph Pipeline["Ingestion Pipeline (Node.js)"]
+    subgraph Pipeline["Ingestion Pipeline (GitHub Actions)"]
         direction LR
-        S["Scraper<br/>1 req/sec"]
-        E["Enricher<br/>(merge JAR + SODRA + VMI)"]
-        G["Graph Builder<br/>(create nodes + edges)"]
-        R["Risk Scorer<br/>(apply signal rules)"]
-        A["Alert Generator<br/>(threshold check)"]
+        S["Scraper Script<br/>1 req/sec"]
+        E["Enricher<br/>(Prisma Upsert)"]
+        R["Risk Scorer<br/>(Business Logic)"]
     end
 
     subgraph Storage["Data Layer"]
-        PG["PostgreSQL + AGE"]
-        TS["Typesense Index"]
+        PG["Supabase (PostgreSQL)"]
+        FTS["Supabase FTS Index"]
     end
 
-    VP -->|" GET /sutartis/{id}.json<br/>GET /asmuo/{jar}.json "| S
-    S --> E --> G --> R --> A
-    A --> PG
-    A --> TS
+    VP -->|"GET /sutartis/{id}.json"| S
+    S --> E --> R
+    R --> PG
+    R --> FTS
+
     style Sources fill: #fce4ec, stroke: #c62828
     style Pipeline fill: #fff3e0, stroke: #ef6c00
     style Storage fill: #e8f5e9, stroke: #2e7d32
@@ -591,24 +581,23 @@ flowchart LR
 
 ### 9.1 Phase 1 — Seed (one-time)
 
-1. Request bulk data export from viespirkiai.org (contact form) — they offer data exports.
-2. Load all contracts and entities into PostgreSQL.
-3. Run initial risk scoring pass.
-4. Build graph edges from contract-entity-person relationships.
+1. Request bulk data export from viespirkiai.org.
+2. Load contracts and entities into Supabase using Prisma.
+3. Compute initial risk scores using serverless logic.
 
 ### 9.2 Phase 2 — Incremental Sync
 
-```
-Schedule: nightly (02:00 EET)
-
-For each new contract ID in VPT feed:
-  1. GET /sutartis/{id}.json
-  2. Extract: buyer JAR, supplier JAR, contract type, value, date
-  3. For each JAR:
-       GET /asmuo/{jar}.json → upsert Company node with SODRA/VMI data
-  4. Create/update edges (AWARDED_TO, PARTICIPATED_IN)
-  5. Recompute risk scores for affected nodes
-  6. If riskScore delta > threshold → generate alert
+```yaml
+# GitHub Action schedule: nightly (02:00 EET)
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm install
+      - run: npm run ingest
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 ```
 
 ### 9.3 Rate Limiting Strategy
@@ -672,27 +661,21 @@ Edge style       → dashed = inferred/indirect relationship; solid = direct/doc
 
 ```
 GET  /api/entities/{jarKodas}
-     → Entity profile + risk score breakdown
+     → 360 View: Entity profile + risk score breakdown + direct relationship counts
 
-GET  /api/entities/{jarKodas}/graph?depth=2&minRisk=100
-     → Subgraph (nodes + edges) up to depth hops, filtered by risk threshold
-     → Returns Cytoscape.js-compatible JSON (elements: {nodes, edges})
-
-GET  /api/contracts/{contractId}
-     → Contract detail + linked entities
+GET  /api/entities/{jarKodas}/network?depth=1&minRisk=100
+     → Lazy Loading: Subgraph (nodes + edges) for immediate neighbors
+     → Returns Cytoscape.js-compatible JSON
 
 GET  /api/search?q={term}&type={company|person|contract}
-     → Typesense-backed full-text search
+     → Supabase-backed FTS search
 
 GET  /api/alerts?since={iso_date}&minRisk=150
-     → Alerts generated since date, sorted by risk score desc
-
-GET  /api/risk/explain/{jarKodas}
-     → Human-readable breakdown of score components for an entity
+     → Recent alerts
 
 POST /api/graph/path
      body: { from: jarKodas, to: jarKodas, maxDepth: 5 }
-     → Shortest risk path between two entities
+     → Shortest risk path using Recursive CTEs
 ```
 
 ### Graph response format (Cytoscape.js-compatible)
@@ -739,47 +722,59 @@ POST /api/graph/path
 
 ## 12. Storage Design
 
-### 12.1 Key Tables (PostgreSQL relational)
+### 12.1 Key Tables (PostgreSQL / Prisma)
 
-```sql
--- Core entity store
-companies (jar_kodas PK, name, registered_date, status, employees, avg_salary,
-           monthly_contributions, risk_score, flags jsonb, raw_data jsonb, updated_at)
+```prisma
+// Prisma Schema fragment
+model Company {
+  jarKodas        String    @id
+  pavadinimas     String
+  riskScore       Int       @default(0)
+  employees       Int?
+  avgSalary       Decimal?
+  contractsAsBuyer Contract[] @relation("Buyer")
+  contractsAsSupplier Contract[] @relation("Supplier")
+}
 
-persons   (id PK, name, role, institution_jar, risk_score, flags jsonb, updated_at)
-
-contracts (contract_id PK, buyer_jar, supplier_jar, value, signed_date, type,
-           cpv_code, procurement_id, risk_score, raw_data jsonb, updated_at)
-
--- Risk scoring
-risk_signals (id, entity_id, entity_type, signal_type, score, detail, detected_at)
-
-alerts       (id, entity_id, entity_type, risk_score, triggered_by jsonb, resolved, created_at)
-
--- Ingestion tracking
-ingestion_log (id, entity_type, entity_id, status, attempted_at, error_detail)
+model Contract {
+  contractId String @id
+  value      Decimal
+  buyer      Company @relation("Buyer", fields: [buyerJar], references: [jarKodas])
+  buyerJar   String
+  supplier   Company @relation("Supplier", fields: [supplierJar], references: [jarKodas])
+  supplierJar String
+}
 ```
 
-### 12.2 Graph Layer (Apache AGE on same PostgreSQL)
+### 12.2 Pathfinding via Recursive CTE
 
-```cypher
--- Create graph
-SELECT create_graph('risk_graph');
+Instead of Cypher, multi-hop traversals use PostgreSQL Recursive CTEs. This is efficient for depths up to 5–10 levels.
 
--- Create edges (simplified: Institution → Company, per Section 6.2.
--- In practice, AWARDED_TO is mediated by a Contract node; this shorthand
--- is used for direct graph traversal queries where the Contract is implicit.)
-SELECT * FROM cypher('risk_graph', $$
-  MATCH (i:Institution {jarKodas: '188704927'}), (s:Company {jarKodas: '110053842'})
-  CREATE (i)-[:AWARDED_TO {contractId: '2007700250', value: 32670}]->(s)
-$$) AS (result agtype);
+```sql
+-- Find paths from Company A to Company B through shareholder links
+WITH RECURSIVE path_finder AS (
+  -- Base case: direct shareholders
+  SELECT 
+    source_id, 
+    target_id, 
+    1 as depth,
+    ARRAY[source_id, target_id] as path
+  FROM shareholders
+  WHERE source_id = 'START_JAR'
 
--- Query: find all companies with risk > 150 within 2 hops
-SELECT * FROM cypher('risk_graph', $$
-  MATCH path = (a:Company {jarKodas: $startId})-[*1..2]-(b:Company)
-  WHERE b.riskScore > 150
-  RETURN path
-$$, $params) AS (path agtype);
+  UNION ALL
+
+  -- Recursive step
+  SELECT 
+    s.source_id, 
+    s.target_id, 
+    pf.depth + 1,
+    pf.path || s.target_id
+  FROM shareholders s
+  JOIN path_finder pf ON s.source_id = pf.target_id
+  WHERE pf.depth < 5 AND NOT s.target_id = ANY(pf.path)
+)
+SELECT * FROM path_finder WHERE target_id = 'END_JAR';
 ```
 
 ---
@@ -812,7 +807,8 @@ $$, $params) AS (path agtype);
 | 1 | Can we get bulk data export from viespirkiai.org?                      | Phase 1 seeding relies on scraping ~millions of IDs without a seed list          | Contact viespirkiai.org     |
 | 2 | Are tender participant lists (co-bidders) available via API?           | UC-01 (cartel detection) is blocked without participant data                     | Verify VPT CVP IS data      |
 | 3 | Is VTEK interest declaration data machine-readable in the /asmuo JSON? | UC-03 (PEP) needs structured VTEK data                                           | Test against sample JARs    |
-| 4 | Does Apache AGE handle 500k+ node graphs without degradation?          | May need to migrate to Neo4j if graph grows large                                | Benchmark at 100k nodes     |
+| 4 | Does PostgreSQL handle 500k+ relationship traversals efficiently? | May need to optimize Recursive CTEs or use caching | Benchmark at 100k nodes |
+
 | 5 | Rate limit policy of viespirkiai.org                                   | Pipeline could get blocked without a known limit                                 | Contact or empirically test |
 | 6 | Subcontractor data completeness in SABIS                               | UC-04 (AML path) is only partially implementable                                 | Assess SABIS coverage       |
 | 7 | GDPR DPA notification                                                  | If storing PEP natural person data, may require registering as a data controller | Legal review                |
@@ -1093,64 +1089,43 @@ graph TD
 
 ### Phase 1 — Foundation & Data Layer
 
-> **Goal:** Establish the data pipeline and storage layer. No UI yet.
+> **Goal:** Establish the data pipeline and storage layer using Supabase and Prisma.
 
-- [ ] Contact viespirkiai.org for bulk data export access (resolves Open Question #1)
-- [ ] Set up PostgreSQL with Apache AGE extension in Docker Compose
-- [ ] Define relational schema: `companies`, `persons`, `contracts`, `risk_signals`, `alerts`, `ingestion_log`
-- [ ] Create AGE graph (`risk_graph`) with node labels: Company, Person, Contract, Institution, Tender
-- [ ] Build ingestion scraper (Node.js): fetch `/sutartis/{id}.json` and `/asmuo/{jar}.json`
-- [ ] Implement rate limiter (1 req/sec, exponential backoff on 429/503)
-- [ ] Implement entity enricher: merge JAR + SODRA + VMI data into Company nodes
-- [ ] Implement graph builder: create edges (AWARDED_TO, PARTICIPATED_IN, WON, SHAREHOLDER_OF, etc.)
-- [ ] Run seed ingestion: load initial dataset into PostgreSQL + AGE
-- [ ] Verify data quality: handle foreign company codes (`tiekejoKodas: "803"`), missing SODRA, null dates
+- [ ] Set up Supabase project and connect Prisma ORM
+- [ ] Define Prisma schema for entities and relationships
+- [ ] Build Node.js scraper script for viespirkiai.org
+- [ ] Set up GitHub Action for nightly incremental ingestion
+- [ ] Implement Prisma upsert logic for Company/Contract nodes
+- [ ] Configure Supabase Full-Text Search (pg_trgm) for entity searching
 
-### Phase 2 — Risk Scoring Engine
+### Phase 2 — Risk Scoring & Pathfinding
 
-> **Goal:** Implement the scoring rules and alert generation.
+> **Goal:** Implement the scoring logic and relational traversals.
 
-- [ ] Implement node risk scoring service (additive signal model per Section 5.2)
-- [ ] Implement UC-2 shell company signals: employee count, company age, contract type, blacklist
-- [ ] Implement UC-1 cartel signals: co-bidder frequency, win rotation stddev, spoiler bid ratio
-- [ ] Implement UC-3 PEP signals: shortest path traversal, VTEK declaration cross-reference
-- [ ] Implement UC-4 subcontractor signals: pass-through ratio, circular ownership, cycle detection
-- [ ] Implement UC-5 EU fund double-dipping signals: CPV code + date overlap cross-reference
-- [ ] Implement edge risk scoring (co-bidder, subcontractor, non-advertised award)
-- [ ] Implement composite score calculation: `entityRiskScore`, `edgeRiskScore`, `graphPathScore`
-- [ ] Implement alert generator: threshold-based alerts (≥100 yellow, ≥150 orange, ≥200 red)
-- [ ] Implement risk score explanation endpoint (`/api/risk/explain/{jarKodas}`)
-- [ ] Write unit tests for all scoring rules with known test entities
+- [ ] Implement node risk scoring service using Prisma
+- [ ] Write Recursive CTEs for multi-hop pathfinding (UBO/PEP chains)
+- [ ] Implement UC-1 (Cartel) and UC-2 (Shell) detection logic in SQL/TypeScript
+- [ ] Implement alert generator as a background task
+- [ ] Create risk explanation service for the 360 View
 
-### Phase 3 — API Layer
+### Phase 3 — API & Frontend Foundation
 
-> **Goal:** Expose graph and risk data via Next.js API Route Handlers.
+> **Goal:** Build the Entity Profile (360 View) and Next.js routes.
 
-- [ ] Implement `GET /api/entities/{jarKodas}` — entity profile + risk breakdown
-- [ ] Implement `GET /api/entities/{jarKodas}/graph?depth=2&minRisk=100` — Cytoscape.js-compatible subgraph JSON
-- [ ] Implement `GET /api/contracts/{contractId}` — contract detail + linked entities
-- [ ] Implement `GET /api/search?q={term}&type={company|person|contract}` — Typesense full-text search
-- [ ] Implement `GET /api/alerts?since={iso_date}&minRisk=150` — alert list
-- [ ] Implement `POST /api/graph/path` — shortest risk path between two entities
-- [ ] Add JWT authentication middleware for all API routes
-- [ ] Add query depth limit (max depth=4) to prevent graph traversal DoS
-- [ ] Write integration tests for each API endpoint
+- [ ] Implement `GET /api/entities/{jarKodas}` (360 View endpoint)
+- [ ] Build the Entity Profile page with MUI components
+- [ ] Implement search UI using Supabase FTS API
+- [ ] Set up Vercel deployment with necessary environment variables
 
-### Phase 4 — Visualization (Cytoscape.js)
+### Phase 4 — Lazy Loading Visualization (Cytoscape.js)
 
-> **Goal:** Build the interactive graph UI with MUI components.
+> **Goal:** Implement the interactive relationship network.
 
-- [ ] Set up Cytoscape.js canvas component with React lifecycle integration
-- [ ] Implement visual encoding: node size (contract value), color (risk score), shape (entity type)
-- [ ] Implement layout switching: CoSE-Bilkent (cartel), Breadth-First (PEP), Dagre (subcontract), Concentric (overview)
-- [ ] Implement click → side panel: entity detail, risk score breakdown, source links
-- [ ] Implement double-click → expand node: load 1-hop neighbors from API
-- [ ] Implement risk threshold slider: filter nodes below threshold
-- [ ] Implement path finder: "Find path between A and B" using Cytoscape.js `dijkstra()` / `aStar()`
-- [ ] Implement alert overlay: pulsing animation on recently-triggered alert nodes
-- [ ] Implement edge styling: dashed = inferred, solid = documented; width = value/frequency
-- [ ] Add performance guard: max 2,000 nodes rendered; server-side subgraph extraction for larger queries
-- [ ] Build Alert Dashboard page with MUI DataGrid for alert triage
+- [ ] Implement `GET /api/entities/{jarKodas}/network` (Neighbor expansion endpoint)
+- [ ] Integrate Cytoscape.js into the Entity Profile page
+- [ ] Implement "View Network" button to lazily load and render neighbors
+- [ ] Add visual encoding (node size/color) based on risk scores
+- [ ] Implement path finder UI using server-side Recursive CTEs
 
 ### Phase 5 — Incremental Sync & Ops
 
@@ -1159,9 +1134,9 @@ graph TD
 - [ ] Implement nightly incremental sync (02:00 EET cron schedule)
 - [ ] Implement delta risk score recomputation on new ingestion
 - [ ] Implement ingestion logging and error tracking (`ingestion_log` table)
-- [ ] Set up Typesense index sync for full-text search
-- [ ] Configure Docker Compose for production deployment (PostgreSQL + AGE + Typesense + Next.js)
-- [ ] Benchmark Apache AGE at 100k nodes; document migration path to Neo4j if needed (Open Question #4)
+- [ ] Set up Supabase Full-Text Search index
+- [ ] Configure GitHub Actions for production deployment
+- [ ] Benchmark PostgreSQL relationship traversals at 100k nodes
 - [ ] Implement GDPR compliance: no public Person name exposure, data correction contact mechanism
 - [ ] Add monitoring and health checks for ingestion pipeline
 - [ ] Write Cypress E2E tests for critical UI flows
@@ -1177,7 +1152,7 @@ graph TD
 - [ ] Add TED (EU) cross-border tender data for transnational bid rigging detection
 - [ ] Add CPVA/esinvesticijos.lt integration for EU fund double-dipping
 - [ ] Legal review: GDPR DPA notification if storing PEP natural person data (Open Question #7)
-- [ ] Performance test: graph traversal at 500k+ nodes, optimize Cypher queries
+- [ ] Performance test: relationship traversals at 500k+ nodes, optimize Recursive CTEs
 
 ---
 
@@ -1185,9 +1160,9 @@ graph TD
 
 This section documents contradictions found during the review of the original v0.1-DRAFT and how they were resolved.
 
-| # | Location                    | Contradiction                                                                                                                                                  | Resolution                                                                                                            |
-|---|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------|
-| 1 | Section 10.2 vs Appendix A  | Section 10.2 mapped `green` to `<100` (a single band), while Appendix A correctly splits into `Grey (0–49)` and `Green (50–99)` — two distinct severity bands. | Aligned Section 10.2 with Appendix A: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200). |
-| 2 | Section 12.2 vs Section 6.2 | The Cypher example in 12.2 created `AWARDED_TO` as `(Company)→(Company)`, but Section 6.2 defines it as `Institution → Company`.                               | Fixed Cypher example to use `(i:Institution)-[:AWARDED_TO]->(s:Company)` matching the edge definition.                |
-| 3 | Section 8 vs Codebase       | Document listed `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `MUI v5 + Emotion` for the component library.                                       | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers.     |
-| 4 | Section 7 Architecture      | Next.js with App Router is a full-stack framework (SSR + API routes), not a SPA + separate backend.                                                            | Replaced ASCII diagram with Mermaid diagram showing the unified Next.js architecture.                                 |
+| # | Location | Contradiction | Resolution |
+|---|---|---|---|
+| 1 | Section 10.2 vs Appendix A | Section 10.2 mapped `green` to `<100` (a single band), while Appendix A correctly splits into `Grey (0–49)` and `Green (50–99)` — two distinct severity bands. | Aligned Section 10.2 with Appendix A: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200). |
+| 2 | Section 12.2 vs Section 6.2 | The SQL example in 12.2 had inconsistent edge naming compared to Section 6.2. | Fixed SQL example to match the `Institution → Company` edge definition. |
+| 3 | Section 8 vs Codebase | Document listed `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `MUI v5 + Emotion` for the component library. | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers. |
+| 4 | Section 7 Architecture | Next.js with App Router is a full-stack framework (SSR + API routes), not a SPA + separate backend. | Replaced ASCII diagram with Mermaid diagram showing the unified Next.js architecture. |
