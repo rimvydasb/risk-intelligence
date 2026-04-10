@@ -569,7 +569,7 @@ flowchart LR
         FTS["Supabase FTS Index"]
     end
 
-    VP -->|"GET /sutartis/{id}.json"| S
+    VP -->|"GET /sutartis/{id}.json<br/>GET /asmuo/{jar}.json"| S
     S --> E --> R
     R --> PG
     R --> FTS
@@ -589,6 +589,11 @@ flowchart LR
 
 ```yaml
 # GitHub Action schedule: nightly (02:00 EET)
+# 1. Fetch new contract IDs from VPT feed
+# 2. GET /sutartis/{id}.json -> Extract Buyer and Supplier JARs
+# 3. GET /asmuo/{jar}.json -> Fetch metadata for Buyer and Supplier
+# 4. Prisma Upsert: Contract and Company nodes
+# 5. Risk Scorer: Recompute risk for the network subgraph
 jobs:
   ingest:
     runs-on: ubuntu-latest
