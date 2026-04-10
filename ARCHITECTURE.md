@@ -441,34 +441,33 @@ erDiagram
 
 ## 7. System Architecture & Environment Parity
 
-The system follows a **Two-Pronged Runtime Model** to ensure high-velocity local development and resilient production deployment.
+The system follows a **Host-First Development Model**. To maximize debugging visibility and minimize abstraction overhead, Node.js runs directly on the developer's host machine.
 
 ```mermaid
 graph TB
-    subgraph LOCAL["LOCAL DEVELOPMENT (Docker Compose)"]
+    subgraph LOCAL["LOCAL DEVELOPMENT (Host + Docker)"]
         direction TB
-        NH["Host Node.js<br/>(Next.js / Scraper)"]
+        NH["Host Node.js<br/>(npm run dev)"]
         LD["Docker Postgres<br/>(Local DB)"]
     end
 
     subgraph PROD["PRODUCTION (Vercel / Supabase)"]
         direction TB
-        VH["Vercel Serverless<br/>(Next.js)"]
+        VH["Vercel Runtime<br/>(Next.js)"]
         GA["GitHub Actions<br/>(ETL Runner)"]
         SD["Supabase Postgres<br/>(Prod DB)"]
     end
 
-    subgraph PRESENTATION["PRESENTATION LAYER"]
+    subgraph PRESENTATION["PRESENTATION LAYER (Strictly SPA)"]
         direction LR
         GV["360 View Dashboard<br/>(Cytoscape.js)"]
         RF["Risk Filter"]
         ED["Entity Profile"]
     end
 
-    subgraph CORE_SERVICES["CORE SERVICES"]
+    subgraph CORE_SERVICES["CORE SERVICES (Stateless API)"]
         direction TB
         A1["/api/entities/{jarKodas}"]
-        A2["/api/entities/{jarKodas}/network"]
         RS["Risk Engine<br/>(Business Logic)"]
         PE["Path Engine<br/>(Recursive CTEs)"]
     end
@@ -486,13 +485,9 @@ graph TB
     style CORE_SERVICES fill:#f3e5f5,stroke:#7b1fa2
 ```
 
-### 7.1 Environment Configuration Strategy
-- **Local Dev:** `DATABASE_URL` points to the Docker Compose PostgreSQL instance. The Node.js application runs directly on the host (e.g., `npm run dev`) for native debugging.
-- **Production:** `DATABASE_URL` points to Supabase. Next.js Route Handlers (Vercel) execute transactional and analytical queries (FTS, CTEs).
-
-### 7.2 The RAGp (Relational-as-Graph) Mental Model
-Instead of a separate graph database, the system uses **Projected Graphs**. Data is stored in normalized relational tables (Supabase), and relationships are projected into memory (Cytoscape.js) on-demand. This eliminates the "Double Storage" problem and ensures ACID compliance for risk scores.
-
+### 7.1 Operational Strategy
+- **Local Dev:** `docker-compose.yml` is used **exclusively** for the PostgreSQL database. Node.js is executed on the host. No Dockerfile is required for the application during development.
+- **Single Package Management:** The project uses a single root `package.json`. No monorepo/workspace overhead.
 
 ---
 
@@ -500,60 +495,48 @@ Instead of a separate graph database, the system uses **Projected Graphs**. Data
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Frontend framework | Next.js 16 (App Router) + React 19 + TypeScript | Strictly Client Components (SPA); enables Static Export to S3 + Node if moved off Vercel. |
-| Hosting | Vercel (Current) / S3 + Node (Portable) | Frontend cleanly decoupled from API Route Handlers. |
-| Graph visualization | Cytoscape.js 3.x | Specified requirement; handles on-demand expansion of network |
-| UI components | MUI v5 (Material UI) + Emotion | Existing codebase dependency; rich component library |
-| Backend API | Next.js API Routes (Route Handlers) / Node.js | Built as stateless endpoints, easily extractable to a standalone Node.js server. |
-| Database | Supabase (PostgreSQL) | Managed PostgreSQL with built-in auth and edge functions |
-| ORM | Prisma or Drizzle | Type-safe database access and migrations |
-| Search | Supabase FTS (pg_trgm) | Leverages PostgreSQL native capabilities for text search |
-| Ingestion | Node.js + GitHub Actions | Runs scraper nightly; avoids Vercel timeout limits |
-| Containerization | Docker Compose (local dev only) | Local database parity |
+| Frontend framework | Next.js 16 (App Router) + React 19 | Client-side logic ONLY. Portable to S3 + Node if required. |
+| Hosting | Vercel (Production) | Managed hosting for Next.js endpoints and static assets. |
+| Database | Supabase (PostgreSQL) | Managed storage with standard Postgres compatibility. |
+| ORM | Prisma or Drizzle | Type-safe access via single root configuration. |
+| Ingestion | Node.js + GitHub Actions | Stateful ETL runner executing on host/runner Node.js. |
 
 ---
 
-## 8.1 Repository Structure (Monolithic but Decoupled)
+## 8.1 Repository Structure (Single-Root Decoupled)
 
-To enforce the separation between the SPA Frontend and the Node.js API, the GitHub repository must be structured to strictly decouple client-side code from server-side logic. This guarantees that the Next.js app can be deployed as a Static Export (`output: 'export'`) to an S3 bucket, while the API is deployed to a Node.js runtime (or Vercel).
+The following tree defines the mandatory structure to maintain logical separation while using a single `package.json`.
 
 ```text
 risk-intelligence/
-├── apps/
-│   ├── web/                     # Next.js Frontend (Strictly SPA / Static Export)
-│   │   ├── src/
-│   │   │   ├── app/             # App Router (Client Components only using 'use client')
-│   │   │   ├── components/      # MUI + Cytoscape UI components
-│   │   │   └── lib/             # API client services (fetch wrappers)
-│   │   ├── next.config.ts       # Configured for output: 'export' (if not Vercel native)
-│   │   └── package.json
-│   │
-│   └── api/                     # Node.js API (Next.js Route Handlers OR standalone Express)
-│       ├── src/
-│       │   ├── app/api/         # API Route Handlers (if using Next.js backend)
-│       │   ├── services/        # Core business logic (Risk Scorer, Path Engine)
-│       │   └── prisma/          # Database schema and migrations
-│       ├── Dockerfile           # For local or non-Vercel containerized deployments
-│       └── package.json
-│
-├── packages/
-│   ├── config/                  # Shared ESLint, TypeScript, Jest configurations
-│   └── types/                   # Shared TypeScript interfaces (DTOs, DB models)
-│
 ├── .github/
 │   └── workflows/
-│       ├── etl-scraper.yml      # Nightly ETL Stateful runner
-│       └── ci-cd.yml            # CI/CD pipelines
-│
-├── docker-compose.yml           # Local Postgres and environment parity setup
-├── package.json                 # Monorepo root (Turborepo or npm workspaces)
-└── ARCHITECTURE.md              # This document
+│       └── etl-scraper.yml      # Nightly ETL Runner
+├── prisma/                      # Database Schema & Migrations
+├── public/                      # Static Assets
+├── src/
+│   ├── app/                     # App Router (Next.js Entry)
+│   │   ├── api/                 # Stateless API Route Handlers
+│   │   │   ├── entities/        # [GET] 360 View / Network
+│   │   │   └── risk/            # [GET] Risk explanations
+│   │   ├── layout.tsx           # Global Shell & Theme Provider
+│   │   ├── page.tsx             # Main Dashboard Entry (SPA)
+│   │   └── globals.css          # Global Styles
+│   ├── components/              # Modular Client UI Components
+│   │   ├── graph/               # Cytoscape.js Logic
+│   │   └── entity/              # Profile & List components
+│   ├── lib/                     # Business Logic (Risk Rules, DB Client)
+│   ├── types/                   # Shared TypeScript Interfaces
+│   └── services/                # API Client Wrappers
+├── docker-compose.yml           # Local Postgres ONLY
+├── package.json                 # SINGLE ROOT PACKAGE
+├── tsconfig.json
+└── ARCHITECTURE.md
 ```
 
-### 8.1.1 Key Principles of this Structure
-- **No SSR:** `apps/web` must not use Next.js Server Components for data fetching. All data must be fetched client-side from `apps/api`.
-- **Portability:** While Vercel is the current target, building the backend in `apps/api` (even if implemented via Next.js Route Handlers initially) ensures it can be instantly swapped to an Express/Fastify Node.js server without touching the UI code.
-- **Shared Types:** The `packages/types` workspace ensures the Frontend and Backend share the exact same API Contracts.
+### 8.1.1 Logical Separation Rules
+- **Physical Monolith, Mental Decoupling:** All UI code in `src/app` must remain agnostic of the backend implementation. It communicates with `/api/*` solely via standard `fetch` calls.
+- **API Statelessness:** API Route Handlers must not rely on Vercel-specific state. They should be pure Node.js functions that can be easily ported to an Express or Fastify server.
 
 ---
 
