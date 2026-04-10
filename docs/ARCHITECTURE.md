@@ -1094,32 +1094,32 @@ graph TD
 
 ### Phase 1 — Foundation & Local Sandbox
 > **Goal:** Establish a functional local environment with a "seed" database.
-- [ ] Set up local PostgreSQL via `docker-compose.yml` (DB only).
-- [ ] Initialize Prisma with the core schema (Company, Contract, Person).
-- [ ] Implement `npm run db:setup`: Script to initialize schema and run basic health checks.
-- [ ] Implement `Fetcher` POC: Successfully ingest and parse the two known `viespirkiai` sample endpoints.
+- [x] Set up local PostgreSQL via `docker-compose.yml` (DB only).
+- [x] Initialize Prisma with the core schema (Company, Contract, Person).
+- [x] Implement `npm run db:setup`: Script to initialize schema and run basic health checks.
+- [x] Implement `Fetcher` POC: Successfully ingest and parse the two known `viespirkiai` sample endpoints.
 
 ### Phase 2 — Data Synthesis Engine
 > **Goal:** Expand the 2-node graph into a meaningful network for risk analysis.
-- [ ] **Build Synthesizer:** Create a Node.js utility to generate ~1,000 synthetic Companies and ~5,000 Contracts.
-- [ ] **Relational Logic:** Ensure synthesized data follows real-world distributions (e.g., Pareto distribution for contract values).
-- [ ] **Identity Normalization:** Implement the `Entity Resolver` logic locally to handle synthetic name variations.
-- [ ] **Seed Local DB:** Create a rich local dataset for testing the "360 View."
+- [x] **Build Synthesizer:** Create a Node.js utility to generate ~1,000 synthetic Companies and ~5,000 Contracts.
+- [x] **Relational Logic:** Ensure synthesized data follows real-world distributions (e.g., Pareto distribution for contract values).
+- [x] **Identity Normalization:** Implement the `Entity Resolver` logic locally to handle synthetic name variations.
+- [x] **Seed Local DB:** Create a rich local dataset for testing the "360 View."
 
 ### Phase 3 — Risk Scoring & Pathfinding POC
 > **Goal:** Implement the business logic (Inference Engine) on the synthesized data.
-- [ ] Implement the **Calculation on Write (CoW)** risk scorer locally.
-- [ ] Write and optimize the **Recursive CTEs** for multi-hop pathfinding.
-- [ ] Verify UC-1 (Cartel) and UC-2 (Shell) detection logic against synthesized anomalies.
-- [ ] Implement the `DisplayScore` (Logarithmic) calculation.
+- [x] Implement the **Calculation on Write (CoW)** risk scorer locally.
+- [x] Write and optimize the **Recursive CTEs** for multi-hop pathfinding.
+- [x] Verify UC-1 (Cartel) and UC-2 (Shell) detection logic against synthesized anomalies.
+- [x] Implement the `DisplayScore` (Logarithmic) calculation.
 
 ### Phase 4 — UI & Visualization POC (The "GUI")
 > **Goal:** Build the interactive dashboard against the local Node.js API.
-- [ ] Build the Next.js App Router shell (Strictly SPA mode).
-- [ ] Implement the `360 View` Entity Profile page.
-- [ ] Integrate Cytoscape.js for the **Lazy Loading Network** view.
-- [ ] Implement the "View Network" expansion logic using local API handlers.
-- [ ] **E2E/GUI Testing:** Implement Cypress test suite for critical user flows (Search -> Profile -> Graph).
+- [x] Build the Next.js App Router shell (Strictly SPA mode).
+- [x] Implement the `360 View` Entity Profile page.
+- [x] Integrate Cytoscape.js for the **Lazy Loading Network** view.
+- [x] Implement the "View Network" expansion logic using local API handlers.
+- [x] **E2E/GUI Testing:** Implement Cypress test suite for critical user flows (Search -> Profile -> Graph).
 
 ### Phase 5 — Cloud Transition (Deferred)
 > **Goal:** Move the verified POC to production-grade infrastructure.

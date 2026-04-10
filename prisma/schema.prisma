@@ -1,0 +1,76 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// SCRAPE LOG (ETL Tracker)
+model ScrapeLog {
+    id           String   @id @default(uuid())
+    entityType   String   // "contract" or "person"
+    entityId     String   // The viespirkiai ID (jarKodas or contractId)
+    status       String   // "pending", "success", "error"
+    lastFetched  DateTime @default(now())
+    retryCount   Int      @default(0)
+
+    @@unique([entityType, entityId])
+}
+
+// ENTITY RESOLUTION - Core Nodes
+model Company {
+    jarKodas    String   @id
+    name        String
+    normalized  String   // Soundex/Metaphone search key
+    riskScore   Float    @default(0)
+    displayScore Float   @default(0) // log2(riskScore + 1) * 10
+    updatedAt   DateTime @updatedAt
+
+    // Edges
+    contracts     Contract[] @relation("Supplier")
+    relationships PersonRelationship[]
+}
+
+model Person {
+    uid         String   @id // Synthetic ID: H(normalized_name)
+    fullName    String
+    normalized  String   // Surname normalization for Lithuanian variations
+    riskScore   Float    @default(0)
+    displayScore Float   @default(0)
+    updatedAt   DateTime @updatedAt
+
+    // Edges
+    relationships PersonRelationship[]
+}
+
+// EDGES (RAGp Projection)
+model Contract {
+    contractId  String   @id
+    title       String
+    value       Float
+    currency    String   @default("EUR")
+    status      String
+    signedAt    DateTime
+    
+    // Edge: Institution -> Company
+    buyerName   String
+    buyerCode   String
+    supplierId  String
+    supplier    Company  @relation("Supplier", fields: [supplierId], references: [jarKodas])
+}
+
+model PersonRelationship {
+    id          String   @id @default(uuid())
+    personId    String
+    companyId   String
+    role        String   // "owner", "ceo", "ubo"
+    since       DateTime?
+    until       DateTime?
+
+    person      Person   @relation(fields: [personId], references: [uid])
+    company     Company  @relation(fields: [companyId], references: [jarKodas])
+
+    @@unique([personId, companyId, role])
+}

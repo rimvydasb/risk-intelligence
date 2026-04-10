@@ -10,29 +10,39 @@
     "format": "prettier --write .",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "db:setup": "ts-node scripts/db-setup.ts",
+    "db:synthesize": "ts-node scripts/db-synthesize.ts"
   },
   "dependencies": {
-    "next": "16.2.3",
-    "react": "19.2.5",
-    "react-dom": "19.2.5",
-    "@mui/material": "9.0.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
-    "cytoscape": "3.33.2"
+    "@mui/material": "9.0.0",
+    "@prisma/client": "^5.21.0",
+    "axios": "^1.15.0",
+    "cytoscape": "3.33.2",
+    "natural": "^8.1.1",
+    "next": "16.2.3",
+    "react": "19.2.5",
+    "react-dom": "19.2.5"
   },
   "devDependencies": {
-    "typescript": "6.0.2",
+    "@faker-js/faker": "^10.4.0",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@types/jest": "30.0.0",
+    "@types/natural": "^5.1.5",
     "@types/node": "25.6.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
-    "jest": "30.3.0",
-    "@types/jest": "30.0.0",
-    "ts-jest": "29.4.9",
-    "jest-environment-jsdom": "30.3.0",
-    "@testing-library/react": "16.3.2",
-    "@testing-library/jest-dom": "6.9.1",
+    "cypress": "^15.13.1",
     "eslint": "10.2.0",
-    "eslint-config-next": "16.2.3"
+    "eslint-config-next": "16.2.3",
+    "jest": "30.3.0",
+    "jest-environment-jsdom": "30.3.0",
+    "prisma": "^5.21.0",
+    "ts-jest": "29.4.9",
+    "ts-node": "^10.9.2",
+    "typescript": "6.0.2"
   }
 }
