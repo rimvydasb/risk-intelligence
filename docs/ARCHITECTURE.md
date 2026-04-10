@@ -1119,6 +1119,7 @@ graph TD
 - [ ] Implement the `360 View` Entity Profile page.
 - [ ] Integrate Cytoscape.js for the **Lazy Loading Network** view.
 - [ ] Implement the "View Network" expansion logic using local API handlers.
+- [ ] **E2E/GUI Testing:** Implement Cypress test suite for critical user flows (Search -> Profile -> Graph).
 
 ### Phase 5 — Cloud Transition (Deferred)
 > **Goal:** Move the verified POC to production-grade infrastructure.

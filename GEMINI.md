@@ -55,7 +55,11 @@ rigging, shell companies, and conflicts of interest.
 
 ### Testing Practices
 
-- **Unit Tests:** Located alongside components in `__tests__` directories (e.g., `src/components/__tests__/GraphView.test.tsx`).
+- **Unit Tests (Jest):** Focused on business logic, risk scoring algorithms, and data utilities. No GUI testing.
+- **E2E & GUI Tests (Cypress):** Mandatory for verifying UI interactions, Cytoscape.js rendering, and 360-view navigation.
+- **Test Locations:**
+    - Jest: `src/**/__tests__/*.test.ts` (Logic and Services).
+    - Cypress: `cypress/e2e/*.cy.ts` (User flows and GUI).
 - **Setup:** Global test setup is handled in `jest.setup.ts`.
 
 ## Key Files
