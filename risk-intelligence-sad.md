@@ -23,6 +23,9 @@
 12. [Storage Design](#12-storage-design)
 13. [Security and Legal Considerations](#13-security-and-legal-considerations)
 14. [Open Questions and Risks](#14-open-questions-and-risks)
+15. [Use Case Implementation Details](#15-use-case-implementation-details)
+16. [Implementation Plan](#16-implementation-plan)
+17. [Contradictions Resolved](#17-contradictions-resolved)
 
 ---
 
@@ -368,50 +371,124 @@ Edge: CO_BIDDER           (Company → Company, tender = reference, weight = fre
 Edge: EMPLOYED_AT         (Person → Institution)
 ```
 
+### 6.3 Graph Data Model Diagram
+
+```mermaid
+erDiagram
+    Institution ||--o{ Contract : "publishes tender for"
+    Contract }o--|| Company : "AWARDED_TO"
+    Company ||--o{ Tender : "PARTICIPATED_IN"
+    Company ||--o{ Tender : "WON"
+    Company ||--o{ Company : "SUBCONTRACTED_TO"
+    Company ||--o{ Company : "CO_BIDDER"
+    Person ||--o{ Company : "SHAREHOLDER_OF"
+    Person ||--o{ Company : "DIRECTOR_OF"
+    Person ||--o{ Company : "DECLARED_INTEREST"
+    Person ||--o{ Institution : "EMPLOYED_AT"
+
+    Company {
+        string jarKodas PK
+        string pavadinimas
+        date registravimoData
+        int employees
+        decimal avgSalary
+        int riskScore
+    }
+    Person {
+        string id PK
+        string name
+        enum role
+        int riskScore
+    }
+    Contract {
+        string contractId PK
+        decimal value
+        date signedDate
+        string type
+        string cpvCode
+        int riskScore
+    }
+    Institution {
+        string jarKodas PK
+        string pavadinimas
+        enum type
+    }
+    Tender {
+        string pirkimoNumeris PK
+        string type
+        boolean advertised
+        int participantCount
+    }
+```
+
 ---
 
 ## 7. System Architecture
 
+```mermaid
+graph TB
+    subgraph PRESENTATION["PRESENTATION LAYER"]
+        direction LR
+        GV["Graph View<br/>(Cytoscape.js)"]
+        RF["Risk Filter"]
+        ED["Entity Detail"]
+        AD["Alert Dashboard"]
+    end
+
+    subgraph NEXTJS["NEXT.JS 16 (App Router)"]
+        direction TB
+        subgraph PAGES["React Server + Client Components"]
+            P1["pages / layouts"]
+            P2["MUI v5 themed components"]
+        end
+        subgraph API["API Route Handlers"]
+            A1["/api/entities/{jarKodas}"]
+            A2["/api/entities/{jarKodas}/graph"]
+            A3["/api/alerts"]
+            A4["/api/graph/path"]
+            A5["/api/risk/explain/{jarKodas}"]
+        end
+        subgraph SERVICES["Server-Side Services"]
+            RS["Risk Scoring Engine"]
+            GQ["Graph Query Engine"]
+        end
+    end
+
+    subgraph DATA["DATA LAYER"]
+        PG["PostgreSQL<br/>(relational + AGE graph)"]
+        TS["Typesense<br/>(full-text search)"]
+    end
+
+    subgraph INGESTION["INGESTION PIPELINE"]
+        direction LR
+        SC["Scraper<br/>(Node.js)"]
+        EN["Enricher"]
+        GB["Graph Builder"]
+        RSC["Risk Scorer"]
+        AG["Alert Generator"]
+    end
+
+    subgraph EXTERNAL["EXTERNAL DATA SOURCES"]
+        VP1["viespirkiai.org<br/>/sutartis/{id}.json"]
+        VP2["viespirkiai.org<br/>/asmuo/{jar}.json"]
+        FUT["Future: VPT, VTEK,<br/>LITEKO direct APIs"]
+    end
+
+    PRESENTATION --> NEXTJS
+    PAGES --> API
+    API --> SERVICES
+    SERVICES --> DATA
+    INGESTION --> DATA
+    EXTERNAL --> INGESTION
+
+    style PRESENTATION fill:#e3f2fd,stroke:#1565c0
+    style NEXTJS fill:#f3e5f5,stroke:#7b1fa2
+    style DATA fill:#e8f5e9,stroke:#2e7d32
+    style INGESTION fill:#fff3e0,stroke:#ef6c00
+    style EXTERNAL fill:#fce4ec,stroke:#c62828
 ```
-┌──────────────────────────────────────────────────────────────────────┐
-│                        PRESENTATION LAYER                            │
-│              React + Cytoscape.js (Browser SPA)                      │
-│   [Graph View] [Risk Filter] [Entity Detail] [Alert Dashboard]       │
-└───────────────────────────┬──────────────────────────────────────────┘
-                            │ REST / GraphQL
-┌───────────────────────────▼──────────────────────────────────────────┐
-│                         API LAYER                                     │
-│              Spring Boot (Java 21)                                    │
-│   /api/graph/{entityId}   /api/risk/{entityId}   /api/alerts         │
-└──────────┬────────────────┬─────────────────────────────────────────-┘
-           │                │
-┌──────────▼───────┐  ┌─────▼──────────────────────────────────────────┐
-│  Risk Scoring    │  │  Graph Query Engine                             │
-│  Engine          │  │  (Neo4j Cypher or PostgreSQL + AGE extension)   │
-│  (Java service)  │  │                                                  │
-└──────────┬───────┘  └─────┬────────────────────────────────────────--┘
-           │                │
-┌──────────▼────────────────▼──────────────────────────────────────────┐
-│                        DATA LAYER                                     │
-│  PostgreSQL (relational + AGE graph extension)                        │
-│  or Neo4j Community Edition                                           │
-│  [companies] [contracts] [persons] [edges] [risk_scores] [alerts]    │
-└───────────────────────────┬──────────────────────────────────────────┘
-                            │
-┌───────────────────────────▼──────────────────────────────────────────┐
-│                      INGESTION PIPELINE                               │
-│                  Node.js + Bull queue (or Python)                     │
-│   [viespirkiai.org scraper] → [enricher] → [graph builder]           │
-│   [risk scorer] → [alert generator]                                   │
-└───────────────────────────┬──────────────────────────────────────────┘
-                            │
-┌───────────────────────────▼──────────────────────────────────────────┐
-│                     EXTERNAL DATA SOURCES                             │
-│  viespirkiai.org/sutartis/{id}.json                                  │
-│  viespirkiai.org/asmuo/{jar}.json                                    │
-│  (future: direct VPT, VTEK, LITEKO APIs)                             │
-└──────────────────────────────────────────────────────────────────────┘
-```
+
+> **Note:** The previous draft showed a separate Spring Boot API layer. The architecture now reflects the actual Next.js 16 App Router setup, where API Route Handlers serve the same role — eliminating a separate backend deployment.
 
 ---
 
@@ -419,23 +496,55 @@ Edge: EMPLOYED_AT         (Person → Institution)
 
 | Layer | Technology | Rationale |
 |---|---|---|
-| Frontend | React + TypeScript | Your existing stack |
-| Graph visualization | Cytoscape.js | Specified requirement; handles 10k+ nodes |
-| UI components | TailwindCSS + shadcn/ui | Rapid iteration |
-| Backend API | Spring Boot (Java 21) | Your primary backend expertise |
+| Frontend framework | Next.js 16 (App Router) + React 19 + TypeScript | Existing codebase stack; SSR + API routes in one deployment |
+| Graph visualization | Cytoscape.js 3.x | Specified requirement; handles 10k+ nodes |
+| UI components | MUI v5 (Material UI) + Emotion | Existing codebase dependency; rich component library |
+| Backend API | Next.js API Routes (Route Handlers) | Eliminates separate backend service; collocated with frontend |
 | Graph storage | PostgreSQL + Apache AGE | Avoids introducing Neo4j; AGE adds Cypher on top of PG |
 | Relational storage | PostgreSQL | Shared instance with AGE |
 | Search | Typesense | Same as viespirkiai.org itself; fast faceted filtering |
-| Ingestion | Node.js (matches VP stack) or Python | Lightweight scraper/transformer |
+| Ingestion | Node.js (matches Next.js runtime) | Lightweight scraper/transformer; can run as Next.js cron or standalone script |
 | Queue | Bull (Redis-backed) or plain cron | Rate-limited ingestion scheduling |
 | Containerization | Docker Compose | Local + prod parity |
 | Hosting | Any Ubuntu VPS (same as VP: Ubuntu 24.04 LTS) | Operational simplicity |
+
+> **Note on previous draft:** An earlier version of this document listed Spring Boot (Java 21) as the backend and TailwindCSS + shadcn/ui for UI components. These have been corrected to match the actual project setup: Next.js 16 with App Router for both frontend and API layer, and MUI v5 for the component library.
 
 **Graph DB decision note:** PostgreSQL + Apache AGE is a pragmatic choice — you avoid running two separate databases and AGE gives you Cypher query syntax. The trade-off is that AGE is less mature than Neo4j for complex traversals. If query complexity grows (e.g., multi-hop path finding across 500k nodes), migrating to Neo4j Community is a valid escalation path.
 
 ---
 
 ## 9. Data Ingestion Pipeline
+
+```mermaid
+flowchart LR
+    subgraph Sources["External Sources"]
+        VP["viespirkiai.org API"]
+    end
+
+    subgraph Pipeline["Ingestion Pipeline (Node.js)"]
+        direction LR
+        S["Scraper<br/>1 req/sec"]
+        E["Enricher<br/>(merge JAR + SODRA + VMI)"]
+        G["Graph Builder<br/>(create nodes + edges)"]
+        R["Risk Scorer<br/>(apply signal rules)"]
+        A["Alert Generator<br/>(threshold check)"]
+    end
+
+    subgraph Storage["Data Layer"]
+        PG["PostgreSQL + AGE"]
+        TS["Typesense Index"]
+    end
+
+    VP -->|"GET /sutartis/{id}.json<br/>GET /asmuo/{jar}.json"| S
+    S --> E --> G --> R --> A
+    A --> PG
+    A --> TS
+
+    style Sources fill:#fce4ec,stroke:#c62828
+    style Pipeline fill:#fff3e0,stroke:#ef6c00
+    style Storage fill:#e8f5e9,stroke:#2e7d32
+```
 
 ### 9.1 Phase 1 — Seed (one-time)
 
@@ -489,7 +598,7 @@ For each new contract ID in VPT feed:
 
 ```
 Node size        → total contract value (log scale)
-Node color       → risk score: green (<100) / yellow (100-149) / orange (150-199) / red (≥200)
+Node color       → risk score: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200)
 Node shape       → type: ellipse=Company, rectangle=Institution, diamond=Person, triangle=Contract
 Edge width       → co-bid frequency or subcontract value
 Edge color       → edge risk score gradient
@@ -613,10 +722,10 @@ ingestion_log (id, entity_type, entity_id, status, attempted_at, error_detail)
 -- Create graph
 SELECT create_graph('risk_graph');
 
--- Create edges
+-- Create edges (Institution → Company, matching Section 6.2 edge definition)
 SELECT * FROM cypher('risk_graph', $$
-  MATCH (c:Company {jarKodas: '188704927'}), (s:Company {jarKodas: '110053842'})
-  CREATE (c)-[:AWARDED_TO {contractId: '2007700250', value: 32670}]->(s)
+  MATCH (i:Institution {jarKodas: '188704927'}), (s:Company {jarKodas: '110053842'})
+  CREATE (i)-[:AWARDED_TO {contractId: '2007700250', value: 32670}]->(s)
 $$) AS (result agtype);
 
 -- Query: find all companies with risk > 150 within 2 hops
@@ -692,3 +801,342 @@ $$, $params) AS (path agtype);
 | `papildomiTiekejai` | `co_suppliers` | AML subcontract path |
 | `sabisSutartys` | `sabis_contracts` | SABIS money flow |
 | `cpvaProjektuSutartys` | `eu_projects` | Double-dipping check |
+
+---
+
+## 15. Use Case Implementation Details
+
+This section provides concrete implementation guidance for each use case, including graph construction logic, detection algorithms, and Cytoscape.js rendering specifics.
+
+### 15.1 UC-1: Cartel & Bid Rigging Detection
+
+**Goal:** Identify clusters of companies that frequently compete in the same tenders but rotate winning outcomes.
+
+**Graph Construction:**
+
+1. Extract all `Tender` nodes from procurement data (`cvpisPirkimas` in the contract JSON).
+2. Extract all `Company` nodes that participated as bidders.
+3. Generate `PARTICIPATED_IN` edges (Company → Tender) for every bid.
+4. Generate `WON` edges (Company → Tender) for the winning company.
+5. Generate `CO_BIDDER` edges (Company ↔ Company) for every pair of companies that appear in the same tender. Increment `weight` for each co-occurrence.
+
+**Detection Algorithm:**
+
+```
+Input: CO_BIDDER subgraph
+
+1. Filter CO_BIDDER edges where weight ≥ 3 (co-appeared in ≥3 tenders).
+2. Run connected component analysis on the filtered subgraph.
+3. For each connected component with ≥3 companies:
+   a. Compute win distribution: wins_per_company / total_tenders_in_cluster.
+   b. If distribution is roughly uniform (stddev < 0.15):
+      → FLAG as rotational win pattern (cartel signal).
+   c. Compute spoiler bid ratio:
+      For each losing bid, if bid_amount > winner_amount * 1.20:
+      → FLAG as cover quote.
+4. Assign risk scores:
+   - Cluster membership: +60
+   - Confirmed win rotation: +40
+   - Spoiler bid pattern: +30
+```
+
+**Cytoscape.js Rendering:**
+
+```mermaid
+graph TD
+    subgraph Cartel_Cluster["Detected Cluster (CoSE-Bilkent layout)"]
+        A["Company A<br/>Won: 3/9"] -->|"co-bid: 9x"| B["Company B<br/>Won: 3/9"]
+        B -->|"co-bid: 9x"| C["Company C<br/>Won: 3/9"]
+        C -->|"co-bid: 9x"| A
+    end
+    T1["Tender 1"] -.->|WON| A
+    T2["Tender 2"] -.->|WON| B
+    T3["Tender 3"] -.->|WON| C
+
+    style A fill:#ff9800,stroke:#e65100,stroke-width:3px
+    style B fill:#ff9800,stroke:#e65100,stroke-width:3px
+    style C fill:#ff9800,stroke:#e65100,stroke-width:3px
+```
+
+- **Layout:** CoSE-Bilkent — dense clusters of co-participants become visually obvious.
+- **Edge width** scales with `CO_BIDDER.weight` (co-bid frequency).
+- **Node border** turns orange/red when the cluster has a rotational win flag.
+- **Tooltip** on cluster edge: "Co-appeared in N tenders; win rotation stddev = X".
+
+---
+
+### 15.2 UC-2: Shell Company ("Feniksai") Identification
+
+**Goal:** Spot entities with high-value contracts but suspiciously low operational capacity.
+
+**Graph Construction:**
+
+1. For each `Company` node, set `size` proportional to `totalContractValue` (sum of all `contract.verte`).
+2. Read `employeeCount` from SODRA metadata (`sodra.draustieji` in `/asmuo/{jar}.json`).
+3. Read `monthlyContributions` from SODRA (`sodra.imokuSuma`).
+4. Compute `companyAgeAtContract` = `contract.sudarymoData` − `jar.registravimoData`.
+
+**Detection Algorithm:**
+
+```
+Input: Company nodes with contract + SODRA data
+
+For each Company node:
+  1. Compute totalContractValue = SUM(contract.verte) for all linked contracts.
+  2. Retrieve employees = sodra.draustieji (default 0 if missing).
+  3. Retrieve companyAge = contract.sudarymoData - jar.registravimoData.
+
+  Flag conditions (additive scoring):
+    IF employees < 2                          → +50 (critical: near-zero workforce)
+    IF employees < 5 AND totalContractValue > 500,000 → +30 (disproportionate)
+    IF companyAge < 6 months at contract date → +80 (freshly registered)
+    IF contract.tipas = "MVP" (non-advertised) → +80 (no competitive process)
+    IF blacklisted = true (VPT list)          → +100 (known bad actor)
+    IF sodra data missing entirely            → +40 (no LT employees at all)
+
+  Visual flags:
+    IF riskScore ≥ 150 → red border stroke on node
+    IF employees < 2 AND totalContractValue > 100,000 → pulsing animation
+```
+
+**Cytoscape.js Rendering:**
+
+```mermaid
+graph LR
+    I["Institution<br/>(Buyer)"] -->|"AWARDED_TO<br/>€750,000"| S["🔴 Shell Co.<br/>Employees: 1<br/>Age: 3 months<br/>Risk: 210"]
+    S -->|"SHAREHOLDER_OF"| P["Person X<br/>(UBO)"]
+    P -->|"DIRECTOR_OF"| S2["Company Y<br/>Employees: 0"]
+
+    style S fill:#f44336,stroke:#b71c1c,stroke-width:4px,color:white
+    style S2 fill:#ff9800,stroke:#e65100,stroke-width:3px
+```
+
+- **Node size** = `totalContractValue` (log scale) — shell companies appear as large nodes.
+- **Node label** shows: employee count, registration age, win method.
+- **Red border stroke** when: high node degree (many contracts) + large node size (high value) + critical metadata flag (`employees < 2`).
+- **Side panel** on click: full risk breakdown table showing each signal and its score contribution.
+
+---
+
+### 15.3 UC-3: PEP & Conflict of Interest (VTEK)
+
+**Goal:** Visualize the distance between decision-makers and contract winners.
+
+**Graph Construction:**
+
+1. Load `Person` nodes from VTEK interest declarations (linked to Institution via `EMPLOYED_AT`).
+2. Load `Person` nodes from company board member / shareholder data (JADIS).
+3. Create `DECLARED_INTEREST` edges (Person → Company) from VTEK data.
+4. Create `SHAREHOLDER_OF` and `DIRECTOR_OF` edges from JADIS.
+5. Create `EMPLOYED_AT` edges (Person → Institution) for officials.
+6. Create family relationship edges where available from VTEK: `SPOUSE_OF`, `RELATIVE_OF`.
+
+**Detection Algorithm:**
+
+```
+Input: Person node (official at Institution I) + Company node (contract winner C)
+
+1. Build weighted graph:
+   - Edge weight = inverse of relationship strength
+     (direct ownership = 1, spouse = 2, relative = 3, shared director = 4)
+
+2. Run Dijkstra shortest-path from Person P (official) to Company C (winner):
+   - Path: P → [SPOUSE_OF] → Person S → [SHAREHOLDER_OF] → Company C
+   - pathLength = sum(edge_weights)
+
+3. If pathLength ≤ 3 AND Company C has active contract with Institution I:
+   → CONFLICT OF INTEREST signal
+
+4. Risk scoring by path:
+   - Direct ownership of winner:    +100 (pathLength = 1)
+   - Spouse owns winner:            +90  (pathLength = 2)
+   - 1st degree relative owns:      +70  (pathLength = 3)
+   - Common director/shareholder:   +60  (pathLength = 2, different edge type)
+   - Missing VTEK declaration:      +40  (absence of expected data)
+
+5. If no path found within maxDepth=4 → no conflict signal.
+```
+
+**Cytoscape.js Rendering:**
+
+```mermaid
+graph LR
+    O["👤 Official<br/>(VTEK declared)"] -->|SPOUSE_OF| SP["👤 Spouse"]
+    SP -->|SHAREHOLDER_OF<br/>51%| W["🏢 Winning Co.<br/>Risk: 190"]
+    O -->|EMPLOYED_AT| INST["🏛️ Ministry X"]
+    INST -->|AWARDED_TO<br/>€2.1M| W
+
+    style O fill:#9c27b0,stroke:#4a148c,color:white
+    style W fill:#ff9800,stroke:#e65100,stroke-width:3px
+    style INST fill:#1565c0,stroke:#0d47a1,color:white
+```
+
+- **Layout:** Breadth-First from the Person (official) node — shows hop distance clearly.
+- **Shortest path highlight:** The path from official to winning company is rendered with thick, colored edges.
+- **Path finder UI:** "Find path between A and B" using Cytoscape.js `aStar()` or `dijkstra()` extension.
+- **Edge labels** show relationship type and weight (e.g., "SHAREHOLDER_OF 51%").
+
+---
+
+### 15.4 UC-4: Subcontracting & ML Paths
+
+**Goal:** Trace funds from a primary contractor to suspicious sub-entities.
+
+**Graph Construction:**
+
+1. Parse `sabisSutartys` field from the contract JSON to extract subcontractor relationships.
+2. Create directed `SUBCONTRACTED_TO` edges (PrimeContractor → Subcontractor) with `value` attribute.
+3. Cross-reference subcontractor shareholders (JADIS) with prime contractor shareholders to detect circular ownership.
+4. If `papildomiTiekejai` (additional suppliers) field is populated, create additional `CO_SUPPLIER` edges.
+
+**Detection Algorithm:**
+
+```
+Input: Contract C with prime contractor P and subcontractor data
+
+1. Build directed money-flow graph:
+   P --[value_1]--> Sub1
+   P --[value_2]--> Sub2
+   Sub1 --[value_3]--> Sub1a  (if nested subcontracting exists)
+
+2. Compute pass-through ratio for each subcontractor:
+   passThrough = subcontract_value / prime_contract_value
+
+3. Flag conditions:
+   IF passThrough > 0.80 for any single subcontractor  → +70
+   IF subcontractor shareholders ∩ prime shareholders ≠ ∅ → +90 (circular ownership)
+   IF subcontractor is on VPT blacklist                → +100
+   IF subcontractor has employees < 2                  → +50 (shell sub)
+
+4. Cycle detection:
+   Run DFS on the directed subcontract graph.
+   IF cycle found (money flows back to a node connected to P) → +90
+
+5. Aggregate path risk:
+   graphPathScore = sum(edgeRiskScores along path) / path_length
+```
+
+**Cytoscape.js Rendering:**
+
+```mermaid
+graph TD
+    P["🏢 Prime Contractor<br/>Contract: €5M"] -->|"€4.2M (84%)"| S1["🔴 Subcontractor A<br/>Employees: 1<br/>Risk: 210"]
+    P -->|"€0.8M (16%)"| S2["🏢 Subcontractor B<br/>Employees: 45"]
+    S1 -->|"SHAREHOLDER_OF"| SH["👤 Person Z"]
+    SH -->|"SHAREHOLDER_OF"| P
+
+    style P fill:#1565c0,stroke:#0d47a1,color:white
+    style S1 fill:#f44336,stroke:#b71c1c,stroke-width:4px,color:white
+    style SH fill:#ff9800,stroke:#e65100
+```
+
+- **Layout:** Dagre (DAG) — directed flow is readable top-down.
+- **Edge width** scales with subcontract `value`.
+- **Edge color gradient:** green (low value) → red (high value, >80% pass-through).
+- **Cycle highlight:** If circular ownership or money cycle detected, edges forming the cycle are rendered in dashed red with animation.
+- **Edge labels** show absolute amount and percentage of prime contract value.
+
+---
+
+## 16. Implementation Plan
+
+### Phase 1 — Foundation & Data Layer
+
+> **Goal:** Establish the data pipeline and storage layer. No UI yet.
+
+- [ ] Contact viespirkiai.org for bulk data export access (resolves Open Question #1)
+- [ ] Set up PostgreSQL with Apache AGE extension in Docker Compose
+- [ ] Define relational schema: `companies`, `persons`, `contracts`, `risk_signals`, `alerts`, `ingestion_log`
+- [ ] Create AGE graph (`risk_graph`) with node labels: Company, Person, Contract, Institution, Tender
+- [ ] Build ingestion scraper (Node.js): fetch `/sutartis/{id}.json` and `/asmuo/{jar}.json`
+- [ ] Implement rate limiter (1 req/sec, exponential backoff on 429/503)
+- [ ] Implement entity enricher: merge JAR + SODRA + VMI data into Company nodes
+- [ ] Implement graph builder: create edges (AWARDED_TO, PARTICIPATED_IN, WON, SHAREHOLDER_OF, etc.)
+- [ ] Run seed ingestion: load initial dataset into PostgreSQL + AGE
+- [ ] Verify data quality: handle foreign company codes (`tiekejoKodas: "803"`), missing SODRA, null dates
+
+### Phase 2 — Risk Scoring Engine
+
+> **Goal:** Implement the scoring rules and alert generation.
+
+- [ ] Implement node risk scoring service (additive signal model per Section 5.2)
+- [ ] Implement UC-2 shell company signals: employee count, company age, contract type, blacklist
+- [ ] Implement UC-1 cartel signals: co-bidder frequency, win rotation stddev, spoiler bid ratio
+- [ ] Implement UC-3 PEP signals: shortest path traversal, VTEK declaration cross-reference
+- [ ] Implement UC-4 subcontractor signals: pass-through ratio, circular ownership, cycle detection
+- [ ] Implement UC-5 EU fund double-dipping signals: CPV code + date overlap cross-reference
+- [ ] Implement edge risk scoring (co-bidder, subcontractor, non-advertised award)
+- [ ] Implement composite score calculation: `entityRiskScore`, `edgeRiskScore`, `graphPathScore`
+- [ ] Implement alert generator: threshold-based alerts (≥100 yellow, ≥150 orange, ≥200 red)
+- [ ] Implement risk score explanation endpoint (`/api/risk/explain/{jarKodas}`)
+- [ ] Write unit tests for all scoring rules with known test entities
+
+### Phase 3 — API Layer
+
+> **Goal:** Expose graph and risk data via Next.js API Route Handlers.
+
+- [ ] Implement `GET /api/entities/{jarKodas}` — entity profile + risk breakdown
+- [ ] Implement `GET /api/entities/{jarKodas}/graph?depth=2&minRisk=100` — Cytoscape.js-compatible subgraph JSON
+- [ ] Implement `GET /api/contracts/{contractId}` — contract detail + linked entities
+- [ ] Implement `GET /api/search?q={term}&type={company|person|contract}` — Typesense full-text search
+- [ ] Implement `GET /api/alerts?since={iso_date}&minRisk=150` — alert list
+- [ ] Implement `POST /api/graph/path` — shortest risk path between two entities
+- [ ] Add JWT authentication middleware for all API routes
+- [ ] Add query depth limit (max depth=4) to prevent graph traversal DoS
+- [ ] Write integration tests for each API endpoint
+
+### Phase 4 — Visualization (Cytoscape.js)
+
+> **Goal:** Build the interactive graph UI with MUI components.
+
+- [ ] Set up Cytoscape.js canvas component with React lifecycle integration
+- [ ] Implement visual encoding: node size (contract value), color (risk score), shape (entity type)
+- [ ] Implement layout switching: CoSE-Bilkent (cartel), Breadth-First (PEP), Dagre (subcontract), Concentric (overview)
+- [ ] Implement click → side panel: entity detail, risk score breakdown, source links
+- [ ] Implement double-click → expand node: load 1-hop neighbors from API
+- [ ] Implement risk threshold slider: filter nodes below threshold
+- [ ] Implement path finder: "Find path between A and B" using Cytoscape.js `dijkstra()` / `aStar()`
+- [ ] Implement alert overlay: pulsing animation on recently-triggered alert nodes
+- [ ] Implement edge styling: dashed = inferred, solid = documented; width = value/frequency
+- [ ] Add performance guard: max 2,000 nodes rendered; server-side subgraph extraction for larger queries
+- [ ] Build Alert Dashboard page with MUI DataGrid for alert triage
+
+### Phase 5 — Incremental Sync & Ops
+
+> **Goal:** Automate ongoing data updates and production readiness.
+
+- [ ] Implement nightly incremental sync (02:00 EET cron schedule)
+- [ ] Implement delta risk score recomputation on new ingestion
+- [ ] Implement ingestion logging and error tracking (`ingestion_log` table)
+- [ ] Set up Typesense index sync for full-text search
+- [ ] Configure Docker Compose for production deployment (PostgreSQL + AGE + Typesense + Next.js)
+- [ ] Benchmark Apache AGE at 100k nodes; document migration path to Neo4j if needed (Open Question #4)
+- [ ] Implement GDPR compliance: no public Person name exposure, data correction contact mechanism
+- [ ] Add monitoring and health checks for ingestion pipeline
+- [ ] Write Cypress E2E tests for critical UI flows
+
+### Phase 6 — Advanced Detection & Hardening
+
+> **Goal:** Mature the detection algorithms and harden for real-world use.
+
+- [ ] Verify tender participant list availability in CVP IS data (Open Question #2)
+- [ ] Verify VTEK machine-readable data in `/asmuo` JSON (Open Question #3)
+- [ ] Assess SABIS subcontractor data completeness (Open Question #6)
+- [ ] Implement WebGL renderer fallback for graphs exceeding 1,000 nodes
+- [ ] Add TED (EU) cross-border tender data for transnational bid rigging detection
+- [ ] Add CPVA/esinvesticijos.lt integration for EU fund double-dipping
+- [ ] Legal review: GDPR DPA notification if storing PEP natural person data (Open Question #7)
+- [ ] Performance test: graph traversal at 500k+ nodes, optimize Cypher queries
+
+---
+
+## 17. Contradictions Resolved
+
+This section documents contradictions found during the review of the original v0.1-DRAFT and how they were resolved.
+
+| # | Location | Contradiction | Resolution |
+|---|---|---|---|
+| 1 | Section 10.2 vs Appendix A | Section 10.2 mapped `green` to `<100` (a single band), while Appendix A correctly splits into `Grey (0–49)` and `Green (50–99)` — two distinct severity bands. | Aligned Section 10.2 with Appendix A: grey (0–49) / green (50–99) / yellow (100–149) / orange (150–199) / red (≥200). |
+| 2 | Section 12.2 vs Section 6.2 | The Cypher example in 12.2 created `AWARDED_TO` as `(Company)→(Company)`, but Section 6.2 defines it as `Institution → Company`. | Fixed Cypher example to use `(i:Institution)-[:AWARDED_TO]->(s:Company)` matching the edge definition. |
+| 3 | Section 8 vs Codebase | Document listed `Spring Boot (Java 21)` as the backend API and `TailwindCSS + shadcn/ui` for UI. The actual codebase uses `Next.js 16 (App Router)` for both frontend and API routes, and `MUI v5 + Emotion` for the component library. | Updated Section 8 technology stack to reflect the actual project: Next.js 16, MUI v5, Next.js API Route Handlers. |
+| 4 | Section 7 Architecture | ASCII diagram showed a separate `Spring Boot` API layer and labeled the frontend as "Browser SPA". Next.js with App Router is a full-stack framework (SSR + API routes), not a SPA + separate backend. | Replaced ASCII diagram with Mermaid diagram showing the unified Next.js architecture. |
