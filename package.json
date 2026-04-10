@@ -16,7 +16,7 @@
     "next": "16.2.3",
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "@mui/material": "5.18.0",
+    "@mui/material": "9.0.0",
     "@emotion/react": "11.14.0",
     "@emotion/styled": "11.14.1",
     "cytoscape": "3.33.2"
@@ -32,7 +32,7 @@
     "jest-environment-jsdom": "30.3.0",
     "@testing-library/react": "16.3.2",
     "@testing-library/jest-dom": "6.9.1",
-    "eslint": "9.39.4",
+    "eslint": "10.2.0",
     "eslint-config-next": "16.2.3"
   }
 }
