@@ -1,7 +1,6 @@
-import { SoundEx, Metaphone } from 'natural';
+import { Metaphone } from 'natural';
 
 export class EntityResolver {
-    private static soundex = SoundEx;
     private static metaphone = new Metaphone();
 
     /**

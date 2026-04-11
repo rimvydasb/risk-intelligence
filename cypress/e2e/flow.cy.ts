@@ -1,7 +1,7 @@
 describe('Risk Intelligence Biological UI Flow', () => {
     it('should load the initial graph and allow searching and viewing node details', () => {
         // Ignore uncaught exceptions from the application
-        Cypress.on('uncaught:exception', (err, runnable) => {
+        Cypress.on('uncaught:exception', (_err, _runnable) => {
             return false;
         });
 
@@ -17,12 +17,12 @@ describe('Risk Intelligence Biological UI Flow', () => {
         cy.get('.MuiAutocomplete-option', { timeout: 10000 }).should('have.length.at.least', 1).first().click({ force: true });
 
         // 3. Sidebar should open
-        cy.contains('Entity Details').should('be.visible');
+        cy.contains('Node Details').should('be.visible');
         cy.contains('Lietuvos geležinkeliai').should('be.visible');
         cy.contains('Risk Profile').should('be.visible');
 
         // 4. Close Sidebar
         cy.get('[data-testid="close-sidebar"]').click();
-        cy.contains('Entity Details').should('not.exist');
+        cy.contains('Node Details').should('not.exist');
     });
 });

@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
-import { useHashRouter, parseRoute, buildGraphUrl, activeFilterCount, FILTER_DEFAULTS, type GraphFilterParams } from '../useHashRouter';
+import { useHashRouter, parseRoute, buildGraphUrl, activeFilterCount, FILTER_DEFAULTS } from '../useHashRouter';
 
 beforeEach(() => {
     window.location.hash = '';

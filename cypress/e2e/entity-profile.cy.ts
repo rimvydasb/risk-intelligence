@@ -22,7 +22,7 @@ describe('Entity Profile — Hash Navigation', () => {
         cy.get('input[placeholder="Search Company or Person..."]').type('Lietuvos');
         cy.get('.MuiAutocomplete-option', { timeout: 10000 }).should('have.length.at.least', 1).first().click({ force: true });
 
-        cy.contains('Entity Details').should('be.visible');
+        cy.contains('Node Details').should('be.visible');
 
         // Click "View Full Profile" — should switch to entity detail via hash
         cy.contains('View Full Profile').click();

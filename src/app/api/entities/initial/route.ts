@@ -36,9 +36,6 @@ export async function GET(request: Request) {
             prisma.person.findMany({ where: { uid: { in: personIds } } }),
         ]);
 
-        const companyMap = new Map(companies.map(c => [c.jarKodas, c]));
-        const personMap = new Map(persons.map(p => [p.uid, p]));
-
         // 4. Format for Cytoscape
         const elements: any[] = [];
 

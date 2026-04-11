@@ -6,7 +6,7 @@ import type { EntityDetailResponse } from '@/types/api';
 const prisma = new PrismaClient();
 
 export async function GET(
-    request: Request,
+    _request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params;

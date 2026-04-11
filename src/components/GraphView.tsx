@@ -13,7 +13,12 @@ export interface GraphViewProps {
 export default function GraphView({onNodeClick, elements: passedElements, dataUrl}: GraphViewProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const cyRef = useRef<Core | null>(null);
+    const onNodeClickRef = useRef<typeof onNodeClick>(onNodeClick);
     const [elements, setElements] = useState<ElementDefinition[]>([]);
+
+    useEffect(() => {
+        onNodeClickRef.current = onNodeClick;
+    }, [onNodeClick]);
 
     useEffect(() => {
         if (passedElements) {
@@ -120,9 +125,9 @@ export default function GraphView({onNodeClick, elements: passedElements, dataUr
                     animate: true,
                     randomize: true,
                     padding: 60,
-                    nodeRepulsion: (node: any) => 45000,
-                    idealEdgeLength: (edge: any) => 100,
-                    edgeElasticity: (edge: any) => 0.45,
+                    nodeRepulsion: (_node: any) => 45000,
+                    idealEdgeLength: (_edge: any) => 100,
+                    edgeElasticity: (_edge: any) => 0.45,
                     nestingFactor: 0.1,
                     numIter: 2500,
                     gravity: 0.25,
@@ -132,8 +137,8 @@ export default function GraphView({onNodeClick, elements: passedElements, dataUr
 
             cy.on('tap', 'node', (evt) => {
                 const node = evt.target;
-                if (onNodeClick) {
-                    onNodeClick(node.data());
+                if (onNodeClickRef.current) {
+                    onNodeClickRef.current(node.data());
                 }
             });
 
@@ -146,7 +151,7 @@ export default function GraphView({onNodeClick, elements: passedElements, dataUr
             cy?.destroy();
             cyRef.current = null;
         };
-    }, [elements, onNodeClick]);
+    }, [elements]);
 
     return (
         <Box
