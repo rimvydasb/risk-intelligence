@@ -48,6 +48,7 @@ export async function GET(
     return NextResponse.json(result);
   } catch (err) {
     if (err instanceof ViespirkiaiError) {
+      console.error(`[expand] upstream error for jarKodas=${jarKodas}:`, err.message, 'httpStatus:', err.statusCode);
       return NextResponse.json(
         { error: 'Upstream data source error', detail: err.message, code: 'UPSTREAM_ERROR' },
         { status: 502 },

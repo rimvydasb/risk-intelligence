@@ -50,6 +50,10 @@ describe('parseAsmuo — Lietuvos geležinkeliai (full fixture)', () => {
     const { edges } = parseAsmuo(lgFixture);
     const contractEdges = edges.filter((e) => e.data.type === 'Contract');
     expect(contractEdges.length).toBeGreaterThan(0);
+    // Label should show formatted value, not plain "Contract"
+    contractEdges.forEach((e) => {
+      expect(e.data.label).toMatch(/^€/);
+    });
   });
 
   it('does not duplicate nodes when person appears in multiple sections', () => {

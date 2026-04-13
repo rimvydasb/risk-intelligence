@@ -9,6 +9,13 @@ function orgType(formosKodas?: number): string {
   return 'PrivateCompany';
 }
 
+function formatContractValue(verte?: number | null): string {
+  if (verte == null) return 'Contract';
+  if (verte >= 1_000_000) return `€${(verte / 1_000_000).toFixed(1)}M`;
+  if (verte >= 1_000) return `€${(verte / 1_000).toFixed(0)}K`;
+  return `€${verte.toFixed(0)}`;
+}
+
 function withinYear(
   fromDate: string | null | undefined,
   tillDate: string | null | undefined,
@@ -157,7 +164,7 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
 
   // ── Contract relations — topPirkejai (buyers of anchorOrg) ───────────
   for (const buyer of raw.sutartys?.topPirkejai ?? []) {
-    if (filters?.minContractValue && (buyer.verte ?? 0) < filters.minContractValue) continue;
+    if (filters?.minContractValue && (buyer.total ?? 0) < filters.minContractValue) continue;
     const buyerId = `org:${buyer.jarKodas}`;
     const edgeId = `edge:${buyerId}:${anchorId}:Contract`;
 
@@ -177,15 +184,15 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
         source: buyerId,
         target: anchorId,
         type: 'Contract',
-        label: 'Contract',
-        totalValue: buyer.verte ?? null,
+        label: formatContractValue(buyer.total),
+        totalValue: buyer.total ?? null,
       },
     });
   }
 
   // ── Contract relations — topTiekejai (suppliers to anchorOrg) ────────
   for (const supplier of raw.sutartys?.topTiekejai ?? []) {
-    if (filters?.minContractValue && (supplier.verte ?? 0) < filters.minContractValue) continue;
+    if (filters?.minContractValue && (supplier.total ?? 0) < filters.minContractValue) continue;
     const supplierId = `org:${supplier.jarKodas}`;
     const edgeId = `edge:${anchorId}:${supplierId}:Contract`;
 
@@ -205,8 +212,8 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
         source: anchorId,
         target: supplierId,
         type: 'Contract',
-        label: 'Contract',
-        totalValue: supplier.verte ?? null,
+        label: formatContractValue(supplier.total),
+        totalValue: supplier.total ?? null,
       },
     });
   }

@@ -11,28 +11,33 @@ const client = axios.create({
 });
 
 async function get<T>(path: string): Promise<T> {
+  const url = `${BASE_URL}${path}`;
   try {
     const res = await client.get<T>(path);
+    console.log(`[viespirkiai] GET ${url} → ${res.status}`);
     return res.data;
   } catch (err: unknown) {
     if (axios.isAxiosError(err)) {
+      const status = err.response?.status ?? 'no-response';
+      console.error(`[viespirkiai] GET ${url} failed — HTTP ${status}: ${err.message}`);
       throw new ViespirkiaiError(
-        `GET ${path} failed: ${err.message}`,
+        `GET ${url} failed: HTTP ${status} — ${err.message}`,
         err.response?.status,
       );
     }
-    throw new ViespirkiaiError(`GET ${path} failed: ${String(err)}`);
+    console.error(`[viespirkiai] GET ${url} failed — unexpected error:`, err);
+    throw new ViespirkiaiError(`GET ${url} failed: ${String(err)}`);
   }
 }
 
 export function fetchAsmuo(jarKodas: string): Promise<AsmuoRaw> {
-  return get<AsmuoRaw>(`/api/asmuo/${jarKodas}`);
+  return get<AsmuoRaw>(`/asmuo/${jarKodas}.json`);
 }
 
 export function fetchSutartis(sutartiesUnikalusID: string): Promise<SutartisRaw> {
-  return get<SutartisRaw>(`/api/sutartis/${sutartiesUnikalusID}`);
+  return get<SutartisRaw>(`/sutartis/${sutartiesUnikalusID}.json`);
 }
 
 export function fetchPirkimas(pirkimoId: string): Promise<PirkamasRaw> {
-  return get<PirkamasRaw>(`/api/pirkimas/${pirkimoId}`);
+  return get<PirkamasRaw>(`/pirkimas/${pirkimoId}.json`);
 }

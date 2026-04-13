@@ -33,7 +33,7 @@ describe('viespirkiai client', () => {
 
     const result = await fetchAsmuo('110053842');
     expect(result).toEqual(payload);
-    expect(getMockGet()).toHaveBeenCalledWith('/api/asmuo/110053842');
+    expect(getMockGet()).toHaveBeenCalledWith('/asmuo/110053842.json');
   });
 
   it('fetchSutartis returns parsed JSON on success', async () => {
@@ -42,7 +42,7 @@ describe('viespirkiai client', () => {
 
     const result = await fetchSutartis('abc-123');
     expect(result).toEqual(payload);
-    expect(getMockGet()).toHaveBeenCalledWith('/api/sutartis/abc-123');
+    expect(getMockGet()).toHaveBeenCalledWith('/sutartis/abc-123.json');
   });
 
   it('fetchPirkimas returns parsed JSON on success', async () => {

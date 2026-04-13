@@ -55,8 +55,8 @@ export interface PinregRaw {
 export interface SutartysRaw {
   pirkimaiKasMetus?: Record<string, number>;
   tiekimaiKasMetus?: Record<string, number>;
-  topPirkejai?: Array<{ jarKodas: string; pavadinimas?: string; verte?: number }>;
-  topTiekejai?: Array<{ jarKodas: string; pavadinimas?: string; verte?: number }>;
+  topPirkejai?: Array<{ jarKodas: string; pavadinimas?: string; total?: number }>;
+  topTiekejai?: Array<{ jarKodas: string; pavadinimas?: string; total?: number }>;
 }
 
 export interface AsmuoRaw {
