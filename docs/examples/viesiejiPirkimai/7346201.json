@@ -1,0 +1,283 @@
+{
+  "pavadinimas": "Televizijos programos „Seimas-tiesiogiai“ retransliavimo Lietuvos Respublikos teritorijoje skaitmeninės antžeminės televizijos tinklu paslaugos",
+  "pirkimoId": "7346201",
+  "pirkimoVykdytojas": "Lietuvos Respublikos Seimo kanceliarija",
+  "informacija": "Perkamos perkančiosios organizacijos rengiamos televizijos programos „Seimas-tiesiogiai“ retransliavimo Lietuvos Respublikos teritorijoje skaitmeninės antžeminės televizijos tinklu nekoduotu būdu paslaugos, tiekėjui tapus šios programos retransliuotoju",
+  "paskelbimoData": "2026-04-13 05:30:15",
+  "pasiulymuPateikimoTerminas": "2026-05-19 10:00:00",
+  "pirkimoBudas": "Atviras konkursas",
+  "statusas": "Pasiūlymų teikimas",
+  "numatomaBendraPirkimoVerte": null,
+  "zingsnis": "1",
+  "type": "CfTWS",
+  "turinioNuskaitymas": 9,
+  "turinioNuskaitymoData": "2026-04-13 06:00:58.827998",
+  "turinys": {
+    "failai": [
+      {
+        "kalba": "LT",
+        "versijos": [
+          {
+            "kalba": "LT",
+            "rengejas": "jurateputiatiniene",
+            "statusas": "Galutinis",
+            "versionId": 323846,
+            "pakeitimai": null,
+            "ikelimoData": "2026-04-10",
+            "papildymoId": null,
+            "pavadinimas": "2-as priedas. EBVPD pdf",
+            "dokumentoVersija": "1.0",
+            "id": 90372235,
+            "extension": "pdf",
+            "parsiustas": 1,
+            "nuskaitytas": 9,
+            "zodziuSkaicius": 3754,
+            "puslapiuSkaicius": 21,
+            "dydis": 84563,
+            "md5": "5fdeecb82dd18258f74f110f8f3e4067"
+          }
+        ],
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "2-as priedas. EBVPD pdf",
+        "dokumentasId": 7346863,
+        "versijosExists": true,
+        "dokumentasPavadinimas": "2-as priedas. EBVVPD pdf.pdf"
+      },
+      {
+        "kalba": "LT",
+        "versijos": [
+          {
+            "kalba": "LT",
+            "rengejas": "jurateputiatiniene",
+            "statusas": "Galutinis",
+            "versionId": 323848,
+            "pakeitimai": null,
+            "ikelimoData": "2026-04-10",
+            "papildymoId": null,
+            "pavadinimas": "2-as priedas. EBVPD xml",
+            "dokumentoVersija": "1.0",
+            "id": 90372236,
+            "extension": "xml",
+            "parsiustas": 1,
+            "nuskaitytas": null,
+            "zodziuSkaicius": null,
+            "puslapiuSkaicius": null,
+            "dydis": 114301,
+            "md5": "7f115f9fb8d489f83b84057faddecc8b"
+          }
+        ],
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "2-as priedas. EBVPD xml",
+        "dokumentasId": 7346867,
+        "versijosExists": true,
+        "dokumentasPavadinimas": "2-as priedas. EBVVPD xml.xml"
+      },
+      {
+        "kalba": "LT",
+        "versijos": [
+          {
+            "kalba": "LT",
+            "rengejas": "jurateputiatiniene",
+            "statusas": "Galutinis",
+            "versionId": 323853,
+            "pakeitimai": null,
+            "ikelimoData": "2026-04-10",
+            "papildymoId": null,
+            "pavadinimas": "5-as priedas. Sutarties Bendrosios sąlygos",
+            "dokumentoVersija": "1.0",
+            "id": 90372237,
+            "extension": "docx",
+            "parsiustas": 1,
+            "nuskaitytas": 9,
+            "zodziuSkaicius": 56993,
+            "puslapiuSkaicius": 35,
+            "dydis": 109422,
+            "md5": "723ff67efaccdfc762f8cc619be79ad0"
+          }
+        ],
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "5-as priedas. Sutarties Bendrosios sąlygos",
+        "dokumentasId": 7346876,
+        "versijosExists": true,
+        "dokumentasPavadinimas": "5-as priedas. Sutarties Bendrosios sąlygos.docx"
+      },
+      {
+        "kalba": "LT",
+        "versijos": [
+          {
+            "kalba": "LT",
+            "rengejas": "jurateputiatiniene",
+            "statusas": "Galutinis",
+            "versionId": 323856,
+            "pakeitimai": null,
+            "ikelimoData": "2026-04-10",
+            "papildymoId": null,
+            "pavadinimas": "6-as priedas. Sutarties Specialiosios sąlygos",
+            "dokumentoVersija": "1.0",
+            "id": 90372238,
+            "extension": "docx",
+            "parsiustas": 1,
+            "nuskaitytas": -1,
+            "zodziuSkaicius": null,
+            "puslapiuSkaicius": null,
+            "dydis": 105566,
+            "md5": "ff8a4b6216c8a4453a410f6eedddd353"
+          }
+        ],
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "6-as priedas. Sutarties Specialiosios sąlygos",
+        "dokumentasId": 7346886,
+        "versijosExists": true,
+        "dokumentasPavadinimas": "6-as priedas. Sutarties Specialiosios sąlygos.docx"
+      },
+      {
+        "kalba": "LT",
+        "versijos": [
+          {
+            "kalba": "LT",
+            "rengejas": "jurateputiatiniene",
+            "statusas": "Galutinis",
+            "versionId": 323858,
+            "pakeitimai": null,
+            "ikelimoData": "2026-04-10",
+            "papildymoId": null,
+            "pavadinimas": "7-as priedas. Sutarties 2 priedas. Techninė specifikacija",
+            "dokumentoVersija": "1.0",
+            "id": 90372239,
+            "extension": "docx",
+            "parsiustas": 1,
+            "nuskaitytas": 9,
+            "zodziuSkaicius": 4915,
+            "puslapiuSkaicius": 4,
+            "dydis": 56573,
+            "md5": "db9e4ac1dd86b3527573a1be785c0054"
+          }
+        ],
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "7-as priedas. Sutarties 2 priedas. Techninė specifikacija",
+        "dokumentasId": 7346911,
+        "versijosExists": true,
+        "dokumentasPavadinimas": "7-as priedas. Sutarties 2 priedas. Techninė specifikacija.docx"
+      },
+      {
+        "kalba": "LT",
+        "versijos": [
+          {
+            "kalba": "LT",
+            "rengejas": "jurateputiatiniene",
+            "statusas": "Galutinis",
+            "versionId": 323844,
+            "pakeitimai": null,
+            "ikelimoData": "2026-04-10",
+            "papildymoId": null,
+            "pavadinimas": "Konkurso sąlygos",
+            "dokumentoVersija": "1.0",
+            "id": 90372240,
+            "extension": "docx",
+            "parsiustas": 1,
+            "nuskaitytas": -1,
+            "zodziuSkaicius": null,
+            "puslapiuSkaicius": null,
+            "dydis": 148007,
+            "md5": "ff7026899cfec4bb8a0b013fe6db40e1"
+          }
+        ],
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "Konkurso sąlygos",
+        "dokumentasId": 7346815,
+        "versijosExists": true,
+        "dokumentasPavadinimas": "Konkurso salygos.docx"
+      },
+      {
+        "kalba": "EN",
+        "aprasymas": null,
+        "papildymoId": null,
+        "pavadinimas": "Tender Structure XML - Cycle 1",
+        "dokumentasId": 7352508,
+        "versijosExists": false,
+        "dokumentasPavadinimas": "c4t_7346201_1.xml"
+      }
+    ],
+    "aprasymas": "Perkamos perkančiosios organizacijos rengiamos televizijos programos „Seimas-tiesiogiai“ retransliavimo Lietuvos Respublikos teritorijoje skaitmeninės antžeminės televizijos tinklu nekoduotu būdu paslaugos, tiekėjui tapus šios programos retransliuotoju",
+    "bvpzKodai": [
+      "64228100"
+    ],
+    "direktyva": "2014/24/ES (Klasikinė)",
+    "nutsKodai": "",
+    "skelbimai": [
+      {
+        "kalba": "LT",
+        "tipas": "Skelbimas apie pirkimą - bendroji direktyva, įprasta tvarka",
+        "isLinked": false,
+        "statusas": "Paskelbta",
+        "externalId": "0e972311-e807-4644-956d-f8e3203cefa1",
+        "ikelimoData": "2026-04-10 14:38:13",
+        "downloadHref": "https://viesiejipirkimai.lt/epps/cft/downloadNotice.do?documentId=7347313&lang=lt&noticeType=16&extId=0e972311-e807-4644-956d-f8e3203cefa1&resourceId=7346201",
+        "paskelbimoData": "2026-04-13 00:00:00"
+      }
+    ],
+    "pavadinimas": "Televizijos programos „Seimas-tiesiogiai“ retransliavimo Lietuvos Respublikos teritorijoje skaitmeninės antžeminės televizijos tinklu paslaugos",
+    "pirkimoBudas": "Atviras konkursas",
+    "skelbimoKalba": "LT",
+    "spkKategorija": "",
+    "esFinansavimas": "Ne",
+    "numatomaVerteEUR": null,
+    "eAukcionuSukurimas": "Ne",
+    "pirkimoObjektoTipas": "Paslaugos",
+    "pirkimoVykdytojasId": "1735",
+    "pvPirkimoUnikalusID": "",
+    "bvpzKodaiPavadinimai": [
+      "Televizijos programų transliavimo paslaugos"
+    ],
+    "laimetojoNustatymoData": null,
+    "pirkimuSuvestinesNuoroda": "1002/2987/3268399",
+    "kvietimuIssiuntimoTerminas": "",
+    "pasiulymuVertinimoKriterijai": "Kaina/Sąnaudos",
+    "paskelbimoIrArbaKvietimoData": "2026-04-13 05:30",
+    "pirkimoVykdytojasPavadinimas": "Lietuvos Respublikos Seimo kanceliarija",
+    "susipazinimoSuPasiulymaisData": "2026-05-19 10:30",
+    "dokumentuIkelimasSuPaaiskinimais": "Taip",
+    "tedNuorodosIPaskelbtusPranesimus": [
+      "https://ted.europa.eu/udl?uri=TED:NOTICE:248187-2026:TEXT:LT:HTML"
+    ],
+    "laimetojoNustatymasKiekvienamObjektui": "Ne",
+    "pirkimasSkaidomasIDaliuDPSIKategorijas": "Ne",
+    "pasiulymuPateikimoTerminasDienosvalandos": "36/3",
+    "leidziamaPateiktisAlternatyviusPasiulymus": "Ne",
+    "prasymuPateiktiPaaiskinimusTerminoPabaiga": "08/05/2026 15:45",
+    "asmenuSusipazistanciuSuPasiulymaisSkaicius": "Vienas",
+    "virsArbaZemiauTarptautinioPirkimoVertesRibos": "Virš",
+    "leistiTiekejamsSistemojePareikstiSusidomejima": "Taip",
+    "pasiulymoGaliojimoTerminasDienomisArbaMenesiais": "90 days",
+    "sutartiesTrukmeMenesiaisArbaMetaisIsskyrusPratesimus": "16 months",
+    "pasiulymuArbaParaiskuDalyvautiPirkimePateikimoTerminas": "2026-05-19 10:00",
+    "sutartiesTipasPasirinkusSutartiesTipaJisBusTaikomasVisomsPirkimoDalims": "Pirkimo sutartis",
+    "tedSkelbimai": [
+      {
+        "pavadinimas": "Skelbimas apie pirkimą",
+        "numeris": "248187-2026",
+        "downloadHref": "/ted/248187-2026",
+        "originalHref": "https://ted.europa.eu/udl?uri=TED:NOTICE:248187-2026:TEXT:LT:HTML"
+      }
+    ],
+    "tedNuorodosIsorines": []
+  },
+  "scrapeReservation": null,
+  "searchTsv": "'7346201':19 'antžeminės':11,34 'būdu':38 'kanceliarija':18 'lietuvos':7,15,30 'nekoduotu':37 'organizacijos':22 'paslaugos':14,39 'perkamos':20 'perkančiosios':21 'programos':2,25,43 'rengiamos':23 'respublikos':8,16,31 'retransliavimo':6,29 'retransliuotoju':44 'seimas':4,27 'seimas-tiesiogiai':3,26 'seimo':17 'skaitmeninės':10,33 'tapus':41 'televizijos':1,12,24,35 'teritorijoje':9,32 'tiekėjui':40 'tiesiogiai':5,28 'tinklu':13,36 'šios':42",
+  "numatomaVerteEUR": null,
+  "bvpzKodai": [
+    "64228100"
+  ],
+  "pirkimoObjektoTipas": "Paslaugos",
+  "esFinansavimas": false,
+  "pirkimoVykdytojasId": "1735",
+  "jarKodas": "188605295",
+  "vykdytojoPavadinimas": "Lietuvos Respublikos Seimo kanceliarija",
+  "sutartys": []
+}

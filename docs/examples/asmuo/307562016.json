@@ -1,0 +1,198 @@
+{
+  "jar": {
+    "id": 891181,
+    "jarKodas": 307562016,
+    "pavadinimas": "Mažoji bendrija GR paslaugos",
+    "adresas": "Šilalės r. sav., Šilalės kaimiškoji sen., Biržų Lauko k., Akmenos g. 9, LT-75110",
+    "registravimoData": "2026-01-22",
+    "formosKodas": 960,
+    "formosPavadinimas": "Mažoji bendrija",
+    "statusoKodas": 0,
+    "statusoPavadinimas": "Teisinis stat neįregistruotas",
+    "statusasNuo": "2026-01-22",
+    "duomenuData": "2026-01-27",
+    "location": [
+      55.469535024,
+      22.24561672
+    ],
+    "pavadinimasBase": "GR paslaugos",
+    "locationState": 1,
+    "locationVersion": 1,
+    "jarId": "912b2f94-7cf9-4ca6-a7b2-24b371fb6a2b"
+  },
+  "sodra": {
+    "kodas": 4440205,
+    "jarKodas": "307562016",
+    "pavadinimas": "MAŽOJI BENDRIJA GR PASLAUGOS",
+    "savivaldybe": "Šilalės r. sav.",
+    "ekonominesVeiklosKodas": null,
+    "ekonominesVeiklosPavadinimas": null,
+    "vidutinisAtlyginimas": null,
+    "vidutinisAtlyginimas2": null,
+    "draustieji": 1,
+    "draustieji2": 0,
+    "imokuSuma": null,
+    "data": "2026-02",
+    "bendrasDraustujuSkaicius": 1,
+    "bendrasVidutinisAtlyginimas": 0,
+    "atlyginimuIslaidos": 0,
+    "duomenys": [
+      {
+        "data": "2026-02",
+        "vidutinisAtlyginimas": null,
+        "draustieji": 1,
+        "vidutinisAtlyginimas2": null,
+        "draustieji2": 0,
+        "imokuSuma": null
+      }
+    ],
+    "turejoDraustuju": true,
+    "turejoDraustuju2": false,
+    "turejoAtlyginimu": false,
+    "turejoAtlyginimu2": false
+  },
+  "regitra": {
+    "limit": 5,
+    "rows": 0,
+    "transportoPriemones": []
+  },
+  "teismoNuosprendziai": {
+    "limit": 10,
+    "rows": 0,
+    "nuosprendziai": []
+  },
+  "sutartys": {
+    "pirkimaiKasMetus": [],
+    "tiekimaiKasMetus": [],
+    "topPirkejai": [],
+    "topTiekejai": []
+  },
+  "finansai": {
+    "ataskaitos": [],
+    "pagalEilute": {},
+    "lentele": {
+      "metai": [],
+      "duomenys": {
+        "Pelningumas": []
+      }
+    }
+  },
+  "istatinisKapitalas": {},
+  "darboSkelbimai": {
+    "limit": 5,
+    "rows": 1,
+    "skelbimai": [
+      {
+        "_type": null,
+        "_id": "027c2542-d84f-4f58-b38a-6aac54de2a67",
+        "_revision": "2eb67044-51d6-4ab9-9b6c-94ebbad5d31a",
+        "darbo_vietos_id": "DV-87-996819638",
+        "statusas": "archyvuota",
+        "ikelimo_data": "2026-03-01",
+        "galioja_nuo": "2026-03-01",
+        "galioja_iki": "2026-03-27",
+        "imones_iregistravimas": "2026-01-22",
+        "prelim_darbo_uzmokestis": 1200,
+        "vid_darbo_uzmokestis": 1200,
+        "maks_darbo_uzmokestis": 2000,
+        "valiuta": "EUR",
+        "uzmokescio_komentaras_lt": null,
+        "profesijos_pareigybes_pav": "Pagalbinis pastatų statybos darbininkas",
+        "darbo_aprasymas_lt": "Įvairūs pagalbiniai betonavimo darbai",
+        "ar_aktuali_siandien": "0",
+        "ar_uzpildyta": "1",
+        "ar_papildomai_remia": "0",
+        "ar_darbina_po_mokymu": "0",
+        "ar_apmoka_keliones": "0",
+        "ar_apgyvendina": "0",
+        "ar_maitina": "0",
+        "pageidaujama_darbo_pradzia": "2026-03-09",
+        "darbo_vietu_skaicius": 2,
+        "darbo_vietos_adresas": "51, Vingininkai, Lietuva",
+        "darbo_vietos_sav_pav": "Šilalės rajono sav.",
+        "registravimo_pagrindo_pav": "Sukūrus naują darbo vietą",
+        "registravimo_budo_pav": "Išorinis portalas",
+        "pageidavimo_pateikimo_pav": null,
+        "rizikos_lt": null,
+        "jar_kodas": "307562016",
+        "darbdavys": "Mažoji bendrija GR paslaugos",
+        "teisinio_statuso_pav": "Įregistruotas",
+        "teisines_formos_pav": "Juridiniai asmenys",
+        "darbdavio_bustine": "Biržų Laukas, Akmenos g. 9, LT-75110",
+        "darbdavio_kontaktinis_asmuo": "GINTARAS RADZEVIČIUS",
+        "susisiekimo_budas": "el. paštu, skambinant atsakingam asmeniui",
+        "darbdavio_tel_nr": "+37068235682",
+        "darbdavio_mob_nr": "+37068235682",
+        "darbdavio_el_pastas": "gintaras.radzevicius@icloud.com",
+        "reik_darbo_patirtis": null,
+        "reik_kompetencijos_lt": "Privalumas - panašaus darbo patirtis.",
+        "reik_gebejimai": null,
+        "reik_issilavinimo_pav": null,
+        "reik_mok_progr_pav": null
+      }
+    ]
+  },
+  "pinreg": {
+    "darbovietes": [],
+    "sutuoktinioDarbovietes": [],
+    "rysiaiSuJa": [],
+    "counts": {
+      "darbovietes": 0,
+      "sutuoktiniuDarbovietes": 0,
+      "rysiaiSuJa": 0
+    },
+    "total": 0,
+    "rows": 0,
+    "limit": 3
+  },
+  "nepatikimi": [],
+  "melagingi": [],
+  "jadis": {},
+  "rcPranesimai": {
+    "limit": 3,
+    "rows": 1,
+    "pranesimai": [
+      {
+        "leidinioOid": "328269",
+        "title": "Registro tvarkytojo skelbimai",
+        "subtitle": "Įregistruoti juridiniai asmenys",
+        "jarPavadinimas": "Mažoji bendrija GR paslaugos",
+        "jarKodas": "307562016",
+        "teisineForma": "Mažoji bendrija",
+        "teisinisStatusas": "Teisinis statusas neįregistruotas.",
+        "buveinesAdresas": "Šilalės r. sav., Šilalės kaimiškoji sen., Biržų Lauko k., Akmenos g. 9, LT-75110",
+        "pranesimoNr": "7356251",
+        "text": "Įregistravimo data: 2026-01-22. Vadovas: GINTARAS RADZEVIČIUS, Direktorius. Taisyklė, pagal kurią asmenys veikia\njuridinio asmens vardu: Vienasmenis atstovavimas. Juridinio asmens vardu veikia vadovas.",
+        "leidinioLink": "https://www.registrucentras.lt/jar/infleid/download.do?oid=328269",
+        "leidinioData": "2026-01-23",
+        "leidinioAtnaujinimas": null,
+        "leidinioNumeris": "2026-023"
+      }
+    ]
+  },
+  "domenai": {
+    "limit": 3,
+    "count": 0,
+    "rows": []
+  },
+  "kotis": {
+    "limit": 3,
+    "count": 0,
+    "rows": []
+  },
+  "esInvesticijos": {
+    "limit": 5,
+    "count": 0,
+    "rows": []
+  },
+  "mvpAprasai": {
+    "limit": 1,
+    "count": 0,
+    "rows": []
+  },
+  "vdiPazeidimai": {
+    "limit": 3,
+    "count": 0,
+    "rows": []
+  }
+}
