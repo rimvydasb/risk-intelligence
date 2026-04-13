@@ -56,7 +56,8 @@ data model.
    useContext for global state management.
 4. **Database:** PostgreSQL within Docker for development; Supabase Postgres in production for managed hosting.
 5. **ORM:** Prisma for type-safe database access and migrations.
-6. **Testing:** Jest for unit tests; Cypress for end-to-end testing of the UI and integration points.
+6. **Testing:** Jest for unit tests **and** API integration tests (real PostgreSQL test database, viespirkiai HTTP
+   client mocked); Cypress for end-to-end testing of the UI.
 7. **Hosting:** Vercel for production deployment of the Next.js application; GitHub Actions for CI/CD pipelines.
 8. **Data Ingestion:** On-demand via API route handlers — viespirkiai.org data is fetched and cached when users
    expand graph nodes. No batch ETL in v1.
@@ -392,6 +393,13 @@ When cross-entity queries, person deduplication, aggregate analytics, or batch r
 add normalized `Entity` + `Relationship` tables populated by a background ETL job reading from staging —
 not on the API request path. Until then, staging + in-memory parsing is sufficient.
 
+### Test Database
+
+`docker-compose.yml` includes a `postgres-test` service on host port `5433` (separate from the dev
+database on `5432`). The test container uses `tmpfs` for storage — it is wiped clean each time it
+starts. `.env.test` points `DATABASE_URL` at this container. `bin/run-api-tests.sh` manages its
+lifecycle automatically.
+
 ## Components
 
 ### Graph Component
@@ -457,26 +465,69 @@ risk-intelligence/
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                # CI: lint, test, build
-├── cypress/                     # E2E & GUI Testing (Specs, Screenshots, Videos)
-├── prisma/                      # Database Schema & Migrations
-├── public/                      # Static Assets
+├── bin/
+│   ├── run-cypress-tests.sh      # E2E test runner (starts Next.js dev server)
+│   └── run-api-tests.sh          # API integration test runner (starts test DB, runs Jest)
+├── cypress/                      # E2E & GUI Testing (Specs, Screenshots, Videos)
+├── prisma/
+│   ├── schema.prisma             # StagingAsmuo, StagingSutartis, StagingPirkimas models
+│   └── migrations/               # Generated migration files
+├── public/                       # Static Assets
 ├── src/
-│   ├── app/                     # App Router (Next.js Entry)
-│   │   ├── api/                 # Stateless API Route Handlers
-│   │   │   ├── v1/graph/        # [GET] /expand/{entityId} — graph expansion
-│   │   │   └── v1/entity/       # [GET] /{entityId} — 360 detail view
-│   │   ├── layout.tsx           # Global Shell & Theme Provider
-│   │   ├── page.tsx             # SINGLE UI ENTRY POINT — manages hash routing
-│   │   └── globals.css          # Global Styles
-│   ├── components/              # Modular Client UI Components
-│   │   ├── graph/               # Cytoscape.js Logic
-│   │   └── entity/              # EntityDetailView component (rendered via hash route)
-│   ├── lib/                     # Business Logic (Risk Rules, DB Client)
-│   │   └── useHashRouter.ts     # Hash-based routing hook (SSR-safe)
-│   ├── types/                   # Shared TypeScript Interfaces
-│   └── services/                # API Client Wrappers
-├── docker-compose.yml           # Local Postgres ONLY
-├── package.json                 # SINGLE ROOT PACKAGE
+│   ├── app/                      # App Router (Next.js Entry)
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       ├── graph/
+│   │   │       │   └── expand/
+│   │   │       │       └── [jarKodas]/
+│   │   │       │           └── route.ts     # GET — delegates to lib/graph/expand
+│   │   │       └── entity/
+│   │   │           └── [entityId]/
+│   │   │               └── route.ts         # GET — delegates to lib/graph/entity
+│   │   ├── layout.tsx            # Global Shell & Theme Provider
+│   │   ├── page.tsx              # SINGLE UI ENTRY POINT — manages hash routing
+│   │   └── globals.css           # Global Styles
+│   ├── components/               # Modular Client UI Components
+│   │   ├── graph/                # Cytoscape.js Logic
+│   │   ├── entity/               # EntityDetailView component (rendered via hash route)
+│   │   ├── services/             # Frontend API client wrappers (browser → backend)
+│   │   └── useHashRouter.ts      # Hash-based routing hook (SSR-safe)
+│   ├── lib/                      # React and Front-end free plain Business Logic
+│   │   │
+│   │   │   # Convention: every module owns types.ts + __tests__/
+│   │   │
+│   │   ├── db.ts                 # Prisma singleton (reused across hot-reloads in dev)
+│   │   │
+│   │   ├── viespirkiai/          # Raw HTTP layer — viespirkiai.org API
+│   │   │   ├── types.ts          # AsmuoRaw, SutartisRaw, PirkamasRaw, ViespirkiaiError
+│   │   │   ├── client.ts         # fetchAsmuo / fetchSutartis / fetchPirkimas
+│   │   │   └── __tests__/
+│   │   │       └── client.test.ts
+│   │   ├── staging/              # PostgreSQL cache — stores raw API responses with TTL
+│   │   │   ├── types.ts          # CacheEntry<T>, isFresh(entry, ttlHours): bool
+│   │   │   ├── ...
+│   │   │   └── __tests__/
+│   │   │       ├── asmuo.test.ts
+│   │   │       ├── ...
+│   │   ├── parsers/              # Pure functions: raw JSON → Cytoscape elements (no I/O)
+│   │   │   ├── types.ts          # CytoscapeNode, CytoscapeEdge, CytoscapeElements, FilterParams
+│   │   │   ├── ...
+│   │   │   └── __tests__/
+│   │   │       ├── asmuo.test.ts
+│   │   │       ├── ...
+│   │   └── graph/                # Orchestration — ties staging + viespirkiai + parsers
+│   │       ├── types.ts          # ExpandResult, EntityDetailResult, GraphFilters
+│   │       ├── ...
+│   │       └── __tests__/
+│   │           ├── expand.test.ts
+│   │
+│   └── types/
+│       └── graph.ts              # Shared interfaces: TemporalEntity, OrganizationEntity,
+│                                 # PersonEntity, TenderEntity, Relationship, CytoscapeResponse
+├── docker-compose.yml            # Dev DB (port 5432) + Test DB (port 5433, tmpfs)
+├── .env                          # Dev environment variables (not committed)
+├── .env.test                     # Test environment variables (not committed)
+├── package.json                  # SINGLE ROOT PACKAGE
 ├── tsconfig.json
 └── ARCHITECTURE.md
 ```
@@ -488,9 +539,10 @@ risk-intelligence/
 > API will be implemented using Next.js API `import type { NextApiRequest, NextApiResponse } from 'next';` route
 > handlers.
 
-> API's will be tested using Jest REST tests that require a running instance of the service. Mock database will be used.
-> Server will be started with `.env.test` config to read from the mock database. `doc/examples` are used as testing
-> data.
+> API's will be tested using Jest integration tests that require a running PostgreSQL test database.
+> The viespirkiai.org HTTP client is **mocked** in tests — `docs/examples/` JSON fixtures are used
+> as mock responses so tests never hit the live API. The server is started with `.env.test` config.
+> Run `./bin/run-api-tests.sh` to execute: start test DB → migrate → run Jest → stop DB.
 
 ### Core Endpoints
 
@@ -520,10 +572,26 @@ staging JSON, the same Cytoscape output is produced every time.
 
 **Initial page load:** `GET /api/v1/graph/expand/110053842`
 
+**Error responses:**
+
+| Status | Condition                                       |
+|--------|-------------------------------------------------|
+| `400`  | `jarKodas` missing or non-numeric               |
+| `502`  | viespirkiai.org unreachable or returned non-2xx |
+| `500`  | Unexpected parse or database error              |
+
 #### `GET /api/v1/entity/{entityId}`
 
 **Purpose:** Return the full 360-degree detail view for a single entity (metadata, all relationships, summary stats).
 Used when the user clicks a node to see its detail panel. Reads from staging cache — no additional external fetch.
+
+**Error responses:**
+
+| Status | Condition                                                          |
+|--------|--------------------------------------------------------------------|
+| `400`  | `entityId` has no recognised prefix (`org:`, `person:`, `tender:`) |
+| `404`  | Entity not found in staging cache (not yet expanded)               |
+| `500`  | Unexpected error                                                   |
 
 ### Graph Response Format (Cytoscape.js-compatible)
 
