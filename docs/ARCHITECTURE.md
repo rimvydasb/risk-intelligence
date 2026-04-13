@@ -291,7 +291,7 @@ risk-intelligence/
 ### Core endpoints
 
 ```
-GET  /api/v1/entities/initial?yearFrom=2020&yearTo=2024&minValue=100000
+GET  /api/v1/entities/root?yearFrom=2020&yearTo=2024&minValue=100000
      → TBC
 ```
 
@@ -333,6 +333,8 @@ GET  /api/v1/entities/initial?yearFrom=2020&yearTo=2024&minValue=100000
 ## 12. Storage Design
 
 ### 12.1 Key Tables (PostgreSQL / Prisma)
+
+TBC: need to find the best 360 view representation to return graph details
 
 ```prisma
 
