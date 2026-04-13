@@ -313,49 +313,80 @@ flowchart TD
 
 ### Staging Storage Population Flow
 
-Sequence diagram: RIS GUI, RIS Service, Viespirkiai.org API, and Staging PostgreSQL tables.
+The staging layer is populated **on-demand** when a user expands a node in the graph. The service checks whether
+fresh staging data exists before calling viespirkiai.org, then parses the raw JSON into the normalized graph store.
 
 ```mermaid
 sequenceDiagram
     participant GUI as RIS GUI
     participant Service as RIS Service
+    participant Staging as Staging Tables
     participant API as Viespirkiai.org API
-    participant Staging as Staging PostgreSQL
-    GUI ->> Service: GET /api/v1/entities?entityType={entityType}&dataReference={dataReference}
-    Service ->> API: Fetch /asmuo/{jarKodas}.json
-    API -->> Service: Return company data
-    Service ->> Staging: Insert into STAGING_ASMUO (jarKodas, data)
-    Staging -->> Service: Return inserted record with fetchedAt timestamp
-    Staging ->> Staging: Deprecate old data for jarKodas (if exists)
-    Service ->> API: Fetch additional related data
-    API -->> Service: Return additional related data
-    Service ->> Staging: Insert into STAGING_*
-    Staging -->> Service: Return inserted record with fetchedAt timestamp
-    Service ->> GUI: Return combined entity data for response    
+    participant Graph as Graph Store<br/>(Entity + Relationship)
+    Note over GUI: User clicks an Organization node (jarKodas)
+    GUI ->> Service: GET /api/v1/graph/expand/{jarKodas}
+%% Step 1: Check staging freshness
+    Service ->> Staging: SELECT * FROM StagingAsmuo WHERE jarKodas = ?
+    alt Staging row missing or stale (fetchedAt > TTL)
+        Service ->> API: GET /asmuo/{jarKodas}.json
+        API -->> Service: Raw asmuo JSON
+        Service ->> Staging: UPSERT StagingAsmuo (jarKodas, data, fetchedAt=now)
+    else Staging data is fresh
+        Staging -->> Service: Cached asmuo JSON
+    end
+
+%% Step 2: Parse staging → graph store
+    Service ->> Staging: Read StagingAsmuo.data
+    Note over Service: Parse jar → Entity (Org)<br/>Parse pinreg.darbovietes → Entity (Person) + Relationship<br/>Parse pinreg.sutuoktinioDarbovietes → Entity × 2 + Relationships<br/>Parse pinreg.rysiaiSuJa → Entity (Person) + Relationship
+    Service ->> Graph: UPSERT Entity rows (org + persons)
+    Service ->> Graph: UPSERT Relationship rows (employment, director, spouse, ...)
+%% Step 3: Discover and fetch related contracts
+    Note over Service: Discover contract partner jarKodas<br/>from sutartys.topPirkejai / topTiekejai
+    loop For each discovered contract partner (if not in staging)
+        Service ->> API: GET /asmuo/{partnerJarKodas}.json
+        API -->> Service: Raw partner JSON
+        Service ->> Staging: UPSERT StagingAsmuo
+        Service ->> Graph: UPSERT partner Entity + Relationships
+    end
+
+%% Step 4: Query and return expanded subgraph
+    Service ->> Graph: SELECT entities + relationships WHERE sourceId=? OR targetId=?
+    Graph -->> Service: Expanded subgraph rows
+    Service ->> GUI: Return Cytoscape.js elements { nodes, edges, meta }
+    Note over GUI: Cytoscape renders new nodes + edges around clicked node
 ```
+
+#### Freshness TTL Strategy
+
+| Staging Table     | TTL      | Rationale                                                |
+|-------------------|----------|----------------------------------------------------------|
+| `StagingAsmuo`    | 24 hours | Employee/governance data changes infrequently            |
+| `StagingSutartis` | 7 days   | Contract data is essentially immutable after publication |
+| `StagingPirkimas` | 24 hours | Active tenders may update (new bids, status changes)     |
 
 ### Staging Storage Schema
 
-```mermaid
-erDiagram
-    STAGING_ASMUO {
-        string jarKodas PK
-        date deprecatedAt
-        date fetchedAt
-        json data
-    }
-    STAGING_SUTARTIS {
-        string sutartiesUnikalusID PK
-        date deprecatedAt
-        date fetchedAt
-        json data
-    }
-    STAGING_PIRKIMAS {
-        string pirkimoId PK
-        date deprecatedAt
-        date fetchedAt
-        json data
-    }
+```prisma
+model StagingAsmuo {
+  jarKodas     String    @id
+  data         Json      
+  fetchedAt    DateTime  @default(now())
+  deprecatedAt DateTime? 
+}
+
+model StagingSutartis {
+  sutartiesUnikalusID String    @id
+  data                Json      
+  fetchedAt           DateTime  @default(now())
+  deprecatedAt        DateTime? 
+}
+
+model StagingPirkimas {
+  pirkimoId    String    @id
+  data         Json      
+  fetchedAt    DateTime  @default(now())
+  deprecatedAt DateTime? 
+}
 ```
 
 ## Components
@@ -420,8 +451,8 @@ risk-intelligence/
 ├── src/
 │   ├── app/                     # App Router (Next.js Entry)
 │   │   ├── api/                 # Stateless API Route Handlers
-│   │   │   ├── entities/        # [GET] 360 View / Network
-│   │   │   └── risk/            # [GET] Risk explanations
+│   │   │   ├── v1/graph/        # [GET] /expand/{entityId} — graph expansion
+│   │   │   └── v1/entity/       # [GET] /{entityId} — 360 detail view
 │   │   ├── layout.tsx           # Global Shell & Theme Provider
 │   │   ├── page.tsx             # SINGLE UI ENTRY POINT — manages hash routing
 │   │   └── globals.css          # Global Styles
@@ -442,14 +473,44 @@ risk-intelligence/
 
 ## API Design
 
-### Core endpoints
+### Core Endpoints
 
 ```
-GET  /api/v1/entities/root?yearFrom=2020&yearTo=2024&minValue=100000
-     → TBC
+GET  /api/v1/graph/expand/{entityId}?depth=1&yearFrom=&yearTo=&minValue=
+GET  /api/v1/entity/{entityId}
 ```
 
-### Graph response format (Cytoscape.js-compatible)
+#### `GET /api/v1/graph/expand/{entityId}`
+
+**Purpose:** Expand the graph around a given entity. This is the primary endpoint powering both the initial page load
+and every subsequent node-click expansion.
+
+**Behaviour:**
+
+1. Ensure staging data is fresh (fetch from viespirkiai if stale/missing — see Staging Population Flow)
+2. Parse staging JSON → Entity + Relationship tables (idempotent upserts)
+3. Query the graph store for the 1-hop neighbourhood of `entityId`
+4. Apply filters (yearFrom/yearTo on Relationship.fromDate, minValue on Contract.data.verte)
+5. Return Cytoscape.js-compatible response
+
+**Parameters:**
+
+| Param      | Type  | Default  | Description                                                                     |
+|------------|-------|----------|---------------------------------------------------------------------------------|
+| `entityId` | path  | required | Entity UUID (jarKodas for orgs, deklaracija for persons, pirkimoId for tenders) |
+| `depth`    | query | `1`      | How many hops from the anchor to include (v1: always 1)                         |
+| `yearFrom` | query | —        | Filter relationships starting from this year                                    |
+| `yearTo`   | query | —        | Filter relationships ending before this year                                    |
+| `minValue` | query | —        | Minimum contract value (EUR) for Contract edges                                 |
+
+**Initial page load:** `GET /api/v1/graph/expand/110053842?depth=1`
+
+#### `GET /api/v1/entity/{entityId}`
+
+**Purpose:** Return the full 360-degree detail view for a single entity (metadata, all relationships, summary stats).
+Used when the user clicks a node to see its detail panel.
+
+### Graph Response Format (Cytoscape.js-compatible)
 
 ```json
 {
@@ -459,46 +520,134 @@ GET  /api/v1/entities/root?yearFrom=2020&yearTo=2024&minValue=100000
         "data": {
           "id": "110053842",
           "label": "AB Lietuvos geležinkeliai",
-          "type": ...,
+          "type": "PublicCompany",
           "employees": 122,
           "totalContractValue": 5200000
+        }
+      },
+      {
+        "data": {
+          "id": "026a8bda-cae8-49a8-b812-e1a1b88827d7",
+          "label": "ALEKSANDRAS ZUBRIAKOVAS",
+          "type": "Person"
         }
       }
     ],
     "edges": [
       {
         "data": {
-          ...
+          "id": "rel-026a8bda-110053842-Director",
+          "source": "026a8bda-cae8-49a8-b812-e1a1b88827d7",
+          "target": "110053842",
+          "type": "Director",
+          "label": "Korporatyvinių reikalų direktorius",
+          "fromDate": "2023-09-25"
+        }
+      },
+      {
+        "data": {
+          "id": "rel-2008059225",
+          "source": "302296711",
+          "target": "302444074",
+          "type": "Contract",
+          "label": "1200 EUR",
+          "verte": 1200,
+          "fromDate": "2026-04-12",
+          "tillDate": "2026-07-07"
         }
       }
     ]
   },
   "meta": {
-    "totalNodes": 1,
-    "totalEdges": 1,
-    "queryDepth": 1,
-    "generatedAt": "2026-04-10T12:00:00Z"
+    "anchorId": "110053842",
+    "totalNodes": 2,
+    "totalEdges": 2,
+    "depth": 1,
+    "generatedAt": "2026-04-13T12:00:00Z"
   }
 }
 ```
 
 ---
 
-## 12. Storage Design
+## Storage Design
 
-### 12.1 Key Tables (PostgreSQL / Prisma)
+The system uses a **two-layer storage** architecture:
 
-TBC: need to find the best 360 view representation to return graph details
+| Layer           | Purpose                                                 | Tables                                               | Populated by               |
+|-----------------|---------------------------------------------------------|------------------------------------------------------|----------------------------|
+| **Staging**     | Cache of raw viespirkiai.org JSON responses             | `StagingAsmuo`, `StagingSutartis`, `StagingPirkimas` | Fetch from viespirkiai API |
+| **Graph Store** | Normalized entities and relationships for graph queries | `Entity`, `Relationship`                             | Parsed from staging data   |
+
+Staging is the **raw data cache** — immutable JSON blobs fetched from viespirkiai.org.
+Graph Store is the **query-optimized projection** — normalized rows derived from staging, serving the API.
+
+```mermaid
+flowchart LR
+    V["viespirkiai.org API"] -->|" raw JSON "| S["Staging Tables\n(JSON blobs)"]
+    S -->|" parse & normalize "| G["Graph Store\n(Entity + Relationship)"]
+    G -->|" query "| A["API endpoints\n→ Cytoscape.js"]
+```
+
+### Graph Store Schema (PostgreSQL / Prisma)
 
 ```prisma
+model Entity {
+  id            String    @id // jarKodas | deklaracija UUID | pirkimoId
+  type          String    // PrivateCompany | PublicCompany | Institution | Person | Tender
+  name          String    
+  fromDate      DateTime? 
+  tillDate      DateTime? 
+  dataReference String?   // staging FK (jarKodas, pirkimoId) — null for Person
+  data          Json?     // extra metadata (employees, avgSalary, verte, etc.)
 
-model Entity
-{
-...
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  outgoing Relationship[] @relation("source")
+  incoming Relationship[] @relation("target")
+
+  @@index([type])
 }
 
-model Relationship
-{
-...
+model Relationship {
+  id            String    @id @default(cuid())
+  type          String    // Contract | Employment | Director | Official | Spouse | Shareholder
+  name          String?   // display label (e.g. "Vadovas", "1200 EUR")
+  fromDate      DateTime? 
+  tillDate      DateTime? 
+  dataReference String?   // staging FK (sutartiesUnikalusID) — null for non-Contract
+  data          Json?     // extra metadata (verte, pareigos, etc.)
+
+  sourceId String 
+  targetId String 
+  source   Entity @relation("source", fields: [sourceId], references: [id])
+  target   Entity @relation("target", fields: [targetId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([type, sourceId, targetId, fromDate]) // prevent duplicate edges
+  @@index([sourceId])
+  @@index([targetId])
+  @@index([type])
 }
+```
+
+### Staging → Graph Store Parse Rules
+
+When staging data is parsed into the graph store, the following rules apply:
+
+| Staging Source                                      | → Entity                                   | → Relationship(s)                                                                                                         |
+|-----------------------------------------------------|--------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| `StagingAsmuo.data.jar`                             | `Entity(type=Org*, id=jarKodas)`           | —                                                                                                                         |
+| `StagingAsmuo.data.pinreg.darbovietes[]`            | `Entity(type=Person, id=deklaracija)`      | `Relationship(type=Employment/Director/Official, source=Person, target=Org)`                                              |
+| `StagingAsmuo.data.pinreg.sutuoktinioDarbovietes[]` | `Entity(type=Person)` × 2                  | `Relationship(type=Spouse, source=declarant, target=spouse)` + `Relationship(type=Employment, source=spouse, target=Org)` |
+| `StagingAsmuo.data.pinreg.rysiaiSuJa[]`             | `Entity(type=Person, id=deklaracija)`      | `Relationship(type=Director/Shareholder/Official, source=Person, target=Org)`                                             |
+| `StagingSutartis.data`                              | `Entity(type=Org*)` × 2 (buyer + supplier) | `Relationship(type=Contract, source=buyer, target=supplier)`                                                              |
+| `StagingPirkimas.data`                              | `Entity(type=Tender, id=pirkimoId)`        | — (Tender links to Contracts via Contract.data.pirkimoNumeris)                                                            |
+
+All upserts are **idempotent** — re-parsing the same staging row produces no duplicates (ensured by the unique
+constraint on Relationship and the primary key on Entity).
+
 ```
