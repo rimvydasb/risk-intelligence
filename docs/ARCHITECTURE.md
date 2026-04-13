@@ -95,12 +95,15 @@ interface OrganizationEntity extends TemporalEntity {
 
 /**
  * PersonEntity represents an individual (natural person) in the graph.
- * uuid - pinreg.darbovietes[].uuid
- * name - pinreg.darbovietes[].vardas + pavarde
- * fromDate - earliest known association date (e.g., first contract or relationship)
+ * uuid - pinreg.darbovietes[].deklaracija (declaration UUID, unique per person)
+ * name - pinreg.darbovietes[].vardas + " " + pavarde
+ * fromDate - pinreg.darbovietes[].rysioPradzia (start of relationship with organization)
  *
- * @example: https://viespirkiai.org/asmuo/307562016.json
- * @example: [307562016.json](examples/asmuo/307562016.json)
+ * Note: Same person across multiple orgs will have different deklaracija UUIDs.
+ * Same person at same org may appear multiple times (different roles) with same deklaracija.
+ *
+ * @example: https://viespirkiai.org/asmuo/110053842.json
+ * @example: [110053842.json](examples/asmuo/110053842.json)
  */
 interface PersonEntity extends TemporalEntity {
     data: Record<string, any> // pinreg.darbovietes[].*
@@ -125,7 +128,7 @@ interface TenderEntity extends TemporalEntity {
  *  name - label (CEO, 300 EUR, etc.)
  */
 interface Relationship extends TemporalEntity {
-    type: 'Contract' | 'Ownership' | 'Employment' | 'Spause' | 'Relative' | 'Official' | 'Shareholder' | 'Director' | 'DeclaredInterest' | 'Subcontract' | 'CoBidder';
+    type: 'Contract' | 'Ownership' | 'Employment' | 'Spouse' | 'Relative' | 'Official' | 'Shareholder' | 'Director' | 'DeclaredInterest' | 'Subcontract' | 'CoBidder';
     source: string; // uuid
     target: string; // uuid
     data: Record<string, any>
@@ -150,11 +153,161 @@ interface ContractRelationship extends Relationship {
 - https://viespirkiai.org/asmuo/{jarKodas}.json
 - for scraping GUI: https://viespirkiai.org/juridiniai?search=paslaugos (for example "paslaugos" is a keyword)
 
-**Pirkimas, konkursas (Tenant)**
+**Pirkimas, konkursas (Tender)**
 
 - https://viespirkiai.org/viesiejiPirkimai/{pirkimoId}.json
 - for scraping GUI: https://viespirkiai.org/viesiejiPirkimai?search=paslaugos&sort=paskelbimoData (for example "
   paslaugos" is a keyword)
+
+## Data-to-Entity Mapping
+
+This section documents how graph entities and relationships are derived from viespirkiai.org API responses.
+
+### Mapping Overview
+
+```mermaid
+flowchart LR
+    subgraph asmuo["📄 asmuo / jarKodas .json"]
+        jar["jar.*"]
+        sodra["sodra.*"]
+        pinD["pinreg.darbovietes[]"]
+        pinS["pinreg.sutuoktinio-\nDarbovietes[]"]
+        pinR["pinreg.rysiaiSuJa[]"]
+        topP["sutartys.topPirkejai[]"]
+        topT["sutartys.topTiekejai[]"]
+    end
+
+    subgraph sutartis["📄 sutartis / sutartiesUnikalusID .json"]
+        sRoot["root fields"]
+    end
+
+    subgraph pirkimas["📄 viesiejiPirkimai / pirkimoId .json"]
+        pRoot["root fields"]
+    end
+
+    subgraph nodes["Nodes"]
+        Org["OrganizationEntity"]
+        Per["PersonEntity"]
+        Ten["TenderEntity"]
+    end
+
+    subgraph edges["Edges"]
+        Employment
+        Director
+        Official
+        Spouse
+        Shareholder
+        Contract
+    end
+
+    jar -->|" jarKodas, pavadinimas "| Org
+    sodra -.->|" enriches: employees count "| Org
+    pinD -->|" vardas, pavarde "| Per
+    pinD -->|" pareiguTipas = Darbuotojas "| Employment
+    pinD -->|" pareiguTipas = Vadovas "| Director
+    pinD -->|" pareiguTipas = Pirkimo iniciatorius "| Official
+    pinS -->|" sutuoktinioVardas/Pavarde "| Per
+    pinS -->|" declarant ↔ spouse "| Spouse
+    pinS -->|" spouse works at org "| Employment
+    pinR -->|" vardas, pavarde "| Per
+    pinR -->|" rysys = Valdybos narys "| Director
+    pinR -->|" rysys = Akcininkas "| Shareholder
+    topP -->|" jarKodas → discover orgs "| Org
+    topT -->|" jarKodas → discover orgs "| Org
+    sRoot -->|" perkOrg + tiekejas codes "| Org
+    sRoot -->|" buyer → supplier "| Contract
+    sRoot -->|" pirkimoNumeris "| Ten
+    pRoot -->|" pirkimoId, pavadinimas "| Ten
+    pRoot -->|" jarKodas vykdytojas "| Org
+```
+
+### asmuo/{jarKodas}.json → Entities
+
+The `asmuo` endpoint is the **richest source** for graph construction. A single fetch yields the organization itself,
+all declared employees, their spouses, board members, and summary of contract partners.
+
+**@example:** [110053842.json](examples/asmuo/110053842.json) (AB "Lietuvos geležinkeliai" — trimmed)
+
+| API Section                       | Produces                        | Entity/Edge Type                             | Key Fields                                                                                                  |
+|-----------------------------------|---------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| `jar`                             | **OrganizationEntity**          | PrivateCompany / PublicCompany / Institution | `jarKodas` → uuid, `pavadinimas` → name, `registravimoData` → fromDate, `formosKodas` → type classification |
+| `sodra`                           | enriches **OrganizationEntity** | —                                            | `bendrasDraustujuSkaicius` → employee count, `bendrasVidutinisAtlyginimas` → avg salary                     |
+| `pinreg.darbovietes[]`            | **PersonEntity**                | Person                                       | `deklaracija` → uuid, `vardas + pavarde` → name, `rysioPradzia` → fromDate                                  |
+| `pinreg.darbovietes[]`            | **Relationship**                | Employment / Director / Official             | `pareiguTipasPavadinimas` determines type (see mapping below), source=Person, target=Organization           |
+| `pinreg.sutuoktinioDarbovietes[]` | **PersonEntity** × 2            | Person (declarant + spouse)                  | Declarant: `deklaruojancioVardas/Pavarde`, Spouse: `sutuoktinioVardas/Pavarde`                              |
+| `pinreg.sutuoktinioDarbovietes[]` | **Relationship**                | Spouse                                       | source=declarant Person, target=spouse Person                                                               |
+| `pinreg.sutuoktinioDarbovietes[]` | **Relationship**                | Employment                                   | source=spouse Person, target=Organization                                                                   |
+| `pinreg.rysiaiSuJa[]`             | **PersonEntity**                | Person                                       | `deklaracija` → uuid, `vardas + pavarde` → name, `rysioPradzia` → fromDate                                  |
+| `pinreg.rysiaiSuJa[]`             | **Relationship**                | Director / Shareholder / Official            | `rysioPobudzioPavadinimas` determines type (see mapping below), source=Person, target=Organization          |
+| `sutartys.topPirkejai[]`          | **OrganizationEntity** (ref)    | discovered via jarKodas                      | `jarKodas`, `pavadinimas` — organizations that buy from this one                                            |
+| `sutartys.topTiekejai[]`          | **OrganizationEntity** (ref)    | discovered via jarKodas                      | `jarKodas`, `pavadinimas` — organizations that supply to this one                                           |
+
+#### pareiguTipasPavadinimas → Relationship Type
+
+| pareiguTipasPavadinimas      | → Relationship Type | Notes                                                |
+|------------------------------|---------------------|------------------------------------------------------|
+| `Vadovas ar jo pavaduotojas` | **Director**        | CEO / Deputy — high risk for nepotism                |
+| `Darbuotojas`                | **Employment**      | Regular employee                                     |
+| `Pirkimo iniciatorius`       | **Official**        | Procurement initiator — key for conflict of interest |
+| `Ekspertas`                  | **Official**        | Expert role in procurement                           |
+| _other_                      | **Official**        | Default for unrecognized role types                  |
+
+#### rysioPobudzioPavadinimas → Relationship Type
+
+| rysioPobudzioPavadinimas  | → Relationship Type | Notes                                     |
+|---------------------------|---------------------|-------------------------------------------|
+| `Valdybos narys`          | **Director**        | Board member                              |
+| `Akcininkas`              | **Shareholder**     | Shareholder                               |
+| `Stebėtojų tarybos narys` | **Director**        | Supervisory board member                  |
+| _other_                   | **Official**        | Default for unrecognized governance roles |
+
+### sutartis/{sutartiesUnikalusID}.json → Entities
+
+The `sutartis` endpoint provides individual contract details — the primary source for **ContractRelationship** edges.
+
+**@example:** [2008059225.json](examples/sutartis/2008059225.json)
+
+| API Field                                                     | Produces                                         | Entity/Edge Type             | Mapping                                                                                                                           |
+|---------------------------------------------------------------|--------------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `perkanciosiosOrganizacijosKodas` + `perkanciojiOrganizacija` | **OrganizationEntity** (buyer)                   | Institution or PublicCompany | `kodas` → uuid, `pavadinimas` → name                                                                                              |
+| `tiekejoKodas` + `tiekejas`                                   | **OrganizationEntity** (supplier)                | PrivateCompany               | `kodas` → uuid, `pavadinimas` → name                                                                                              |
+| root                                                          | **ContractRelationship**                         | Contract                     | `sutartiesUnikalusID` → uuid, `pavadinimas` → name, `paskelbimoData` → fromDate, `galiojimoData` → tillDate, `verte` → data.verte |
+| `pirkimoNumeris`                                              | **TenderEntity** (ref)                           | links Contract → Tender      | may be `null` for MVP contracts                                                                                                   |
+| `papildomiTiekejai[]` / `papildomiTiekejaiKodai[]`            | additional **OrganizationEntity** + **Contract** | CoBidder                     | joint bids (v2)                                                                                                                   |
+
+**Contract edge direction:** source = buyer (perkančioji organizacija), target = supplier (tiekėjas).
+
+### viesiejiPirkimai/{pirkimoId}.json → Entities
+
+The `viesiejiPirkimai` endpoint provides tender/competition details. Tenders group related contracts.
+
+**@example:** [7346201.json](examples/viesiejiPirkimai/7346201.json)
+
+| API Field                                         | Produces                                  | Entity/Edge Type         | Mapping                                                                                                        |
+|---------------------------------------------------|-------------------------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------|
+| root                                              | **TenderEntity**                          | Tender                   | `pirkimoId` → uuid, `pavadinimas` → name, `paskelbimoData` → fromDate, `pasiulymuPateikimoTerminas` → tillDate |
+| `jarKodas` + `vykdytojoPavadinimas`               | **OrganizationEntity** (procuring entity) | Institution              | `jarKodas` → uuid, `pavadinimas` → name                                                                        |
+| `sutartys[]`                                      | **ContractRelationship** (ref)            | links Tender → Contracts | contract IDs under this tender                                                                                 |
+| `numatomaBendraPirkimoVerte` / `numatomaVerteEUR` | enriches **TenderEntity**                 | —                        | estimated total value                                                                                          |
+
+### Entity Discovery Chain
+
+The graph is populated progressively. Starting from a single `asmuo`, the system discovers related entities:
+
+```mermaid
+flowchart TD
+    A["1. Fetch asmuo/{jarKodas}"] --> B["OrganizationEntity\n+ PersonEntities\n+ Relationship edges"]
+    B --> C{"Discover related\norganization jarKodas\nfrom sutartys.topPirkejai\nand topTiekejai"}
+    C --> D["2. Fetch asmuo/{relatedJarKodas}\nfor each discovered org"]
+    D --> E["Expand graph with\nnew orgs + people + edges"]
+    B --> F{"Discover contract IDs\n(via search or\npirkimas.sutartys)"}
+    F --> G["3. Fetch sutartis/{id}\nfor individual contracts"]
+    G --> H["Add Contract edges\nwith value + dates"]
+    H --> I{"pirkimoNumeris\nnot null?"}
+    I -->|yes| J["4. Fetch viesiejiPirkimai/{id}"]
+    J --> K["Add TenderEntity\n+ link to contracts"]
+    I -->|no| L["Skip tender\n(MVP contract)"]
+```
 
 ## Staging Storage
 
@@ -237,6 +390,7 @@ TBC
 ### Filter Component
 
 Top App Bar Component with:
+
 - [ ] Search input (entity name or ID)
 - [ ] Year range slider (yearFrom, yearTo)
 - [ ] Contract value slider (minValue)
@@ -338,11 +492,13 @@ TBC: need to find the best 360 view representation to return graph details
 
 ```prisma
 
-model Entity {
-  ...
+model Entity
+{
+...
 }
 
-model Relationship {
-  ...
+model Relationship
+{
+...
 }
 ```

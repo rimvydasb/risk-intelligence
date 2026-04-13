@@ -1,0 +1,587 @@
+{
+  "jar": {
+    "id": 32,
+    "jarKodas": 110053842,
+    "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+    "adresas": "Vilnius, Geležinkelio g. 16, LT-02100",
+    "registravimoData": "1991-12-24",
+    "formosKodas": 320,
+    "formosPavadinimas": "Akcinė bendrovė",
+    "statusoKodas": 0,
+    "statusoPavadinimas": "Teisinis stat neįregistruotas",
+    "statusasNuo": "2021-12-16",
+    "duomenuData": "2026-01-27",
+    "location": [
+      54.670224595,
+      25.284323282
+    ],
+    "pavadinimasBase": "Lietuvos geležinkeliai",
+    "locationState": 1,
+    "locationVersion": 1,
+    "jarId": "6c7371b7-2800-4eaf-9542-b2a296fb3f7e"
+  },
+  "sodra": {
+    "kodas": 63323,
+    "jarKodas": "110053842",
+    "pavadinimas": "AKCINĖ BENDROVĖ \"LIETUVOS GELEŽINKELIAI\"",
+    "savivaldybe": "Vilniaus m. sav.",
+    "ekonominesVeiklosKodas": "701000",
+    "ekonominesVeiklosPavadinimas": "Pagrindinių buveinių veikla",
+    "vidutinisAtlyginimas": 5066.36,
+    "vidutinisAtlyginimas2": 4020.75,
+    "draustieji": 117,
+    "draustieji2": 5,
+    "imokuSuma": 141131.28,
+    "data": "2026-02",
+    "bendrasDraustujuSkaicius": 122,
+    "bendrasVidutinisAtlyginimas": 5023.507131147541,
+    "atlyginimuIslaidos": 612867.87,
+    "duomenys": [
+      {
+        "data": "2018-01",
+        "vidutinisAtlyginimas": 1171.01,
+        "draustieji": 7375,
+        "vidutinisAtlyginimas2": null,
+        "draustieji2": 3,
+        "imokuSuma": 3557691.52
+      },
+      {
+        "data": "2018-02",
+        "vidutinisAtlyginimas": 1121.7,
+        "draustieji": 7231,
+        "vidutinisAtlyginimas2": null,
+        "draustieji2": 3,
+        "imokuSuma": 3341188.55
+      },
+      {
+        "_note": "... truncated, 97 total records ..."
+      }
+    ],
+    "turejoDraustuju": true,
+    "turejoDraustuju2": true,
+    "turejoAtlyginimu": true,
+    "turejoAtlyginimu2": true
+  },
+  "regitra": {
+    "limit": 5,
+    "rows": 266,
+    "transportoPriemones": [
+      {
+        "_note": "... 5 items shown, 266 total ..."
+      }
+    ]
+  },
+  "teismoNuosprendziai": {
+    "limit": 10,
+    "rows": 853,
+    "nuosprendziai": [
+      {
+        "_note": "... 10 items shown, 853 total ..."
+      }
+    ]
+  },
+  "sutartys": {
+    "pirkimaiKasMetus": [
+      {
+        "year": 2012,
+        "total": 7171298.63
+      },
+      {
+        "year": 2013,
+        "total": 503336510.85
+      },
+      {
+        "year": 2014,
+        "total": 7657337.71
+      },
+      {
+        "year": 2015,
+        "total": 251979049.37
+      },
+      {
+        "year": 2016,
+        "total": 110868123.59
+      },
+      {
+        "year": 2017,
+        "total": 87070638.24
+      },
+      {
+        "year": 2018,
+        "total": 329247255.81
+      },
+      {
+        "year": 2019,
+        "total": 1605118057.02
+      },
+      {
+        "year": 2020,
+        "total": 345184002.21
+      },
+      {
+        "year": 2021,
+        "total": 168837441.77
+      },
+      {
+        "year": 2022,
+        "total": 116951313.56
+      },
+      {
+        "year": 2023,
+        "total": 61463434.18
+      },
+      {
+        "year": 2024,
+        "total": 137368761.9
+      },
+      {
+        "year": 2025,
+        "total": 142040609.25
+      },
+      {
+        "year": 2026,
+        "total": 827132.37
+      }
+    ],
+    "tiekimaiKasMetus": [
+      {
+        "year": 2015,
+        "total": 14197.42
+      },
+      {
+        "year": 2016,
+        "total": 120768.09
+      },
+      {
+        "year": 2017,
+        "total": 4489.08
+      },
+      {
+        "year": 2018,
+        "total": 164363.76
+      },
+      {
+        "year": 2019,
+        "total": 22776432.03
+      },
+      {
+        "year": 2020,
+        "total": 443150.4
+      },
+      {
+        "year": 2021,
+        "total": 103205867.51
+      },
+      {
+        "year": 2022,
+        "total": 232575495.94
+      },
+      {
+        "year": 2023,
+        "total": 115556313.49
+      },
+      {
+        "year": 2024,
+        "total": 184299328.55
+      },
+      {
+        "year": 2025,
+        "total": 36992919.04
+      },
+      {
+        "year": 2026,
+        "total": 18615
+      }
+    ],
+    "topPirkejai": [
+      {
+        "jarKodas": "304977594",
+        "pavadinimas": "AB \"LTG Cargo\"",
+        "total": 432081948.06,
+        "count": 79
+      },
+      {
+        "jarKodas": "305202934",
+        "pavadinimas": "AB \"LTG Infra\"",
+        "total": 160376788.18,
+        "count": 32
+      },
+      {
+        "jarKodas": "305052228",
+        "pavadinimas": "UAB \"LTG Link\"",
+        "total": 92729374.73,
+        "count": 66
+      },
+      {
+        "jarKodas": "307037118",
+        "pavadinimas": "UAB \"LTG Kompetencijų centras\"",
+        "total": 9111177.79,
+        "count": 3
+      },
+      {
+        "jarKodas": "181628163",
+        "pavadinimas": "Uždaroji akcinė bendrovė Geležinkelio tiesimo centras",
+        "total": 1330847,
+        "count": 2
+      },
+      {
+        "jarKodas": "126280418",
+        "pavadinimas": "Nežinomas",
+        "total": 120157.84,
+        "count": 3
+      },
+      {
+        "jarKodas": "240329870",
+        "pavadinimas": "Akcinė bendrovė Klaipėdos valstybinio jūrų uosto direkcija",
+        "total": 110313.85,
+        "count": 4
+      },
+      {
+        "jarKodas": "188754410",
+        "pavadinimas": "Judėjimo organizavimo tarnyba",
+        "total": 74264.56,
+        "count": 2
+      },
+      {
+        "jarKodas": "111760831",
+        "pavadinimas": "UAB \"VILNIAUS ENERGIJA\"",
+        "total": 69280.42,
+        "count": 4
+      },
+      {
+        "jarKodas": "110818317",
+        "pavadinimas": "Uždaroji akcinė bendrovė \"LITESKO\"",
+        "total": 65432.88,
+        "count": 3
+      }
+    ],
+    "topTiekejai": [
+      {
+        "jarKodas": "166451720",
+        "pavadinimas": "AB \"ORLEN Lietuva\"",
+        "total": 1059193947.32,
+        "count": 24
+      },
+      {
+        "jarKodas": "0",
+        "pavadinimas": "Nežinomas",
+        "total": 717532216.83,
+        "count": 83
+      },
+      {
+        "jarKodas": "803",
+        "pavadinimas": "Nežinomas",
+        "total": 641148918.86,
+        "count": 252
+      },
+      {
+        "jarKodas": "181628163",
+        "pavadinimas": "Uždaroji akcinė bendrovė Geležinkelio tiesimo centras",
+        "total": 164681597.93,
+        "count": 59
+      },
+      {
+        "jarKodas": "147710353",
+        "pavadinimas": "AB \"HISK\"",
+        "total": 154521164.01,
+        "count": 6
+      },
+      {
+        "jarKodas": "110709524",
+        "pavadinimas": "voestalpine Railway Systems Lietuva, UAB",
+        "total": 84350867.24,
+        "count": 42
+      },
+      {
+        "jarKodas": "125167563",
+        "pavadinimas": "UAB \"CORPUS A\"",
+        "total": 62224848.78,
+        "count": 29
+      },
+      {
+        "jarKodas": "122755433",
+        "pavadinimas": "Uždaroji akcinė bendrovė \"EKSKOMISARŲ BIURAS\"",
+        "total": 59870432.16,
+        "count": 3
+      },
+      {
+        "jarKodas": "133729589",
+        "pavadinimas": "Akcinė bendrovė \"Kauno tiltai\"",
+        "total": 57165677.22,
+        "count": 2
+      },
+      {
+        "jarKodas": "163281914",
+        "pavadinimas": "Uždaroji akcinė bendrovė \"HIDROSTATYBA\"",
+        "total": 37399242.79,
+        "count": 6
+      }
+    ]
+  },
+  "finansai": {
+    "_note": "balansai, pelnasNuostoliai, ataskaitos - detailed financial data"
+  },
+  "istatinisKapitalas": {
+    "data": "2019-07-25",
+    "reiksme": 1059282833.04,
+    "valiuta": "EUR",
+    "duomenys": [
+      {
+        "data": "2019-07-25",
+        "reiksme": 1059282833.04,
+        "valiuta": "EUR"
+      }
+    ]
+  },
+  "darboSkelbimai": {
+    "limit": 5,
+    "rows": 2403,
+    "skelbimai": [
+      {
+        "_note": "... job listings ..."
+      }
+    ]
+  },
+  "pinreg": {
+    "darbovietes": [
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "026a8bda-cae8-49a8-b812-e1a1b88827d7",
+        "vardas": "ALEKSANDRAS",
+        "pavarde": "ZUBRIAKOVAS",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2023-09-25",
+        "darbovietesTipas": "STANDARTINE",
+        "duomenuSaltiniai": [],
+        "privaluDeklaruoti": true,
+        "yraJuridinisAsmuo": true,
+        "registruotaLietuvoje": true,
+        "uzpildytaAutomatiskai": true,
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "pareigos": "Korporatyvinių reikalų direktorius",
+        "teisejoKodas": null,
+        "pareiguTipasPavadinimas": "Vadovas ar jo pavaduotojas",
+        "pateikimoData": "2026-02-23 09:26:42.285612",
+        "uuid": "026a8bda-cae8-49a8-b812-e1a1b88827d7",
+        "asmuo": "A*********s Z*********s"
+      },
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "026a8bda-cae8-49a8-b812-e1a1b88827d7",
+        "vardas": "ALEKSANDRAS",
+        "pavarde": "ZUBRIAKOVAS",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2023-09-25",
+        "darbovietesTipas": "EKSPERTO",
+        "duomenuSaltiniai": [],
+        "privaluDeklaruoti": false,
+        "yraJuridinisAsmuo": true,
+        "registruotaLietuvoje": null,
+        "uzpildytaAutomatiskai": false,
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "pareigos": null,
+        "teisejoKodas": null,
+        "pareiguTipasPavadinimas": "Pirkimo iniciatorius",
+        "pateikimoData": "2026-02-23 09:26:42.285612",
+        "uuid": "026a8bda-cae8-49a8-b812-e1a1b88827d7",
+        "asmuo": "A*********s Z*********s"
+      },
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "9549641c-523f-4097-8ea6-825bb9015a1e",
+        "vardas": "RŪTA",
+        "pavarde": "KOMSKIENĖ",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2023-01-02",
+        "darbovietesTipas": "STANDARTINE",
+        "duomenuSaltiniai": [],
+        "privaluDeklaruoti": false,
+        "yraJuridinisAsmuo": true,
+        "registruotaLietuvoje": true,
+        "uzpildytaAutomatiskai": true,
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "pareigos": "Projektų vadovas",
+        "teisejoKodas": null,
+        "pareiguTipasPavadinimas": "Darbuotojas",
+        "pateikimoData": "2026-02-19 16:26:57.934244",
+        "uuid": "9549641c-523f-4097-8ea6-825bb9015a1e",
+        "asmuo": "R**a K*******ė"
+      }
+    ],
+    "sutuoktinioDarbovietes": [
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "398d37db-6b7d-4f1f-98be-89fae285340b",
+        "deklaruojancioVardas": "LINAS",
+        "deklaruojancioPavarde": "KAVALIOVAS",
+        "sutuoktinioVardas": "VILMA",
+        "sutuoktinioPavarde": "KAVALIOVA",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2025-04-28",
+        "darbovietesTipas": "SUTUOKTINIO",
+        "duomenuSaltiniai": [],
+        "privaluDeklaruoti": false,
+        "yraJuridinisAsmuo": true,
+        "registruotaLietuvoje": true,
+        "uzpildytaAutomatiskai": true,
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "pareigos": "Projekto vadovas",
+        "teisejoKodas": null,
+        "pareiguTipasPavadinimas": "Darbuotojas",
+        "pateikimoData": "2026-02-02 10:26:37.472224",
+        "uuid": "398d37db-6b7d-4f1f-98be-89fae285340b",
+        "asmuo": "L***s K********s",
+        "sutuoktinis": "V***a K*******a"
+      },
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "c24d3c5a-249c-42cb-9979-fb476810afa8",
+        "deklaruojancioVardas": "EGLĖ",
+        "deklaruojancioPavarde": "NAVICKĖ",
+        "sutuoktinioVardas": "ANDRIUS",
+        "sutuoktinioPavarde": "NAVICKAS",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2021-04-01",
+        "darbovietesTipas": "SUTUOKTINIO",
+        "duomenuSaltiniai": [],
+        "privaluDeklaruoti": false,
+        "yraJuridinisAsmuo": true,
+        "registruotaLietuvoje": true,
+        "uzpildytaAutomatiskai": true,
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "pareigos": "Projektų vadovas",
+        "teisejoKodas": null,
+        "pareiguTipasPavadinimas": "Darbuotojas",
+        "pateikimoData": "2026-01-26 15:24:03.604009",
+        "uuid": "c24d3c5a-249c-42cb-9979-fb476810afa8",
+        "asmuo": "E**ė N*****ė",
+        "sutuoktinis": "A*****s N******s"
+      },
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "809a82fc-ed2f-4b29-b3bd-892877906c89",
+        "deklaruojancioVardas": "SILVIJA",
+        "deklaruojancioPavarde": "GRABAUSKIENĖ",
+        "sutuoktinioVardas": "GIEDRIUS",
+        "sutuoktinioPavarde": "GRABAUSKAS",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2008-08-04",
+        "darbovietesTipas": "SUTUOKTINIO",
+        "duomenuSaltiniai": [],
+        "privaluDeklaruoti": false,
+        "yraJuridinisAsmuo": true,
+        "registruotaLietuvoje": true,
+        "uzpildytaAutomatiskai": true,
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "pareigos": "Techninės plėtros vadovas",
+        "teisejoKodas": null,
+        "pareiguTipasPavadinimas": "Darbuotojas",
+        "pateikimoData": "2026-01-06 08:19:20.95897",
+        "uuid": "809a82fc-ed2f-4b29-b3bd-892877906c89",
+        "asmuo": "S*****a G**********ė",
+        "sutuoktinis": "G******s G********s"
+      }
+    ],
+    "rysiaiSuJa": [
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "13a54bfa-1b88-48d5-9df6-a0e73a5acb76",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2025-12-17",
+        "rysioPabaiga": null,
+        "duomenuSaltinis": null,
+        "registruotaLietuvoje": true,
+        "jaTeisinesFormosKodas": "320",
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "uzpildytaAutomatiskai": true,
+        "kienoRysys": "ASMENINIS",
+        "pastabos": null,
+        "rysioPobudzioPavadinimas": "Valdybos narys",
+        "dalyvavimoVpInformacija": null,
+        "dalyvaujaViesuosePirkimuose": false,
+        "pateikimoData": "2026-01-14 14:34:06.786005",
+        "vardas": "AURIMAS TOMAS",
+        "pavarde": "STAŠKEVIČIUS",
+        "uuid": "13a54bfa-1b88-48d5-9df6-a0e73a5acb76",
+        "asmuo": "A*****s T***s S**********s"
+      },
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "9bf3bd8b-62ea-496b-a2ef-1d2409a97346",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2025-12-17",
+        "rysioPabaiga": null,
+        "duomenuSaltinis": null,
+        "registruotaLietuvoje": true,
+        "jaTeisinesFormosKodas": "320",
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "uzpildytaAutomatiskai": false,
+        "kienoRysys": "ASMENINIS",
+        "pastabos": null,
+        "rysioPobudzioPavadinimas": "Valdybos narys",
+        "dalyvavimoVpInformacija": null,
+        "dalyvaujaViesuosePirkimuose": false,
+        "pateikimoData": "2026-01-02 17:20:03.57208",
+        "vardas": "ROBERTAS",
+        "pavarde": "VYŠNIAUSKAS",
+        "uuid": "9bf3bd8b-62ea-496b-a2ef-1d2409a97346",
+        "asmuo": "R******s V*********s"
+      },
+      {
+        "jarKodas": "110053842",
+        "deklaracija": "57548262-e6f9-4c4e-8bf1-1470d74a8494",
+        "pavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "rysioPradzia": "2025-07-21",
+        "rysioPabaiga": null,
+        "duomenuSaltinis": null,
+        "registruotaLietuvoje": true,
+        "jaTeisinesFormosKodas": "320",
+        "jaTeisinesFormosPavadinimas": "Akcinė bendrovė",
+        "uzpildytaAutomatiskai": true,
+        "kienoRysys": "ASMENINIS",
+        "pastabos": null,
+        "rysioPobudzioPavadinimas": "Valdybos narys",
+        "dalyvavimoVpInformacija": null,
+        "dalyvaujaViesuosePirkimuose": false,
+        "pateikimoData": "2025-11-13 22:12:26.542714",
+        "vardas": "TOMAS",
+        "pavarde": "ZDANAVIČIUS",
+        "uuid": "57548262-e6f9-4c4e-8bf1-1470d74a8494",
+        "asmuo": "T***s Z*********s"
+      }
+    ],
+    "counts": {
+      "darbovietes": 909,
+      "sutuoktiniuDarbovietes": 91,
+      "rysiaiSuJa": 17
+    },
+    "total": 1017,
+    "rows": 9,
+    "limit": 3
+  },
+  "nepatikimi": [],
+  "melagingi": [],
+  "jadis": {},
+  "rcPranesimai": {
+    "limit": 3,
+    "rows": 123,
+    "pranesimai": [
+      {
+        "leidinioOid": "333669",
+        "title": "Registro tvarkytojo skelbimai",
+        "subtitle": "Įregistruoti juridinių asmenų duomenų ar informacijos pakeitimai",
+        "jarPavadinimas": "Akcinė bendrovė \"Lietuvos geležinkeliai\"",
+        "jarKodas": "110053842",
+        "teisineForma": "Akcinė bendrovė",
+        "teisinisStatusas": "Teisinis statusas neįregistruotas.",
+        "buveinesAdresas": "Vilnius, Geležinkelio g. 16, LT-02100",
+        "pranesimoNr": "7427458",
+        "text": "Pakeitimų įregistravimo data: 2026-04-01\nPakeisti duomenys: valdybos pirmininko.\nDokumentai:\nPrašymas\nregistruoti\nJuridinių\nasmenų\nregistre\n(2026-03-02);\nValdybos\nposėdžio\nprotokolo\nišrašas\n(2026-03-02); Įgaliojimas (2026-03-02).",
+        "leidinioLink": "https://www.registrucentras.lt/jar/infleid/download.do?oid=333669",
+        "leidinioData": "2026-04-02",
+        "leidinioAtnaujinimas": null,
+        "leidinioNumeris": "2026-092"
+      }
+    ]
+  }
+}
