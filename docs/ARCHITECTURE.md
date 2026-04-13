@@ -438,21 +438,47 @@ elements for one expanded org + its neighbours. The client **merges** new elemen
 | Spouse      | Person → Person             | `pinreg.sutuoktinioDarbovietes[]`                            | dotted       |
 | Contract    | Organization → Organization | `sutartys.topPirkejai[]` / `topTiekejai[]` (aggregate in v1) | solid        |
 
-### Filter Component
+### Filter Component (`GraphToolbar`)
 
-Top App Bar Component with:
+MUI `AppBar` + `Toolbar` pinned to the top of the graph canvas. Contains:
 
-- [ ] Search input (entity name or ID)
-- [ ] Year range slider (yearFrom, yearTo)
-- [ ] Contract value slider (minValue)
+- **Search** `Autocomplete` — scans in-memory graph nodes by label; selecting a result centres +
+  highlights the node on the canvas. `placeholder="Search Company or Person..."`
+- **Year-from / Year-to** `Select` dropdowns — options 2010 → current year.
+  `data-testid="filter-year-from"` / `data-testid="filter-year-to"`.
+- **Min contract value** `TextField` (number, EUR). `data-testid="filter-min-value"`.
+- **Apply** `Button` (`data-testid="filter-apply"`) — encodes active filter state in the URL hash
+  query string and re-fetches the current anchor with the new filters.
+- **Reset** `Button` (`data-testid="filter-reset"`) — only visible when non-default filters are
+  active. Clears state and removes itself.
 
-### Node Details Component
+Filter state is encoded in the hash fragment: `#/?yearFrom=2022&yearTo=2022&minContractValue=100000`.
 
-TBC
+### Node Details Component (`NodeSidebar`)
+
+MUI `Drawer` (`anchor="right"`, `variant="persistent"`, width 300px) that slides in when a node
+is clicked. Sections:
+
+- **Header:** entity label, type badge `Chip`, close icon button
+  (`data-testid="close-sidebar"`). Section heading `"Node Details"`.
+- **Metadata:** table of all available `nodeData` fields — `type`, `expanded`, `employees`,
+  `avgSalary`, `contractTotal`, `contractCount`, dates.
+- **Risk Profile:** placeholder section (heading `"Risk Profile"`) reserved for future risk
+  scoring. Shows `"—"` for all scores in v1.
+- **"View Full Profile"** `Button` — navigates to `#/entities/{entityId}` where the full
+  360° entity profile is rendered.
 
 ### Edge Details Component
 
-TBC
+In v1, clicking a Contract edge displays a lightweight tooltip (MUI `Popover`) containing:
+
+- Edge type badge
+- Source → Target org names
+- Total value + contract count
+- Date range (`fromDate` – `tillDate`)
+
+Selecting a Contract edge does **not** open the sidebar — the sidebar is node-only in v1.
+Edge popover is dismissed by clicking elsewhere on the canvas.
 
 ---
 
@@ -487,11 +513,27 @@ risk-intelligence/
 │   │   ├── layout.tsx            # Global Shell & Theme Provider
 │   │   ├── page.tsx              # SINGLE UI ENTRY POINT — manages hash routing
 │   │   └── globals.css           # Global Styles
-│   ├── components/               # Modular Client UI Components
-│   │   ├── graph/                # Cytoscape.js Logic
-│   │   ├── entity/               # EntityDetailView component (rendered via hash route)
-│   │   ├── services/             # Frontend API client wrappers (browser → backend)
-│   │   └── useHashRouter.ts      # Hash-based routing hook (SSR-safe)
+│   ├── components/               # Modular Client UI Components ('use client')
+│   │   ├── Providers.tsx         # ThemeProvider + QueryClientProvider (client shell)
+│   │   ├── graph/                # Cytoscape.js rendering + graph-level state
+│   │   │   ├── types.ts          # GraphState, FilterState
+│   │   │   ├── GraphView.tsx     # Root graph page: toolbar + canvas + sidebar
+│   │   │   ├── CytoscapeCanvas.tsx   # Cytoscape.js mount (SSR-safe, dynamic import)
+│   │   │   ├── NodeSidebar.tsx   # Right panel shown on node click
+│   │   │   ├── toolbar/
+│   │   │   │   └── GraphToolbar.tsx  # Search autocomplete + filter inputs + apply/reset
+│   │   │   └── __tests__/
+│   │   ├── entity/               # Full 360° entity profile page
+│   │   │   ├── types.ts          # EntityDetailViewProps
+│   │   │   ├── EntityDetailView.tsx
+│   │   │   └── __tests__/
+│   │   └── services/             # React Query hooks — browser → backend REST API
+│   │       ├── useExpandOrg.ts   # useQuery for GET /api/v1/graph/expand/{jarKodas}
+│   │       ├── useEntityDetail.ts# useQuery for GET /api/v1/entity/{entityId}
+│   │       └── __tests__/
+│   ├── hooks/
+│   │   ├── useHashRouter.ts      # SSR-safe hash routing hook (read/write)
+│   │   └── __tests__/
 │   ├── lib/                      # React and Front-end free plain Business Logic
 │   │   │
 │   │   │   # Convention: every module owns types.ts + __tests__/
@@ -667,3 +709,12 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 |------------|---------------------------------------------------------------|-------------------------------------|
 | `true`     | Full data loaded (people + edges visible)                     | Click → show detail panel           |
 | `false`    | Stub node (only jarKodas + name + aggregate contract summary) | Click → triggers new `/expand` call |
+
+---
+
+## Delivery Stories
+
+| Story                                                              | Status       | Description                                               |
+|--------------------------------------------------------------------|--------------|-----------------------------------------------------------|
+| [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)        | ✅ Complete  | Prisma schema, staging cache, parsers, REST API, tests    |
+| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md)  | ⏳ Next      | Frontend: Cytoscape graph, hash routing, filters, Cypress |
