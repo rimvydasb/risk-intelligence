@@ -381,12 +381,12 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 
 > **Testable:** `./bin/run-api-tests.sh` exits 0. All three staging tables exist in the test DB.
 
-- [ ] Add `postgres-test` service to `docker-compose.yml` (port 5433, tmpfs storage)
-- [ ] Create `.env.test` and add it to `.gitignore`
-- [ ] Write `prisma/schema.prisma` with `StagingAsmuo`, `StagingSutartis`, `StagingPirkimas`
-- [ ] Run `npx prisma migrate dev --name init` to generate migration
-- [ ] Implement `src/lib/db.ts` — Prisma singleton
-- [ ] Create `bin/run-api-tests.sh` — start DB, migrate, run Jest (no test files yet → passes trivially)
+- [x] Add `postgres-test` service to `docker-compose.yml` (port 5433, tmpfs storage)
+- [x] Create `.env.test` and add it to `.gitignore`
+- [x] Write `prisma/schema.prisma` with `StagingAsmuo`, `StagingSutartis`, `StagingPirkimas`
+- [x] Run `npx prisma migrate dev --name init` to generate migration
+- [x] Implement `src/lib/db.ts` — Prisma singleton
+- [x] Create `bin/run-api-tests.sh` — start DB, migrate, run Jest (no test files yet → passes trivially)
 
 ---
 
@@ -395,9 +395,9 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 > **Testable:** `npm test -- --testPathPattern="src/lib/viespirkiai"` passes.
 > Developer can call `fetchAsmuo('110053842')` and receive a typed `AsmuoRaw` object.
 
-- [ ] Implement `src/lib/viespirkiai/types.ts` — `AsmuoRaw`, `SutartisRaw`, `PirkamasRaw`, `ViespirkiaiError`
-- [ ] Implement `src/lib/viespirkiai/client.ts` — `fetchAsmuo`, `fetchSutartis`, `fetchPirkimas`
-- [ ] Write `src/lib/viespirkiai/__tests__/client.test.ts` — 4 unit tests (mocked axios)
+- [x] Implement `src/lib/viespirkiai/types.ts` — `AsmuoRaw`, `SutartisRaw`, `PirkamasRaw`, `ViespirkiaiError`
+- [x] Implement `src/lib/viespirkiai/client.ts` — `fetchAsmuo`, `fetchSutartis`, `fetchPirkimas`
+- [x] Write `src/lib/viespirkiai/__tests__/client.test.ts` — 4 unit tests (mocked axios)
 
 ---
 
@@ -406,9 +406,9 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 > **Testable:** `npm test -- --testPathPattern="src/lib/staging"` passes.
 > Cache correctly returns `null` for missing/stale rows and returns data for fresh rows.
 
-- [ ] Implement `src/lib/staging/types.ts` — `CacheEntry<T>`, `isFresh()` helper
-- [ ] Implement `src/lib/staging/asmuo.ts`, `sutartis.ts`, `pirkimas.ts`
-- [ ] Write `src/lib/staging/__tests__/asmuo.test.ts`, `sutartis.test.ts`, `pirkimas.test.ts` — 4 tests each (real test
+- [x] Implement `src/lib/staging/types.ts` — `CacheEntry<T>`, `isFresh()` helper
+- [x] Implement `src/lib/staging/asmuo.ts`, `sutartis.ts`, `pirkimas.ts`
+- [x] Write `src/lib/staging/__tests__/asmuo.test.ts`, `sutartis.test.ts`, `pirkimas.test.ts` — 4 tests each (real test
   DB)
 
 ---
@@ -419,15 +419,15 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 > `parseAsmuo` on `110053842.json` produces the correct nodes and edge types.
 > Empty `pinreg` in `307562016.json` produces only the anchor org node.
 
-- [ ] Implement `src/types/graph.ts` — shared interfaces (`TemporalEntity`, `OrganizationEntity`,
+- [x] Implement `src/types/graph.ts` — shared interfaces (`TemporalEntity`, `OrganizationEntity`,
   `PersonEntity`, `TenderEntity`, `Relationship`, `CytoscapeResponse`)
-- [ ] Implement `src/lib/parsers/types.ts` — `CytoscapeNode`, `CytoscapeEdge`, `CytoscapeElements`, `FilterParams`
-- [ ] Implement `src/lib/parsers/asmuo.ts` — core parser (all mapping rules)
-- [ ] Implement `src/lib/parsers/sutartis.ts` — Contract edge parser
-- [ ] Implement `src/lib/parsers/pirkimas.ts` — TenderEntity parser
-- [ ] Write `src/lib/parsers/__tests__/asmuo.test.ts` — 5 unit tests
-- [ ] Write `src/lib/parsers/__tests__/sutartis.test.ts` — 1 unit test
-- [ ] Write `src/lib/parsers/__tests__/pirkimas.test.ts` — 1 unit test
+- [x] Implement `src/lib/parsers/types.ts` — `CytoscapeNode`, `CytoscapeEdge`, `CytoscapeElements`, `FilterParams`
+- [x] Implement `src/lib/parsers/asmuo.ts` — core parser (all mapping rules)
+- [x] Implement `src/lib/parsers/sutartis.ts` — Contract edge parser
+- [x] Implement `src/lib/parsers/pirkimas.ts` — TenderEntity parser
+- [x] Write `src/lib/parsers/__tests__/asmuo.test.ts` — 5 unit tests
+- [x] Write `src/lib/parsers/__tests__/sutartis.test.ts` — 1 unit test
+- [x] Write `src/lib/parsers/__tests__/pirkimas.test.ts` — 1 unit test
 
 ---
 
@@ -437,11 +437,11 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 > `expandOrg('110053842')` returns a valid `ExpandResult` with Cytoscape elements.
 > Filters (yearFrom, minValue) are applied correctly. Cache is populated on first call.
 
-- [ ] Implement `src/lib/graph/types.ts` — `ExpandResult`, `EntityDetailResult`, `GraphFilters`
-- [ ] Implement `src/lib/graph/expand.ts` — orchestrator (staging → fetch if stale → parse → filter)
-- [ ] Implement `src/lib/graph/entity.ts` — 360° entity detail builder
-- [ ] Write `src/lib/graph/__tests__/expand.test.ts` — 4 integration tests (test DB + mocked viespirkiai)
-- [ ] Write `src/lib/graph/__tests__/entity.test.ts` — 3 integration tests
+- [x] Implement `src/lib/graph/types.ts` — `ExpandResult`, `EntityDetailResult`, `GraphFilters`
+- [x] Implement `src/lib/graph/expand.ts` — orchestrator (staging → fetch if stale → parse → filter)
+- [x] Implement `src/lib/graph/entity.ts` — 360° entity detail builder
+- [x] Write `src/lib/graph/__tests__/expand.test.ts` — 4 integration tests (test DB + mocked viespirkiai)
+- [x] Write `src/lib/graph/__tests__/entity.test.ts` — 3 integration tests
 
 ---
 
@@ -451,9 +451,9 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 > `curl http://localhost:3000/api/v1/graph/expand/110053842` returns valid Cytoscape JSON.
 > HTTP error codes (400, 404, 502, 500) are correct in all edge cases.
 
-- [ ] Implement `src/app/api/v1/graph/expand/[jarKodas]/route.ts` — thin handler delegating to `graph.expandOrg`
-- [ ] Implement `src/app/api/v1/entity/[entityId]/route.ts` — thin handler delegating to `graph.getEntityDetail`
-- [ ] Write route handler tests — 6 HTTP-level tests
-- [ ] Verify `bin/run-api-tests.sh` end-to-end (DB up → migrate → all tests → DB stop)
-- [ ] Run `npm run lint` — zero errors
-- [ ] Run `npm test` — all tests pass
+- [x] Implement `src/app/api/v1/graph/expand/[jarKodas]/route.ts` — thin handler delegating to `graph.expandOrg`
+- [x] Implement `src/app/api/v1/entity/[entityId]/route.ts` — thin handler delegating to `graph.getEntityDetail`
+- [x] Write route handler tests — 6 HTTP-level tests
+- [x] Verify `bin/run-api-tests.sh` end-to-end (DB up → migrate → all tests → DB stop)
+- [ ] Run `npm run lint` — zero errors ⚠️ pre-existing ESLint 10 / `eslint-config-next` incompatibility (`contextOrFilename.getFilename`); not introduced by this story
+- [x] Run `npm test` — all tests pass (51 tests across 11 suites)

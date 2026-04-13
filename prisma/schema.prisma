@@ -1,0 +1,26 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model StagingAsmuo {
+  jarKodas  String   @id
+  data      Json
+  fetchedAt DateTime @default(now())
+}
+
+model StagingSutartis {
+  sutartiesUnikalusID String   @id
+  data                Json
+  fetchedAt           DateTime @default(now())
+}
+
+model StagingPirkimas {
+  pirkimoId String   @id
+  data      Json
+  fetchedAt DateTime @default(now())
+}
