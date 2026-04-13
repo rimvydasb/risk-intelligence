@@ -38,8 +38,6 @@ data model.
 - Graph visualization using **Cytoscape.js** with interactive filters (year, contract value) and node/edge details on
   click.
 
-The system targets three core fraud typologies:
-
 ## Future Use Cases (Beyond v1)
 
 - **Bid rigging / cartel detection** — identifying artificial competition among suppliers
@@ -60,7 +58,8 @@ The system targets three core fraud typologies:
 5. **ORM:** Prisma for type-safe database access and migrations.
 6. **Testing:** Jest for unit tests; Cypress for end-to-end testing of the UI and integration points.
 7. **Hosting:** Vercel for production deployment of the Next.js application; GitHub Actions for CI/CD pipelines.
-8. **Data Ingestion:** Node.js scripts executed via GitHub Actions for scheduled ETL processes to populate the database.
+8. **Data Ingestion:** On-demand via API route handlers — viespirkiai.org data is fetched and cached when users
+   expand graph nodes. No batch ETL in v1.
 
 ### Constraints
 
@@ -76,11 +75,11 @@ The system targets three core fraud typologies:
 
 Entity IDs use a **namespace prefix** to prevent collisions between entity types:
 
-| Entity Type | ID Format | Example |
-|---|---|---|
-| Organization | `org:{jarKodas}` | `org:110053842` |
-| Person | `person:{deklaracija}` | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
-| Tender | `tender:{pirkimoId}` | `tender:7346201` |
+| Entity Type  | ID Format              | Example                                       |
+|--------------|------------------------|-----------------------------------------------|
+| Organization | `org:{jarKodas}`       | `org:110053842`                               |
+| Person       | `person:{deklaracija}` | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
+| Tender       | `tender:{pirkimoId}`   | `tender:7346201`                              |
 
 ```typescript
 
@@ -239,19 +238,19 @@ all declared employees, their spouses, board members, and summary of contract pa
 
 **@example:** [110053842.json](examples/asmuo/110053842.json) (AB "Lietuvos geležinkeliai" — trimmed)
 
-| API Section                       | Produces                        | Entity/Edge Type                             | Key Fields                                                                                                  |
-|-----------------------------------|---------------------------------|----------------------------------------------|-------------------------------------------------------------------------------------------------------------|
+| API Section                       | Produces                        | Entity/Edge Type                             | Key Fields                                                                                                |
+|-----------------------------------|---------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | `jar`                             | **OrganizationEntity**          | PrivateCompany / PublicCompany / Institution | `jarKodas` → id, `pavadinimas` → name, `registravimoData` → fromDate, `formosKodas` → type classification |
-| `sodra`                           | enriches **OrganizationEntity** | —                                            | `bendrasDraustujuSkaicius` → employee count, `bendrasVidutinisAtlyginimas` → avg salary                     |
+| `sodra`                           | enriches **OrganizationEntity** | —                                            | `bendrasDraustujuSkaicius` → employee count, `bendrasVidutinisAtlyginimas` → avg salary                   |
 | `pinreg.darbovietes[]`            | **PersonEntity**                | Person                                       | `deklaracija` → id, `vardas + pavarde` → name, `rysioPradzia` → fromDate                                  |
-| `pinreg.darbovietes[]`            | **Relationship**                | Employment / Director / Official             | `pareiguTipasPavadinimas` determines type (see mapping below), source=Person, target=Organization           |
-| `pinreg.sutuoktinioDarbovietes[]` | **PersonEntity** × 2            | Person (declarant + spouse)                  | Declarant: `deklaruojancioVardas/Pavarde`, Spouse: `sutuoktinioVardas/Pavarde`                              |
-| `pinreg.sutuoktinioDarbovietes[]` | **Relationship**                | Spouse                                       | source=declarant Person, target=spouse Person                                                               |
-| `pinreg.sutuoktinioDarbovietes[]` | **Relationship**                | Employment                                   | source=spouse Person, target=Organization                                                                   |
+| `pinreg.darbovietes[]`            | **Relationship**                | Employment / Director / Official             | `pareiguTipasPavadinimas` determines type (see mapping below), source=Person, target=Organization         |
+| `pinreg.sutuoktinioDarbovietes[]` | **PersonEntity** × 2            | Person (declarant + spouse)                  | Declarant: `deklaruojancioVardas/Pavarde`, Spouse: `sutuoktinioVardas/Pavarde`                            |
+| `pinreg.sutuoktinioDarbovietes[]` | **Relationship**                | Spouse                                       | source=declarant Person, target=spouse Person                                                             |
+| `pinreg.sutuoktinioDarbovietes[]` | **Relationship**                | Employment                                   | source=spouse Person, target=Organization                                                                 |
 | `pinreg.rysiaiSuJa[]`             | **PersonEntity**                | Person                                       | `deklaracija` → id, `vardas + pavarde` → name, `rysioPradzia` → fromDate                                  |
-| `pinreg.rysiaiSuJa[]`             | **Relationship**                | Director / Shareholder / Official            | `rysioPobudzioPavadinimas` determines type (see mapping below), source=Person, target=Organization          |
-| `sutartys.topPirkejai[]`          | **OrganizationEntity** (ref)    | discovered via jarKodas                      | `jarKodas`, `pavadinimas` — organizations that buy from this one                                            |
-| `sutartys.topTiekejai[]`          | **OrganizationEntity** (ref)    | discovered via jarKodas                      | `jarKodas`, `pavadinimas` — organizations that supply to this one                                           |
+| `pinreg.rysiaiSuJa[]`             | **Relationship**                | Director / Shareholder / Official            | `rysioPobudzioPavadinimas` determines type (see mapping below), source=Person, target=Organization        |
+| `sutartys.topPirkejai[]`          | **OrganizationEntity** (ref)    | discovered via jarKodas                      | `jarKodas`, `pavadinimas` — organizations that buy from this one                                          |
+| `sutartys.topTiekejai[]`          | **OrganizationEntity** (ref)    | discovered via jarKodas                      | `jarKodas`, `pavadinimas` — organizations that supply to this one                                         |
 
 #### pareiguTipasPavadinimas → Relationship Type
 
@@ -278,13 +277,13 @@ The `sutartis` endpoint provides individual contract details — the primary sou
 
 **@example:** [2008059225.json](examples/sutartis/2008059225.json)
 
-| API Field                                                     | Produces                                         | Entity/Edge Type             | Mapping                                                                                                                           |
-|---------------------------------------------------------------|--------------------------------------------------|------------------------------|-----------------------------------------------------------------------------------------------------------------------------------|
-| `perkanciosiosOrganizacijosKodas` + `perkanciojiOrganizacija` | **OrganizationEntity** (buyer)                   | Institution or PublicCompany | `kodas` → id, `pavadinimas` → name                                                                                              |
-| `tiekejoKodas` + `tiekejas`                                   | **OrganizationEntity** (supplier)                | PrivateCompany               | `kodas` → id, `pavadinimas` → name                                                                                              |
+| API Field                                                     | Produces                                         | Entity/Edge Type             | Mapping                                                                                                                               |
+|---------------------------------------------------------------|--------------------------------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| `perkanciosiosOrganizacijosKodas` + `perkanciojiOrganizacija` | **OrganizationEntity** (buyer)                   | Institution or PublicCompany | `kodas` → id, `pavadinimas` → name                                                                                                    |
+| `tiekejoKodas` + `tiekejas`                                   | **OrganizationEntity** (supplier)                | PrivateCompany               | `kodas` → id, `pavadinimas` → name                                                                                                    |
 | root                                                          | **Relationship** (type=Contract)                 | Contract                     | `sutartiesUnikalusID` → edge id, `pavadinimas` → label, `paskelbimoData` → fromDate, `galiojimoData` → tillDate, `verte` → data.verte |
-| `pirkimoNumeris`                                              | **TenderEntity** (ref)                           | links Contract → Tender      | may be `null` for MVP contracts                                                                                                   |
-| `papildomiTiekejai[]` / `papildomiTiekejaiKodai[]`            | additional **OrganizationEntity** + **Contract** | CoBidder                     | joint bids (v2)                                                                                                                   |
+| `pirkimoNumeris`                                              | **TenderEntity** (ref)                           | links Contract → Tender      | may be `null` for MVP contracts                                                                                                       |
+| `papildomiTiekejai[]` / `papildomiTiekejaiKodai[]`            | additional **OrganizationEntity** + **Contract** | CoBidder                     | joint bids (v2)                                                                                                                       |
 
 **Contract edge direction:** source = buyer (perkančioji organizacija), target = supplier (tiekėjas).
 
@@ -294,12 +293,12 @@ The `viesiejiPirkimai` endpoint provides tender/competition details. Tenders gro
 
 **@example:** [7346201.json](examples/viesiejiPirkimai/7346201.json)
 
-| API Field                                         | Produces                                  | Entity/Edge Type         | Mapping                                                                                                        |
-|---------------------------------------------------|-------------------------------------------|--------------------------|----------------------------------------------------------------------------------------------------------------|
+| API Field                                         | Produces                                  | Entity/Edge Type         | Mapping                                                                                                      |
+|---------------------------------------------------|-------------------------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------|
 | root                                              | **TenderEntity**                          | Tender                   | `pirkimoId` → id, `pavadinimas` → name, `paskelbimoData` → fromDate, `pasiulymuPateikimoTerminas` → tillDate |
 | `jarKodas` + `vykdytojoPavadinimas`               | **OrganizationEntity** (procuring entity) | Institution              | `jarKodas` → id, `pavadinimas` → name                                                                        |
-| `sutartys[]`                                      | **Relationship** (type=Contract, ref)     | links Tender → Contracts | contract IDs under this tender                                                                                 |
-| `numatomaBendraPirkimoVerte` / `numatomaVerteEUR` | enriches **TenderEntity**                 | —                        | estimated total value                                                                                          |
+| `sutartys[]`                                      | **Relationship** (type=Contract, ref)     | links Tender → Contracts | contract IDs under this tender                                                                               |
+| `numatomaBendraPirkimoVerte` / `numatomaVerteEUR` | enriches **TenderEntity**                 | —                        | estimated total value                                                                                        |
 
 ### Entity Discovery Chain
 
@@ -337,10 +336,8 @@ sequenceDiagram
     participant Service as RIS Service
     participant Staging as Staging Cache<br/>(PostgreSQL)
     participant API as Viespirkiai.org API
-
     Note over GUI: User clicks an Organization node
     GUI ->> Service: GET /api/v1/graph/expand/{jarKodas}
-
     Service ->> Staging: SELECT data, fetchedAt FROM StagingAsmuo WHERE jarKodas = ?
     alt Missing or stale (fetchedAt > TTL)
         Service ->> API: GET /asmuo/{jarKodas}.json
@@ -361,33 +358,39 @@ without triggering additional fetches. Stubs are expanded when the user clicks t
 
 #### Freshness TTL Strategy
 
-| Staging Table | TTL | Rationale |
-|---|---|---|
-| `StagingAsmuo` | 24 hours | Employee/governance data changes infrequently |
-| `StagingSutartis` | 7 days | Contract data is essentially immutable after publication |
-| `StagingPirkimas` | 24 hours | Active tenders may update (new bids, status changes) |
+| Staging Table     | TTL      | Rationale                                                |
+|-------------------|----------|----------------------------------------------------------|
+| `StagingAsmuo`    | 24 hours | Employee/governance data changes infrequently            |
+| `StagingSutartis` | 7 days   | Contract data is essentially immutable after publication |
+| `StagingPirkimas` | 24 hours | Active tenders may update (new bids, status changes)     |
 
 ### Staging Storage Schema
 
 ```prisma
 model StagingAsmuo {
   jarKodas  String   @id
-  data      Json
+  data      Json     
   fetchedAt DateTime @default(now())
 }
 
 model StagingSutartis {
   sutartiesUnikalusID String   @id
-  data                Json
+  data                Json     
   fetchedAt           DateTime @default(now())
 }
 
 model StagingPirkimas {
   pirkimoId String   @id
-  data      Json
+  data      Json     
   fetchedAt DateTime @default(now())
 }
 ```
+
+### v2: Graph Store (Future)
+
+When cross-entity queries, person deduplication, aggregate analytics, or batch risk scoring are needed,
+add normalized `Entity` + `Relationship` tables populated by a background ETL job reading from staging —
+not on the API request path. Until then, staging + in-memory parsing is sufficient.
 
 ## Components
 
@@ -405,18 +408,27 @@ model StagingPirkimas {
 
 **Edges:**
 
-| Entity               | Relationship Type | Edge Label | Edge Width  | Edge Color (TBC)    | Edge Style |
-|----------------------|-------------------|------------|-------------|---------------------|------------|
+| Entity                  | Relationship Type | Edge Label | Edge Width  | Edge Color (TBC)    | Edge Style |
+|-------------------------|-------------------|------------|-------------|---------------------|------------|
 | Relationship (Contract) | Contract          | verte      | log(verte)  | risk score gradient | solid      |
-| Relationship         | (others)          | role       | fixed width | risk score gradient | dashed     |
+| Relationship            | (others)          | role       | fixed width | risk score gradient | dashed     |
 
 **Graph Data Model:**
 
-TBC
+The graph is built from Cytoscape.js elements returned by `/api/v1/graph/expand/{jarKodas}`. Each call returns
+elements for one expanded org + its neighbours. The client **merges** new elements into the existing graph
+(Cytoscape's `cy.add()` is idempotent for same-ID elements).
 
 **Edge Types:**
 
-TBC
+| Edge Type   | Source → Target             | v1 Data Source                                               | Style        |
+|-------------|-----------------------------|--------------------------------------------------------------|--------------|
+| Employment  | Person → Organization       | `pinreg.darbovietes[]`                                       | dashed       |
+| Director    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed, bold |
+| Official    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed       |
+| Shareholder | Person → Organization       | `pinreg.rysiaiSuJa[]`                                        | dashed       |
+| Spouse      | Person → Person             | `pinreg.sutuoktinioDarbovietes[]`                            | dotted       |
+| Contract    | Organization → Organization | `sutartys.topPirkejai[]` / `topTiekejai[]` (aggregate in v1) | solid        |
 
 ### Filter Component
 
@@ -444,7 +456,7 @@ The following tree defines the mandatory structure to maintain logical separatio
 risk-intelligence/
 ├── .github/
 │   └── workflows/
-│       └── etl-scraper.yml      # Nightly ETL Runner
+│       └── ci.yml                # CI: lint, test, build
 ├── cypress/                     # E2E & GUI Testing (Specs, Screenshots, Videos)
 ├── prisma/                      # Database Schema & Migrations
 ├── public/                      # Static Assets
@@ -486,6 +498,7 @@ GET  /api/v1/entity/{entityId}
 and every subsequent node-click expansion.
 
 **Behaviour:**
+
 1. Check staging cache for `jarKodas` (fetch from viespirkiai if stale/missing)
 2. Parse cached asmuo JSON **in-memory** → Cytoscape nodes + edges
 3. Apply filters (yearFrom/yearTo, minValue on aggregate contract edges)
@@ -496,12 +509,12 @@ staging JSON, the same Cytoscape output is produced every time.
 
 **Parameters:**
 
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `jarKodas` | path | required | Organization code (company registry number) |
-| `yearFrom` | query | — | Filter relationships starting from this year |
-| `yearTo` | query | — | Filter relationships ending before this year |
-| `minValue` | query | — | Minimum aggregate contract value (EUR) for contract edges |
+| Param      | Type  | Default  | Description                                               |
+|------------|-------|----------|-----------------------------------------------------------|
+| `jarKodas` | path  | required | Organization code (company registry number)               |
+| `yearFrom` | query | —        | Filter relationships starting from this year              |
+| `yearTo`   | query | —        | Filter relationships ending before this year              |
+| `minValue` | query | —        | Minimum aggregate contract value (EUR) for contract edges |
 
 **Initial page load:** `GET /api/v1/graph/expand/110053842`
 
@@ -580,60 +593,7 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 
 **Node types in response:**
 
-| `expanded` | Meaning | User action |
-|---|---|---|
-| `true` | Full data loaded (people + edges visible) | Click → show detail panel |
-| `false` | Stub node (only jarKodas + name + aggregate contract summary) | Click → triggers new `/expand` call |
-
----
-
-## Storage Design
-
-### v1: Single-Layer (Staging Only)
-
-For v1, **staging tables ARE the database.** There are no separate Entity/Relationship tables. The API reads cached
-JSON from staging and transforms it to Cytoscape format in-memory.
-
-```mermaid
-flowchart LR
-    V["viespirkiai.org API"] -->|"raw JSON"| S["Staging Tables\n(JSON cache)"]
-    S -->|"parse in-memory"| A["API Route Handler\n→ Cytoscape.js elements"]
-```
-
-**Why no Entity/Relationship tables in v1:**
-- The only query pattern is "1-hop neighbourhood of org X" — answered directly from one asmuo JSON
-- Parsing is stateless and fast (in-memory JSON traversal, no DB writes)
-- Eliminates synchronization between staging and graph store
-- Fewer moving parts = faster to ship, easier to debug
-- TanStack Query on the client caches the transformed Cytoscape elements, so repeat clicks don't even hit the API
-
-**The staging schema (defined in Staging Storage section above) is the complete v1 database.**
-
-### v2: Graph Store (Future)
-
-When the following requirements materialize, add normalized Entity/Relationship tables:
-
-| Requirement | Why it needs a graph store |
-|---|---|
-| Cross-entity graph queries (shortest path, community detection) | Can't traverse JSON blobs with SQL |
-| Person deduplication across organizations | Need a canonical person registry to merge deklaracija UUIDs |
-| Aggregate analytics (total contract value by sector/year) | Requires normalized, indexed columns |
-| Full-text search across all entities | Need indexed `name` + `type` columns |
-| Offline / batch risk scoring | Need materialized entity data for background processing |
-
-The v2 schema would look similar to the current staging parse rules — Entity and Relationship tables populated
-by a background ETL job reading from staging, not by the API request path.
-
-### Staging → Cytoscape Parse Rules (v1)
-
-The expand endpoint transforms staging JSON directly into Cytoscape elements. These are the same mapping rules
-as documented in "Data-to-Entity Mapping", applied in-memory:
-
-| Staging Source | → Cytoscape Nodes | → Cytoscape Edges |
-|---|---|---|
-| `asmuo.jar` | Org node (`expanded: true`) | — |
-| `asmuo.pinreg.darbovietes[]` | Person node | Employment / Director / Official edge → Org |
-| `asmuo.pinreg.sutuoktinioDarbovietes[]` | Person nodes × 2 | Spouse edge + Employment edge |
-| `asmuo.pinreg.rysiaiSuJa[]` | Person node | Director / Shareholder / Official edge → Org |
-| `asmuo.sutartys.topPirkejai[]` | Stub Org node (`expanded: false`) | Aggregate Contract edge (total + count) |
-| `asmuo.sutartys.topTiekejai[]` | Stub Org node (`expanded: false`) | Aggregate Contract edge (total + count) |
+| `expanded` | Meaning                                                       | User action                         |
+|------------|---------------------------------------------------------------|-------------------------------------|
+| `true`     | Full data loaded (people + edges visible)                     | Click → show detail panel           |
+| `false`    | Stub node (only jarKodas + name + aggregate contract summary) | Click → triggers new `/expand` call |
