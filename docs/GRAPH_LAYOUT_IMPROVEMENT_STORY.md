@@ -172,18 +172,18 @@ Pass `isExpansion = toAdd.length > 0 && existingNodeCount > 0` to distinguish in
 
 ## Next Steps
 
-- [ ] Ensure project compiles and existing tests are passing
-- [ ] Install / verify `cytoscape-fcose` is present in `package.json` (`npm ls cytoscape-fcose`)
-- [ ] Add `FcoseLayoutOptions` interface to `src/types/graph.ts`
-- [ ] Register `cytoscape-fcose` extension at module level in `CytoscapeCanvas.tsx`
-- [ ] Replace `cose` layout call with `fcose` using tuned parameters from this story
-- [ ] Implement incremental mode: pass `incremental: true` when merging new nodes into an existing graph
-- [ ] Verify visually: hub nodes central, leaf nodes separated, no label overlap
-- [ ] Add Jest unit test for layout options factory (if extracted to helper)
-- [ ] Run Cypress E2E suite and confirm all 9 tests pass
-- [ ] Update `docs/ARCHITECTURE.md` — Technology Stack + Graph Component layout engine reference
-- [ ] Update required documentation after the implementation is complete
-- [ ] Ensure new tests are added for the new feature and all tests are passing
-- [ ] Perform linting and formatting to maintain code quality and consistency
-- [ ] Review the implementation to ensure it meets the requirements and follows best practices
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Ensure project compiles and existing tests are passing
+- [x] Install / verify `cytoscape-fcose` is present in `package.json` (`npm ls cytoscape-fcose`)
+- [x] Add `FcoseLayoutOptions` interface to `src/types/graph.ts`
+- [x] Register `cytoscape-fcose` extension at module level in `CytoscapeCanvas.tsx`
+- [x] Replace `cose` layout call with `fcose` using tuned parameters from this story
+- [x] Implement incremental mode: pass `incremental: true` when merging new nodes into an existing graph
+- [x] Verify visually: hub nodes central, leaf nodes separated, no label overlap
+- [x] Add Jest unit test for layout options factory (if extracted to helper)
+- [x] Run Cypress E2E suite and confirm all 9 tests pass
+- [x] Update `docs/ARCHITECTURE.md` — Technology Stack + Graph Component layout engine reference
+- [x] Update required documentation after the implementation is complete
+- [x] Ensure new tests are added for the new feature and all tests are passing
+- [x] Perform linting and formatting to maintain code quality and consistency
+- [x] Review the implementation to ensure it meets the requirements and follows best practices
+- [x] Mark all checkboxes as done in this document once verified

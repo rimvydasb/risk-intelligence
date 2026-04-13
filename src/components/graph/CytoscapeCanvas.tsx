@@ -1,11 +1,14 @@
 'use client';
 
 import React, {useEffect, useRef} from 'react';
-import type {CytoscapeElements, CytoscapeNodeData} from '@/types/graph';
+import type {CytoscapeElements, CytoscapeNodeData, FcoseLayoutOptions} from '@/types/graph';
 
 // Cytoscape is browser-only; imported at runtime
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const cytoscape = typeof window !== 'undefined' ? require('cytoscape') : null;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const fcose = typeof window !== 'undefined' ? require('cytoscape-fcose') : null;
+if (cytoscape && fcose) cytoscape.use(fcose);
 
 // Build a data URI for a white Material Design icon (viewBox 0 0 24 24)
 function svgIcon(pathD: string): string {
@@ -114,47 +117,49 @@ const NODE_STYLES = [
             label: 'data(label)',
             'font-family': 'Arial, Roboto, sans-serif',
             'font-size': '8px',
-            color: '#bdbdbd',
+            width: 0.8,
+            color: '#94a3b8',
+            // edge must be thin
+            'text-wrap': 'ellipsis',
             'text-rotation': 'autorotate',
+            'text-margin-y': 15,
         },
     },
     {
         selector: 'edge[type="Contract"]',
-        style: {'line-color': '#ef5350', 'target-arrow-color': '#ef5350', width: 3},
+        style: {
+            width: 0.8
+        },
     },
     {
         selector: 'edge[type="Employment"]',
         style: {
-            'line-color': '#90a4ae',
-            'target-arrow-color': '#90a4ae',
-            width: 1.5,
+            width: 0.8,
             'line-style': 'dashed',
         },
     },
     {
         selector: 'edge[type="Director"]',
         style: {
-            'line-color': '#f48fb1',
-            'target-arrow-color': '#f48fb1',
-            width: 2.5,
+            'line-color': '#ff1667',
+            'target-arrow-color': '#ff1667',
+            width: 0.8,
             'line-style': 'dashed',
         },
     },
     {
         selector: 'edge[type="Official"]',
         style: {
-            'line-color': '#80cbc4',
-            'target-arrow-color': '#80cbc4',
-            width: 1.5,
+            width: 0.8,
             'line-style': 'dashed',
         },
     },
     {
         selector: 'edge[type="Shareholder"]',
         style: {
-            'line-color': '#ce93d8',
-            'target-arrow-color': '#ce93d8',
-            width: 2,
+            'line-color': '#ff1667',
+            'target-arrow-color': '#ff1667',
+            width: 0.8,
             'line-style': 'dashed',
         },
     },
@@ -163,7 +168,7 @@ const NODE_STYLES = [
         style: {
             'line-color': '#ffcc02',
             'target-arrow-color': '#ffcc02',
-            width: 1,
+            width: 0.8,
             'line-style': 'dotted',
         },
     },
@@ -220,11 +225,13 @@ export default function CytoscapeCanvas({
     useEffect(() => {
         const cy = cyInstanceRef.current as {
             add: (el: unknown) => void;
-            layout: (opts: unknown) => { run: () => void; stop: () => void };
+            layout: (opts: FcoseLayoutOptions) => { run: () => void; stop: () => void };
             getElementById: (id: string) => { length: number };
+            nodes: () => { length: number };
         } | null;
         if (!cy || !elements) return;
 
+        const existingNodeCount = cy.nodes().length;
         const toAdd = [
             ...elements.nodes.filter((n) => cy.getElementById(n.data.id).length === 0),
             ...elements.edges.filter((e) => cy.getElementById(e.data.id).length === 0),
@@ -233,7 +240,30 @@ export default function CytoscapeCanvas({
         if (toAdd.length > 0) {
             layoutRef.current?.stop();
             cy.add(toAdd);
-            const layout = cy.layout({name: 'cose', animate: false});
+            const layoutOptions: FcoseLayoutOptions = {
+                name: 'fcose',
+                quality: 'default',
+                randomize: true,              // IMPORTANT: allow better initial placement
+                animate: true,
+                fit: true,
+                padding: 30,
+
+                nodeRepulsion: () => 1500,    // ↓ reduce a lot
+                idealEdgeLength: () => 200,   // ↑ increase to balance spacing
+                edgeElasticity: () => 0.45,
+
+                gravity: 0.8,                 // ↑ pull nodes inward
+                gravityRange: 3.8,
+
+                numIter: 2500,                // ↓ enough for convergence
+
+                tile: true,
+                tilingPaddingVertical: 20,
+                tilingPaddingHorizontal: 20,
+
+                incremental: false,           // 🔴 disable this
+            };
+            const layout = cy.layout(layoutOptions);
             layoutRef.current = layout;
             layout.run();
         }
