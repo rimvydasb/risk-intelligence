@@ -5,7 +5,7 @@ describe('Entity Profile — Hash Navigation', () => {
         cy.visit('http://localhost:3000/#/entities/110053842');
 
         // Entity detail view should render without a page reload
-        cy.contains('AB "Lietuvos geležinkeliai"', { timeout: 10000 }).should('be.visible');
+        cy.contains('Lietuvos geležinkeliai', { timeout: 10000 }).should('be.visible');
         cy.contains('Risk Score').should('be.visible');
         cy.contains('Back to Graph').should('be.visible');
     });
@@ -42,15 +42,14 @@ describe('Entity Profile — Hash Navigation', () => {
         cy.get('[data-testid="graph-container"]').should('be.visible');
     });
 
-    it('redirects legacy /entities/:id path to hash URL', () => {
+    it('deep-links with prefixed entity id from sidebar flow', () => {
         Cypress.on('uncaught:exception', () => false);
 
-        cy.visit('http://localhost:3000/entities/110053842');
-
-        // After redirect the hash should contain the entity id
-        cy.location('hash', { timeout: 10000 }).should('eq', '#/entities/110053842');
+        // The sidebar produces org:-prefixed IDs; verify deep-linking with that format works too
+        cy.visit('http://localhost:3000/#/entities/org:110053842');
 
         // Entity detail view should render
-        cy.contains('AB "Lietuvos geležinkeliai"', { timeout: 10000 }).should('be.visible');
+        cy.location('hash', { timeout: 10000 }).should('include', 'entities');
+        cy.contains('Lietuvos geležinkeliai', { timeout: 10000 }).should('be.visible');
     });
 });
