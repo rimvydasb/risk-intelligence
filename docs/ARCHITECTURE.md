@@ -50,7 +50,7 @@ data model.
 
 ## Technology Stack
 
-1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization.
+1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization. Layout engine: **fCoSE** (`cytoscape-fcose`) — fast compound spring embedder that prevents node/label overlap in star and mixed topologies.
 2. **Design System:** Material UI for consistent styling and responsive design.
 3. **Midlayer:** TanStack React Query for data fetching and caching, ensuring efficient API interactions. React
    useContext for global state management.
@@ -426,6 +426,13 @@ lifecycle automatically.
 The graph is built from Cytoscape.js elements returned by `/api/v1/graph/expand/{jarKodas}`. Each call returns
 elements for one expanded org + its neighbours. The client **merges** new elements into the existing graph
 (Cytoscape's `cy.add()` is idempotent for same-ID elements).
+
+**Layout Engine: fCoSE**
+
+The layout uses **fCoSE** (`cytoscape-fcose`) registered once at module level. Key parameters for RIS star topologies:
+`nodeRepulsion: 6000` (separates leaf nodes), `idealEdgeLength: 120` (label breathing room), `gravity: 0.15`
+(prevents tight-ball compaction), `nodeDimensionsIncludeLabels: true` (physical label bounding boxes — no overlap).
+Initial load uses `incremental: false`; node expansion uses `incremental: true` to preserve existing positions.
 
 **Edge Types:**
 

@@ -34,6 +34,7 @@ const NODE_STYLES = [
         selector: 'node',
         style: {
             label: 'data(label)',
+            'font-family': 'Arial, Roboto, sans-serif',
             'font-size': '10px',
             color: '#e0e0e0',
             'text-wrap': 'ellipsis',
@@ -49,6 +50,7 @@ const NODE_STYLES = [
             width: 60,
             height: 60,
             shape: 'ellipse',
+            'font-size': '12px',
             'background-image': svgIcon(ICONS.DomainAdd), ...iconStyle
         },
     },
@@ -59,6 +61,7 @@ const NODE_STYLES = [
             width: 30,
             height: 30,
             shape: 'ellipse',
+            'font-size': '8px',
             'background-image': svgIcon(ICONS.Business), ...iconStyle
         },
     },
@@ -69,6 +72,7 @@ const NODE_STYLES = [
             width: 70,
             height: 70,
             shape: 'hexagon',
+            'font-size': '13px',
             'background-image': svgIcon(ICONS.AccountBalance), ...iconStyle
         },
     },
@@ -79,6 +83,7 @@ const NODE_STYLES = [
             width: 35,
             height: 35,
             shape: 'ellipse',
+            'font-size': '8px',
             'background-image': svgIcon(ICONS.Person), ...iconStyle
         },
     },
@@ -89,6 +94,7 @@ const NODE_STYLES = [
             width: 45,
             height: 45,
             shape: 'diamond',
+            'font-size': '10px',
             'background-image': svgIcon(ICONS.Assignment), ...iconStyle
         },
     },
@@ -106,7 +112,8 @@ const NODE_STYLES = [
             'curve-style': 'bezier',
             'target-arrow-shape': 'triangle',
             label: 'data(label)',
-            'font-size': '9px',
+            'font-family': 'Arial, Roboto, sans-serif',
+            'font-size': '8px',
             color: '#bdbdbd',
             'text-rotation': 'autorotate',
         },
