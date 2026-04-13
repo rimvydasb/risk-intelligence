@@ -485,12 +485,14 @@ risk-intelligence/
 
 ## API Design
 
-### Core Endpoints
+> API will be implemented using Next.js API `import type { NextApiRequest, NextApiResponse } from 'next';` route
+> handlers.
 
-```
-GET  /api/v1/graph/expand/{jarKodas}?yearFrom=&yearTo=&minValue=
-GET  /api/v1/entity/{entityId}
-```
+> API's will be tested using Jest REST tests that require a running instance of the service. Mock database will be used.
+> Server will be started with `.env.test` config to read from the mock database. `doc/examples` are used as testing
+> data.
+
+### Core Endpoints
 
 #### `GET /api/v1/graph/expand/{jarKodas}`
 
