@@ -247,12 +247,13 @@ export default function SigmaCanvas({
         // crossOrigin: null — avoids CORS attribute being set on data: URIs (causes silent
         // load failures in Firefox/Safari when crossOrigin="anonymous" is used on data URIs).
         const WhiteIconProgram = createNodeImageProgram({
-            keepWithinCircle: false,
+            keepWithinCircle: true,
             size: {mode: 'force', value: 64},
             drawingMode: 'color',
             correctCentering: true,
             colorAttribute: 'pictogramColor',
             crossOrigin: null,
+            padding: 0.25,
         });
         const NodeIconProgram = createNodeCompoundProgram([NodeCircleProgram, WhiteIconProgram]);
 
