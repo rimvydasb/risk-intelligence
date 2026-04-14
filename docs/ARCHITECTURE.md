@@ -724,4 +724,5 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 | Story                                                              | Status       | Description                                               |
 |--------------------------------------------------------------------|--------------|-----------------------------------------------------------|
 | [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)        | ✅ Complete  | Prisma schema, staging cache, parsers, REST API, tests    |
-| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md)  | ⏳ Next      | Frontend: Cytoscape graph, hash routing, filters, Cypress |
+| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md)  | ✅ Complete  | Frontend: Cytoscape graph, hash routing, filters, Cypress |
+| [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)  | ⏳ Next      | Replace Cytoscape.js with Sigma.js + Graphology (WebGL)   |
