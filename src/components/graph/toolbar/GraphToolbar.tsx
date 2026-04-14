@@ -16,6 +16,7 @@ import {
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
+import HubIcon from '@mui/icons-material/Hub';
 import type { CytoscapeNodeData, CytoscapeElements } from '@/types/graph';
 import type { FilterState } from '../types';
 
@@ -27,6 +28,7 @@ export interface GraphToolbarProps {
   filters: FilterState;
   onApplyFilters: (filters: FilterState) => void;
   onNodeSelect: (nodeId: string, data: CytoscapeNodeData) => void;
+  onBalanceGraph?: () => void;
 }
 
 export function GraphToolbar({
@@ -34,6 +36,7 @@ export function GraphToolbar({
   filters,
   onApplyFilters,
   onNodeSelect,
+  onBalanceGraph,
 }: GraphToolbarProps) {
   const [localYearFrom, setLocalYearFrom] = useState<number | ''>( filters.year ?? '');
   const [localYearTo, setLocalYearTo] = useState<number | ''>('');
@@ -171,6 +174,22 @@ export function GraphToolbar({
             data-testid="filter-reset"
           >
             Reset
+          </Button>
+        )}
+
+        <Box sx={{ flexGrow: 1 }} />
+
+        {/* Balance Graph — re-layout all nodes with fCOSE */}
+        {onBalanceGraph && elements.nodes.length > 0 && (
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<HubIcon />}
+            onClick={onBalanceGraph}
+            data-testid="balance-graph"
+            sx={{ color: '#90caf9', borderColor: '#90caf9' }}
+          >
+            Balance
           </Button>
         )}
       </Toolbar>

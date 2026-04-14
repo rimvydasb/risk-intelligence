@@ -5,12 +5,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
-// Mock CytoscapeCanvas (browser-only) and next/dynamic
+// Mock SigmaCanvas (browser-only) and next/dynamic
 jest.mock('next/dynamic', () => () => {
   const MockCanvas = ({ elements }: { elements: unknown }) => (
     <div data-testid="graph-container" data-element-count={JSON.stringify(elements)} />
   );
-  MockCanvas.displayName = 'MockCytoscapeCanvas';
+  MockCanvas.displayName = 'MockSigmaCanvas';
   return MockCanvas;
 });
 

@@ -4,25 +4,23 @@ PORT=3000
 SCREENSHOTS_DIR="./cypress/screenshots"
 LOCK_FILE="./.next/dev/lock"
 
-# 1. Check for Next.js dev lock
+# 1. Kill any existing process on the test port
+if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
+    echo "Port $PORT is occupied. Killing existing process..."
+    lsof -ti:$PORT | xargs kill -9
+    sleep 1
+fi
+
+# Remove stale Next.js dev lock if present
 if [ -f "$LOCK_FILE" ]; then
-    echo "Error: Next.js dev lock detected at $LOCK_FILE"
-    echo "Another instance of 'next dev' is likely running."
-    echo "Please shut down the other instance before running tests."
-    echo "If this is not the case, remove .next folder and build the service again."
-    exit 1
+    echo "Removing stale Next.js dev lock..."
+    rm -f "$LOCK_FILE"
 fi
 
 # 2. Clean up old screenshots so Agent doesn't get confused
 if [ -d "$SCREENSHOTS_DIR" ]; then
     echo "Cleaning up old screenshots..."
     rm -rf "$SCREENSHOTS_DIR"/*
-fi
-
-# 3. Kill any existing process on port 3005
-if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null ; then
-    echo "Port $PORT is occupied. Killing existing process..."
-    lsof -ti:$PORT | xargs kill -9
 fi
 
 # 4. Seed database with example data so graph has nodes to render

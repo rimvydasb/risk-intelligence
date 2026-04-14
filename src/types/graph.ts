@@ -1,5 +1,3 @@
-import type cytoscape from 'cytoscape';
-
 export interface TemporalEntity {
   id: string;
   name: string;
@@ -69,31 +67,4 @@ export interface CytoscapeResponse {
   };
 }
 
-export interface FcoseLayoutOptions extends cytoscape.BaseLayoutOptions {
-  name: 'fcose';
-  quality?: 'draft' | 'default' | 'proof';
-  randomize?: boolean;
-  animate?: boolean;
-  animationDuration?: number;
-  animationEasing?: string;
-  fit?: boolean;
-  padding?: number;
-  nodeDimensionsIncludeLabels?: boolean;
-  uniformNodeDimensions?: boolean;
-  packComponents?: boolean;
-  nodeRepulsion?: (node: cytoscape.NodeSingular) => number;
-  idealEdgeLength?: (edge: cytoscape.EdgeSingular) => number;
-  edgeElasticity?: (edge: cytoscape.EdgeSingular) => number;
-  nestingFactor?: number;
-  gravity?: number;
-  gravityRangeCompound?: number;
-  gravityCompound?: number;
-  gravityRange?: number;
-  initialEnergyOnIncremental?: number;
-  incremental?: boolean;
-  numIter?: number;
-  tile?: boolean;
-  tilingPaddingVertical?: number;
-  tilingPaddingHorizontal?: number;
-  [key: string]: unknown;
-}
+

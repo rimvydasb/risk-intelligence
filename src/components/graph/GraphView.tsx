@@ -11,7 +11,7 @@ import { useHashRouter } from '@/hooks/useHashRouter';
 import type { CytoscapeElements, CytoscapeNodeData } from '@/types/graph';
 import type { FilterState } from './types';
 
-const CytoscapeCanvas = dynamic(() => import('./CytoscapeCanvas'), { ssr: false });
+const SigmaCanvas = dynamic(() => import('./SigmaCanvas'), { ssr: false });
 
 const ANCHOR_JAR_KODAS = '110053842';
 
@@ -39,6 +39,7 @@ export default function GraphView() {
   const [selectedNodeData, setSelectedNodeData] = useState<CytoscapeNodeData | null>(null);
   const [filters, setFilters] = useState<FilterState>({});
   const [expandTarget, setExpandTarget] = useState<string>(ANCHOR_JAR_KODAS);
+  const [balanceTrigger, setBalanceTrigger] = useState(0);
   const cyRef = useRef(null);
 
   const { data: health, isLoading: healthLoading, refetch: retryHealth } = useHealthcheck();
@@ -89,6 +90,10 @@ export default function GraphView() {
     [navigate],
   );
 
+  const handleBalanceGraph = useCallback(() => {
+    setBalanceTrigger((prev) => prev + 1);
+  }, []);
+
   // ── Health gate: show clear error if DB is unreachable ──────────────
   if (healthLoading) {
     return (
@@ -126,6 +131,7 @@ export default function GraphView() {
         elements={graphElements}
         filters={filters}
         onApplyFilters={handleApplyFilters}
+        onBalanceGraph={handleBalanceGraph}
         onNodeSelect={(nodeId, data) => {
           setSelectedNodeId(nodeId);
           setSelectedNodeData(data);
@@ -155,11 +161,12 @@ export default function GraphView() {
               <CircularProgress />
             </Box>
           )}
-          <CytoscapeCanvas
+          <SigmaCanvas
             elements={graphElements}
             onNodeClick={handleNodeClick}
             onBackgroundClick={handleBackgroundClick}
             cyRef={cyRef}
+            balanceTrigger={balanceTrigger}
           />
         </Box>
 
