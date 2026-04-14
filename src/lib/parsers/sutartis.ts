@@ -53,6 +53,7 @@ export function parseSutartis(raw: SutartisRaw): CytoscapeElements {
         target: contractId,
         type: 'Signed',
         label: 'Buyer',
+        value: raw.verte ?? null,
       },
     });
   }
@@ -65,6 +66,7 @@ export function parseSutartis(raw: SutartisRaw): CytoscapeElements {
         target: contractId,
         type: 'Signed',
         label: 'Supplier',
+        value: raw.verte ?? null,
       },
     });
   }

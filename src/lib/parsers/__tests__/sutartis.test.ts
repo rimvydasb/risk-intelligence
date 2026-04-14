@@ -38,4 +38,11 @@ describe('parseSutartis', () => {
     const contract = nodes.find((n) => n.data.type === 'Contract');
     expect(contract!.data.value).toBe(1200);
   });
+
+  it('propagates contract value onto both Signed edges', () => {
+    const { edges } = parseSutartis(raw);
+    for (const e of edges) {
+      expect(e.data.value).toBe(1200);
+    }
+  });
 });

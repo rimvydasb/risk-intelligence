@@ -165,7 +165,7 @@ export default function SigmaCanvas({
             return {
                 color: cfg.color,
                 size: cfg.size,
-                label: (data.label as string | null) ?? null,
+                label: formatEdgeLabel(data),
             };
         };
     }
@@ -219,16 +219,20 @@ export default function SigmaCanvas({
 
         const sigma: SigmaInstance = new Sigma(graph, containerRef.current, {
             renderLabels: true,
-            renderEdgeLabels: false,
+            renderEdgeLabels: true,
             defaultEdgeType: 'arrow',
+            itemSizeRatio: 1.0, // if you remove it, nodes will stay the same when zoom in or out
             labelFont: 'Arial, Roboto, sans-serif',
             labelSize: 10,
-            labelColor: {color: '#e0e0e0'},
+            labelColor: { color: '#e0e0e0' },
             labelDensity: 0.07,
             labelGridCellSize: 60,
             labelRenderedSizeThreshold: 6,
+            edgeLabelFont: 'Arial, Roboto, sans-serif',
+            edgeLabelSize: 9,
+            edgeLabelColor: { color: '#aaaaaa' },
             stagePadding: 30,
-            edgeProgramClasses: {arrow: EdgeArrowProgram},
+            edgeProgramClasses: { arrow: EdgeArrowProgram },
             nodeReducer: buildNodeReducer(selectedNodeRef.current),
             edgeReducer: buildEdgeReducer(),
             zIndex: true,
@@ -341,4 +345,21 @@ function adjustOpacity(hex: string, opacity: number): string {
     const ng = Math.round(g * opacity + bg * (1 - opacity));
     const nb = Math.round(b * opacity + bg * (1 - opacity));
     return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
+}
+
+// Show the contract value as the edge label (e.g. "€1.2M", "€45,000").
+// For non-contract edges (Employment, Director, etc.) fall back to the role label.
+function formatEdgeLabel(data: Record<string, unknown>): string | null {
+    const value = data.value;
+    if (typeof value === 'number' && value > 0) {
+        if (value >= 1_000_000) {
+            return `€${(value / 1_000_000).toFixed(1)}M`;
+        }
+        if (value >= 1_000) {
+            return `€${Math.round(value).toLocaleString('lt-LT')}`;
+        }
+        return `€${Math.round(value)}`;
+    }
+    // Non-monetary edges: show role label (Buyer/Supplier/Director/etc.)
+    return (data.label as string | null) ?? null;
 }
