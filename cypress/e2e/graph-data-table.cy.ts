@@ -48,4 +48,20 @@ describe('Graph Data Table — view mode toggle', () => {
 
         cy.location('hash').should('match', /\/graph\/\?.*yearFrom=2022/);
     });
+
+    it('org:126280418 shows resolved company name in table, not Nežinomas', () => {
+        // The anchor org 110053842 has 126280418 in topPirkejai with pavadinimas "Nežinomas".
+        // The expand endpoint must enrich it before returning — this test verifies the table
+        // reflects the real name fetched from viespirkiai.org.
+        cy.visit('http://localhost:3000/#/table/');
+        cy.get('[data-testid="graph-nodes-table"]', { timeout: 20000 }).should('be.visible');
+
+        cy.get('[data-testid="graph-nodes-table"] tbody tr')
+            .contains('[data-testid="node-id"]', 'org:126280418')
+            .closest('tr')
+            .find('[data-testid="node-label"]')
+            .should('not.contain', 'Nežinomas')
+            .and('not.contain', 'Nezinomas')
+            .and('not.be.empty');
+    });
 });
