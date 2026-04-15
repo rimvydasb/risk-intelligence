@@ -387,7 +387,7 @@ model StagingSutartisList {
   id           String   @id @default(cuid())
   buyerCode    String
   supplierCode String
-  contractIds  String[]
+  contracts    Json     // ContractSummary[]
   fetchedAt    DateTime
 
   @@unique([buyerCode, supplierCode])
