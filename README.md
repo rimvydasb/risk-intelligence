@@ -3,8 +3,8 @@
 > Visualise Lithuanian public procurement relationships as an interactive graph — detect nepotism, conflict-of-interest,
 > and bid-rigging patterns at a glance.
 
-Data is sourced from [viespirkiai.org](https://viespirkiai.org) and rendered
-with [Cytoscape.js](https://js.cytoscape.org/).
+Data is sourced from [viespirkiai.org](https://viespirkiai.org) and rendered with
+[Cytoscape.js](https://js.cytoscape.org/).
 
 ---
 
@@ -37,7 +37,7 @@ in place — no page reloads.
 ## Tech Stack
 
 | Layer             | Technology                               |
-|-------------------|------------------------------------------|
+| ----------------- | ---------------------------------------- |
 | Framework         | Next.js 16 (App Router) + React 19       |
 | Graph             | Cytoscape.js 3 + cytoscape-fcose layout  |
 | UI                | Material UI v9 + Emotion                 |
@@ -171,7 +171,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Available Scripts
 
 | Script                       | Description                                                                 |
-|------------------------------|-----------------------------------------------------------------------------|
+| ---------------------------- | --------------------------------------------------------------------------- |
 | `npm run dev`                | Start Next.js dev server                                                    |
 | `npm run build`              | Production build                                                            |
 | `npm run lint`               | ESLint                                                                      |
@@ -244,9 +244,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full system design in
 
 ## Docs
 
-| Document                                                                 | Description                                     |
-|--------------------------------------------------------------------------|-------------------------------------------------|
-| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                           | System architecture, data model, API design     |
+| Document                                                                 | Description                                      |
+| ------------------------------------------------------------------------ | ------------------------------------------------ |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)                           | System architecture, data model, API design      |
 | [`docs/BACKEND_REST_API_STORY.md`](docs/BACKEND_REST_API_STORY.md)       | Backend implementation story (✅ complete)       |
 | [`docs/GRAPH_VISUALIZATION_STORY.md`](docs/GRAPH_VISUALIZATION_STORY.md) | Frontend graph visualisation story (✅ complete) |
-| [`docs/USE_CASES.md`](docs/USE_CASES.md)                                 | Product use cases and future roadmap            |
+| [`docs/USE_CASES.md`](docs/USE_CASES.md)                                 | Product use cases and future roadmap             |

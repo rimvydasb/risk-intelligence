@@ -1,13 +1,13 @@
 {
-    "compilerOptions": {
-        "target": "ES2017",
-        "lib": ["es2015", "dom"],
-        "types": ["cypress", "node"],
-        "moduleResolution": "node",
-        "ignoreDeprecations": "6.0",
-        "esModuleInterop": true,
-        "strict": false,
-        "skipLibCheck": true
-    },
-    "include": ["**/*.ts"]
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["es2015", "dom"],
+    "types": ["cypress", "node"],
+    "moduleResolution": "node",
+    "ignoreDeprecations": "6.0",
+    "esModuleInterop": true,
+    "strict": false,
+    "skipLibCheck": true
+  },
+  "include": ["**/*.ts"]
 }

@@ -11,10 +11,7 @@
     "statusoPavadinimas": "Teisinis stat neįregistruotas",
     "statusasNuo": "2021-12-16",
     "duomenuData": "2026-01-27",
-    "location": [
-      54.670224595,
-      25.284323282
-    ],
+    "location": [54.670224595, 25.284323282],
     "pavadinimasBase": "Lietuvos geležinkeliai",
     "locationState": 1,
     "locationVersion": 1,

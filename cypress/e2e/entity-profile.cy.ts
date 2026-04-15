@@ -5,7 +5,7 @@ describe('Entity Profile — Hash Navigation', () => {
         cy.visit('http://localhost:3000/#/entities/110053842');
 
         // Entity detail view should render without a page reload
-        cy.contains('Lietuvos geležinkeliai', { timeout: 10000 }).should('be.visible');
+        cy.contains('Lietuvos geležinkeliai', {timeout: 10000}).should('be.visible');
         cy.contains('Risk Score').should('be.visible');
         cy.contains('Back to Graph').should('be.visible');
     });
@@ -20,7 +20,10 @@ describe('Entity Profile — Hash Navigation', () => {
 
         // Search and open sidebar
         cy.get('input[placeholder="Search Company or Person..."]').type('Lietuvos');
-        cy.get('.MuiAutocomplete-option', { timeout: 10000 }).should('have.length.at.least', 1).first().click({ force: true });
+        cy.get('.MuiAutocomplete-option', {timeout: 10000})
+            .should('have.length.at.least', 1)
+            .first()
+            .click({force: true});
 
         cy.contains('Node Details').should('be.visible');
 
@@ -31,7 +34,7 @@ describe('Entity Profile — Hash Navigation', () => {
         cy.location('hash').should('match', /^#\/entities\//);
 
         // Entity detail content rendered
-        cy.contains('Risk Score', { timeout: 10000 }).should('be.visible');
+        cy.contains('Risk Score', {timeout: 10000}).should('be.visible');
         cy.contains('Back to Graph').should('be.visible');
 
         // Click back — hash should return to /
@@ -49,7 +52,7 @@ describe('Entity Profile — Hash Navigation', () => {
         cy.visit('http://localhost:3000/#/entities/org:110053842');
 
         // Entity detail view should render
-        cy.location('hash', { timeout: 10000 }).should('include', 'entities');
-        cy.contains('Lietuvos geležinkeliai', { timeout: 10000 }).should('be.visible');
+        cy.location('hash', {timeout: 10000}).should('include', 'entities');
+        cy.contains('Lietuvos geležinkeliai', {timeout: 10000}).should('be.visible');
     });
 });

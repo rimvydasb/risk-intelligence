@@ -8,11 +8,11 @@ produces messy star-burst topologies when a central hub node (e.g. a large Insti
 clusters.
 
 This story replaces CoSE with **fCoSE** (Fast Compound Spring Embedder), the industry-standard organic layout for
-Cytoscape.js. fCoSE treats nodes as physical objects that cannot occupy the same space, resolves overlaps
-automatically, and produces significantly better results for star and mixed topologies.
+Cytoscape.js. fCoSE treats nodes as physical objects that cannot occupy the same space, resolves overlaps automatically,
+and produces significantly better results for star and mixed topologies.
 
-> `cytoscape-fcose` is already listed as a dependency in `package.json` but is **not yet activated** — the code
-> still calls `cy.layout({ name: 'cose' })`. This story wires it up properly.
+> `cytoscape-fcose` is already listed as a dependency in `package.json` but is **not yet activated** — the code still
+> calls `cy.layout({ name: 'cose' })`. This story wires it up properly.
 
 ---
 
@@ -21,8 +21,8 @@ automatically, and produces significantly better results for star and mixed topo
 1. Replace `cose` with `fcose` in `CytoscapeCanvas.tsx`.
 2. Register the `cytoscape-fcose` extension once, before any Cytoscape instance is created (module-level).
 3. Tune layout parameters to produce a clean, readable graph for the typical RIS topology (1 hub + N leaves).
-4. Support **incremental mode** — when new nodes are added via graph expansion, shift the existing layout instead
-   of recalculating the whole graph.
+4. Support **incremental mode** — when new nodes are added via graph expansion, shift the existing layout instead of
+   recalculating the whole graph.
 5. Add a TypeScript interface (`FcoseLayoutOptions`) so the layout call is fully type-safe without casts.
 6. Ensure the change is covered by existing tests and does not break Cypress E2E flows.
 
@@ -102,23 +102,23 @@ Replace the `cy.layout({ name: 'cose', animate: false })` call with:
 ```typescript
 const layoutOptions: FcoseLayoutOptions = {
     name: 'fcose',
-    quality: 'default',          // 'proof' for best quality, slower
+    quality: 'default', // 'proof' for best quality, slower
     randomize: false,
-    animate: false,              // keep false to avoid async frame races
+    animate: false, // keep false to avoid async frame races
     fit: true,
     padding: 40,
-    nodeDimensionsIncludeLabels: true,  // prevents label overlap
+    nodeDimensionsIncludeLabels: true, // prevents label overlap
     uniformNodeDimensions: false,
-    nodeRepulsion: () => 6000,   // high repulsion pushes leaf nodes apart
-    idealEdgeLength: () => 120,  // breathing room for edge labels
+    nodeRepulsion: () => 6000, // high repulsion pushes leaf nodes apart
+    idealEdgeLength: () => 120, // breathing room for edge labels
     edgeElasticity: () => 0.45,
-    gravity: 0.15,               // low gravity = organic spread, not tight ball
+    gravity: 0.15, // low gravity = organic spread, not tight ball
     gravityRange: 3.8,
     numIter: 2500,
     tile: true,
     tilingPaddingVertical: 10,
     tilingPaddingHorizontal: 10,
-    incremental: false,          // set to true when merging nodes incrementally
+    incremental: false, // set to true when merging nodes incrementally
 };
 
 const layout = cy.layout(layoutOptions);
@@ -127,7 +127,7 @@ const layout = cy.layout(layoutOptions);
 **Parameter rationale for star topologies:**
 
 | Parameter                     | Value       | Why                                                                      |
-|-------------------------------|-------------|--------------------------------------------------------------------------|
+| ----------------------------- | ----------- | ------------------------------------------------------------------------ |
 | `nodeRepulsion`               | `6000`      | Pushes leaf nodes (Person, PrivateCompany) away from each other          |
 | `idealEdgeLength`             | `120`       | Creates space for edge labels and prevents spoke overlap                 |
 | `gravity`                     | `0.15`      | Low gravity prevents the tight "ball" effect; graph can breathe          |
@@ -163,7 +163,7 @@ Pass `isExpansion = toAdd.length > 0 && existingNodeCount > 0` to distinguish in
 ## Affected Files
 
 | File                                       | Change                                                                   |
-|--------------------------------------------|--------------------------------------------------------------------------|
+| ------------------------------------------ | ------------------------------------------------------------------------ |
 | `src/components/graph/CytoscapeCanvas.tsx` | Register fCoSE extension; replace layout call; add `incremental` support |
 | `src/types/graph.ts`                       | Add `FcoseLayoutOptions` interface                                       |
 | `docs/ARCHITECTURE.md`                     | Update Technology Stack and Graph Component sections to reference fCoSE  |

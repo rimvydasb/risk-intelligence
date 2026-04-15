@@ -11,10 +11,7 @@
     "statusoPavadinimas": "Teisinis stat neįregistruotas",
     "statusasNuo": "2026-01-22",
     "duomenuData": "2026-01-27",
-    "location": [
-      55.469535024,
-      22.24561672
-    ],
+    "location": [55.469535024, 22.24561672],
     "pavadinimasBase": "GR paslaugos",
     "locationState": 1,
     "locationVersion": 1,

@@ -13,14 +13,13 @@ As the main source of data, RIS will use [viespirkiai.org](https://viespirkiai.o
 **Graph-First UX Paradigm:** The system features a graph-first user experience, employing Node-Link Diagrams to
 visualize a "Biological Interaction Network." This approach treats the procurement ecosystem as an organic entity,
 allowing investigators to intuitively spot structural anomalies (dense "inflamed" clusters). The front page immediately
-immerses the user in the graph canvas, beginning with the critical anchor node "
-geležinkeliai" (https://viespirkiai.org/asmuo/110053842.json) and its relationships, inviting exploration.
+immerses the user in the graph canvas, beginning with the critical anchor node " geležinkeliai"
+(https://viespirkiai.org/asmuo/110053842.json) and its relationships, inviting exploration.
 
-**360 Degree Entity View:** Clicking on any node (company, person, contract) opens a comprehensive profile view.
-This includes all relevant metadata, risk scores (in the future), and a mini graph of immediate relationships.
-Data fetched from viespirkiai.org is cached in **staging tables** (raw JSON) and parsed **on-the-fly** into
-Cytoscape.js graph elements. No separate entity/relationship tables are needed for v1 — the cached JSON IS the
-data model.
+**360 Degree Entity View:** Clicking on any node (company, person, contract) opens a comprehensive profile view. This
+includes all relevant metadata, risk scores (in the future), and a mini graph of immediate relationships. Data fetched
+from viespirkiai.org is cached in **staging tables** (raw JSON) and parsed **on-the-fly** into Cytoscape.js graph
+elements. No separate entity/relationship tables are needed for v1 — the cached JSON IS the data model.
 
 ## Main Use Cases
 
@@ -50,9 +49,9 @@ data model.
 
 ## Technology Stack
 
-1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization. Layout engine: *
-   *fCoSE** (`cytoscape-fcose`) — fast compound spring embedder that prevents node/label overlap in star and mixed
-   topologies.
+1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization. Layout
+   engine: \* \*fCoSE\*\* (`cytoscape-fcose`) — fast compound spring embedder that prevents node/label overlap in star
+   and mixed topologies.
 2. **Design System:** Material UI for consistent styling and responsive design.
 3. **Midlayer:** TanStack React Query for data fetching and caching, ensuring efficient API interactions. React
    useContext for global state management.
@@ -61,8 +60,8 @@ data model.
 6. **Testing:** Jest for unit tests **and** API integration tests (real PostgreSQL test database, viespirkiai HTTP
    client mocked); Cypress for end-to-end testing of the UI.
 7. **Hosting:** Vercel for production deployment of the Next.js application; GitHub Actions for CI/CD pipelines.
-8. **Data Ingestion:** On-demand via API route handlers — viespirkiai.org data is fetched and cached when users
-   expand graph nodes. No batch ETL in v1.
+8. **Data Ingestion:** On-demand via API route handlers — viespirkiai.org data is fetched and cached when users expand
+   graph nodes. No batch ETL in v1.
 
 ### Constraints
 
@@ -79,15 +78,14 @@ data model.
 Entity IDs use a **namespace prefix** to prevent collisions between entity types:
 
 | Entity Type  | ID Format              | Example                                       |
-|--------------|------------------------|-----------------------------------------------|
+| ------------ | ---------------------- | --------------------------------------------- |
 | Organization | `org:{jarKodas}`       | `org:110053842`                               |
 | Person       | `person:{deklaracija}` | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
 | Tender       | `tender:{pirkimoId}`   | `tender:7346201`                              |
 
 ```typescript
-
 interface TemporalEntity {
-    id: string;        // namespaced ID (see convention above)
+    id: string; // namespaced ID (see convention above)
     name: string;
     fromDate: Date;
     tillDate: Date | null; // null means "present"
@@ -103,7 +101,7 @@ interface TemporalEntity {
  */
 interface OrganizationEntity extends TemporalEntity {
     type: 'PrivateCompany' | 'PublicCompany' | 'Institution';
-    expanded: boolean;  // false = stub node (only jarKodas + name known), true = full data loaded
+    expanded: boolean; // false = stub node (only jarKodas + name known), true = full data loaded
 }
 
 /**
@@ -120,7 +118,7 @@ interface OrganizationEntity extends TemporalEntity {
  * @example: [110053842.json](examples/asmuo/110053842.json)
  */
 interface PersonEntity extends TemporalEntity {
-    data: Record<string, any> // pinreg.darbovietes[].*
+    data: Record<string, any>; // pinreg.darbovietes[].*
 }
 
 /**
@@ -131,8 +129,7 @@ interface PersonEntity extends TemporalEntity {
  * @example https://viespirkiai.org/viesiejiPirkimai/7346201.json
  * @example [7346201.json](examples/viesiejiPirkimai/7346201.json)
  */
-interface TenderEntity extends TemporalEntity {
-}
+interface TenderEntity extends TemporalEntity {}
 
 /**
  * Relationship represents a directed edge between two entities.
@@ -151,7 +148,6 @@ interface Relationship {
     tillDate?: Date;
     data?: Record<string, any>; // extra metadata (verte, pareigos, etc.)
 }
-
 ```
 
 ## Data Sources and API Contract
@@ -242,7 +238,7 @@ all declared employees, their spouses, board members, and summary of contract pa
 **@example:** [110053842.json](examples/asmuo/110053842.json) (AB "Lietuvos geležinkeliai" — trimmed)
 
 | API Section                       | Produces                        | Entity/Edge Type                             | Key Fields                                                                                                |
-|-----------------------------------|---------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| --------------------------------- | ------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `jar`                             | **OrganizationEntity**          | PrivateCompany / PublicCompany / Institution | `jarKodas` → id, `pavadinimas` → name, `registravimoData` → fromDate, `formosKodas` → type classification |
 | `sodra`                           | enriches **OrganizationEntity** | —                                            | `bendrasDraustujuSkaicius` → employee count, `bendrasVidutinisAtlyginimas` → avg salary                   |
 | `pinreg.darbovietes[]`            | **PersonEntity**                | Person                                       | `deklaracija` → id, `vardas + pavarde` → name, `rysioPradzia` → fromDate                                  |
@@ -258,7 +254,7 @@ all declared employees, their spouses, board members, and summary of contract pa
 #### pareiguTipasPavadinimas → Relationship Type
 
 | pareiguTipasPavadinimas      | → Relationship Type | Notes                                                |
-|------------------------------|---------------------|------------------------------------------------------|
+| ---------------------------- | ------------------- | ---------------------------------------------------- |
 | `Vadovas ar jo pavaduotojas` | **Director**        | CEO / Deputy — high risk for nepotism                |
 | `Darbuotojas`                | **Employment**      | Regular employee                                     |
 | `Pirkimo iniciatorius`       | **Official**        | Procurement initiator — key for conflict of interest |
@@ -268,7 +264,7 @@ all declared employees, their spouses, board members, and summary of contract pa
 #### rysioPobudzioPavadinimas → Relationship Type
 
 | rysioPobudzioPavadinimas  | → Relationship Type | Notes                                     |
-|---------------------------|---------------------|-------------------------------------------|
+| ------------------------- | ------------------- | ----------------------------------------- |
 | `Valdybos narys`          | **Director**        | Board member                              |
 | `Akcininkas`              | **Shareholder**     | Shareholder                               |
 | `Stebėtojų tarybos narys` | **Director**        | Supervisory board member                  |
@@ -281,7 +277,7 @@ The `sutartis` endpoint provides individual contract details — the primary sou
 **@example:** [2008059225.json](examples/sutartis/2008059225.json)
 
 | API Field                                                     | Produces                                         | Entity/Edge Type             | Mapping                                                                                                                               |
-|---------------------------------------------------------------|--------------------------------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------------------- | ------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `perkanciosiosOrganizacijosKodas` + `perkanciojiOrganizacija` | **OrganizationEntity** (buyer)                   | Institution or PublicCompany | `kodas` → id, `pavadinimas` → name                                                                                                    |
 | `tiekejoKodas` + `tiekejas`                                   | **OrganizationEntity** (supplier)                | PrivateCompany               | `kodas` → id, `pavadinimas` → name                                                                                                    |
 | root                                                          | **Relationship** (type=Contract)                 | Contract                     | `sutartiesUnikalusID` → edge id, `pavadinimas` → label, `paskelbimoData` → fromDate, `galiojimoData` → tillDate, `verte` → data.verte |
@@ -297,7 +293,7 @@ The `viesiejiPirkimai` endpoint provides tender/competition details. Tenders gro
 **@example:** [7346201.json](examples/viesiejiPirkimai/7346201.json)
 
 | API Field                                         | Produces                                  | Entity/Edge Type         | Mapping                                                                                                      |
-|---------------------------------------------------|-------------------------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------|
+| ------------------------------------------------- | ----------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
 | root                                              | **TenderEntity**                          | Tender                   | `pirkimoId` → id, `pavadinimas` → name, `paskelbimoData` → fromDate, `pasiulymuPateikimoTerminas` → tillDate |
 | `jarKodas` + `vykdytojoPavadinimas`               | **OrganizationEntity** (procuring entity) | Institution              | `jarKodas` → id, `pavadinimas` → name                                                                        |
 | `sutartys[]`                                      | **Relationship** (type=Contract, ref)     | links Tender → Contracts | contract IDs under this tender                                                                               |
@@ -305,8 +301,8 @@ The `viesiejiPirkimai` endpoint provides tender/competition details. Tenders gro
 
 ### Entity Discovery Chain
 
-The graph is populated **lazily** through user interaction. Each node-click triggers at most **one** viespirkiai
-fetch. Partner organizations appear as unexpanded stub nodes until the user clicks them.
+The graph is populated **lazily** through user interaction. Each node-click triggers at most **one** viespirkiai fetch.
+Partner organizations appear as unexpanded stub nodes until the user clicks them.
 
 ```mermaid
 flowchart TD
@@ -327,9 +323,9 @@ This approach guarantees **O(1) viespirkiai fetches per user click** — predict
 
 ## Staging Storage
 
-Staging tables are an **HTTP response cache** for viespirkiai.org API calls. They store raw JSON blobs keyed by
-natural identifiers. The service reads from staging and parses **on-the-fly** into Cytoscape elements — there are
-no intermediate Entity/Relationship database tables in v1.
+Staging tables are an **HTTP response cache** for viespirkiai.org API calls. They store raw JSON blobs keyed by natural
+identifiers. The service reads from staging and parses **on-the-fly** into Cytoscape elements — there are no
+intermediate Entity/Relationship database tables in v1.
 
 ### Staging Storage Population Flow
 
@@ -355,31 +351,31 @@ sequenceDiagram
     Note over GUI: Merge new elements into existing graph
 ```
 
-**Key design decision:** The expand endpoint performs at most **one** external fetch per call. Partner
-organizations from `topPirkejai`/`topTiekejai` appear as **stub nodes** (jarKodas + name + aggregate contract value)
-without triggering additional fetches. Stubs are expanded when the user clicks them.
+**Key design decision:** The expand endpoint performs at most **one** external fetch per call. Partner organizations
+from `topPirkejai`/`topTiekejai` appear as **stub nodes** (jarKodas + name + aggregate contract value) without
+triggering additional fetches. Stubs are expanded when the user clicks them.
 
 #### Freshness TTL Strategy
 
-| Staging Table          | TTL      | Rationale                                                         |
-|------------------------|----------|-------------------------------------------------------------------|
-| `StagingAsmuo`         | 24 hours | Employee/governance data changes infrequently                     |
-| `StagingSutartis`      | 7 days   | Contract data is essentially immutable after publication          |
-| `StagingSutartisList`  | 24 hours | Contract-ID list per buyer/supplier pair; new contracts may be awarded |
-| `StagingPirkimas`      | 24 hours | Active tenders may update (new bids, status changes)              |
+| Staging Table         | TTL      | Rationale                                                              |
+| --------------------- | -------- | ---------------------------------------------------------------------- |
+| `StagingAsmuo`        | 24 hours | Employee/governance data changes infrequently                          |
+| `StagingSutartis`     | 7 days   | Contract data is essentially immutable after publication               |
+| `StagingSutartisList` | 24 hours | Contract-ID list per buyer/supplier pair; new contracts may be awarded |
+| `StagingPirkimas`     | 24 hours | Active tenders may update (new bids, status changes)                   |
 
 ### Staging Storage Schema
 
 ```prisma
 model StagingAsmuo {
   jarKodas  String   @id
-  data      Json     
+  data      Json
   fetchedAt DateTime @default(now())
 }
 
 model StagingSutartis {
   sutartiesUnikalusID String   @id
-  data                Json     
+  data                Json
   fetchedAt           DateTime @default(now())
 }
 
@@ -396,23 +392,22 @@ model StagingSutartisList {
 
 model StagingPirkimas {
   pirkimoId String   @id
-  data      Json     
+  data      Json
   fetchedAt DateTime @default(now())
 }
 ```
 
 ### v2: Graph Store (Future)
 
-When cross-entity queries, person deduplication, aggregate analytics, or batch risk scoring are needed,
-add normalized `Entity` + `Relationship` tables populated by a background ETL job reading from staging —
-not on the API request path. Until then, staging + in-memory parsing is sufficient.
+When cross-entity queries, person deduplication, aggregate analytics, or batch risk scoring are needed, add normalized
+`Entity` + `Relationship` tables populated by a background ETL job reading from staging — not on the API request path.
+Until then, staging + in-memory parsing is sufficient.
 
 ### Test Database
 
-`docker-compose.yml` includes a `postgres-test` service on host port `5433` (separate from the dev
-database on `5432`). The test container uses `tmpfs` for storage — it is wiped clean each time it
-starts. `.env.test` points `DATABASE_URL` at this container. `bin/run-api-tests.sh` manages its
-lifecycle automatically.
+`docker-compose.yml` includes a `postgres-test` service on host port `5433` (separate from the dev database on `5432`).
+The test container uses `tmpfs` for storage — it is wiped clean each time it starts. `.env.test` points `DATABASE_URL`
+at this container. `bin/run-api-tests.sh` manages its lifecycle automatically.
 
 ## Components
 
@@ -421,7 +416,7 @@ lifecycle automatically.
 **Nodes:**
 
 | Entity             | Node/Entity Type | Node Label  | Node Size  | Node Color (TBC)    | Node Icon        |
-|--------------------|------------------|-------------|------------|---------------------|------------------|
+| ------------------ | ---------------- | ----------- | ---------- | ------------------- | ---------------- |
 | OrganizationEntity | PrivateCompany   | pavadinimas | log(verte) | risk score gradient | `Business`       |
 | OrganizationEntity | PublicCompany    | pavadinimas | log(verte) | risk score gradient | `DomainAdd`      |
 | OrganizationEntity | Institution      | pavadinimas | fixed size | fixed color         | `AccountBalance` |
@@ -431,27 +426,27 @@ lifecycle automatically.
 **Edges:**
 
 | Entity                  | Relationship Type | Edge Label | Edge Width  | Edge Color (TBC)    | Edge Style |
-|-------------------------|-------------------|------------|-------------|---------------------|------------|
+| ----------------------- | ----------------- | ---------- | ----------- | ------------------- | ---------- |
 | Relationship (Contract) | Contract          | verte      | log(verte)  | risk score gradient | solid      |
 | Relationship            | (others)          | role       | fixed width | risk score gradient | dashed     |
 
 **Graph Data Model:**
 
-The graph is built from Cytoscape.js elements returned by `/api/v1/graph/expand/{jarKodas}`. Each call returns
-elements for one expanded org + its neighbours. The client **merges** new elements into the existing graph
-(Cytoscape's `cy.add()` is idempotent for same-ID elements).
+The graph is built from Cytoscape.js elements returned by `/api/v1/graph/expand/{jarKodas}`. Each call returns elements
+for one expanded org + its neighbours. The client **merges** new elements into the existing graph (Cytoscape's
+`cy.add()` is idempotent for same-ID elements).
 
 **Layout Engine: fCoSE**
 
 The layout uses **fCoSE** (`cytoscape-fcose`) registered once at module level. Key parameters for RIS star topologies:
-`nodeRepulsion: 6000` (separates leaf nodes), `idealEdgeLength: 120` (label breathing room), `gravity: 0.15`
-(prevents tight-ball compaction), `nodeDimensionsIncludeLabels: true` (physical label bounding boxes — no overlap).
-Initial load uses `incremental: false`; node expansion uses `incremental: true` to preserve existing positions.
+`nodeRepulsion: 6000` (separates leaf nodes), `idealEdgeLength: 120` (label breathing room), `gravity: 0.15` (prevents
+tight-ball compaction), `nodeDimensionsIncludeLabels: true` (physical label bounding boxes — no overlap). Initial load
+uses `incremental: false`; node expansion uses `incremental: true` to preserve existing positions.
 
 **Edge Types:**
 
 | Edge Type   | Source → Target             | v1 Data Source                                               | Style        |
-|-------------|-----------------------------|--------------------------------------------------------------|--------------|
+| ----------- | --------------------------- | ------------------------------------------------------------ | ------------ |
 | Employment  | Person → Organization       | `pinreg.darbovietes[]`                                       | dashed       |
 | Director    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed, bold |
 | Official    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed       |
@@ -463,25 +458,25 @@ Initial load uses `incremental: false`; node expansion uses `incremental: true` 
 
 MUI `AppBar` + `Toolbar` pinned to the top of the graph canvas. Contains:
 
-- **Search** `Autocomplete` — scans in-memory graph nodes by label; selecting a result centres +
-  highlights the node on the canvas. `placeholder="Search Company or Person..."`
-- **Year-from / Year-to** `Select` dropdowns — options 2010 → current year.
-  `data-testid="filter-year-from"` / `data-testid="filter-year-to"`.
+- **Search** `Autocomplete` — scans in-memory graph nodes by label; selecting a result centres + highlights the node on
+  the canvas. `placeholder="Search Company or Person..."`
+- **Year-from / Year-to** `Select` dropdowns — options 2010 → current year. `data-testid="filter-year-from"` /
+  `data-testid="filter-year-to"`.
 - **Min contract value** `TextField` (number, EUR). `data-testid="filter-min-value"`.
-- **Apply** `Button` (`data-testid="filter-apply"`) — encodes active filter state in the URL hash
-  query string and re-fetches the current anchor with the new filters.
-- **Reset** `Button` (`data-testid="filter-reset"`) — only visible when non-default filters are
-  active. Clears state and removes itself.
-- **View mode toggle** `ToggleButtonGroup` (right side) — switches between `"graph"` and `"table"`
-  modes by navigating to `#/graph/` or `#/table/`. Filter query params are preserved across the
-  switch. `data-testid="view-mode-graph"` / `data-testid="view-mode-table"`.
+- **Apply** `Button` (`data-testid="filter-apply"`) — encodes active filter state in the URL hash query string and
+  re-fetches the current anchor with the new filters.
+- **Reset** `Button` (`data-testid="filter-reset"`) — only visible when non-default filters are active. Clears state and
+  removes itself.
+- **View mode toggle** `ToggleButtonGroup` (right side) — switches between `"graph"` and `"table"` modes by navigating
+  to `#/graph/` or `#/table/`. Filter query params are preserved across the switch. `data-testid="view-mode-graph"` /
+  `data-testid="view-mode-table"`.
 
 Filter state is encoded in the hash fragment: `#/?yearFrom=2022&yearTo=2022&minContractValue=100000`.
 
 **Hash routes for view mode:**
 
 | Route      | View            |
-|------------|-----------------|
+| ---------- | --------------- |
 | `#/`       | graph (default) |
 | `#/graph/` | graph           |
 | `#/table/` | table           |
@@ -490,16 +485,16 @@ Filter state is encoded in the hash fragment: `#/?yearFrom=2022&yearTo=2022&minC
 
 ### Graph Data Table (`GraphDataTable`)
 
-An alternative read-only view of the in-memory graph, rendered as plain MUI tables. Activated via
-the view-mode toggle in `GraphToolbar`. Primary use-cases: Cypress test assertions and human
-inspection of graph contents without relying on the WebGL canvas.
+An alternative read-only view of the in-memory graph, rendered as plain MUI tables. Activated via the view-mode toggle
+in `GraphToolbar`. Primary use-cases: Cypress test assertions and human inspection of graph contents without relying on
+the WebGL canvas.
 
 `GraphDataTable` wraps two sub-components in a scrollable `Box`:
 
 **`GraphNodesTable`** (`data-testid="graph-nodes-table"`)
 
 | Column       | Source field         | Format                             |
-|--------------|----------------------|------------------------------------|
+| ------------ | -------------------- | ---------------------------------- |
 | **ID**       | `node.data.id`       | raw string                         |
 | **Label**    | `node.data.label`    | raw string                         |
 | **Type**     | `node.data.type`     | raw string                         |
@@ -510,7 +505,7 @@ inspection of graph contents without relying on the WebGL canvas.
 **`GraphEdgesTable`** (`data-testid="graph-edges-table"`)
 
 | Column     | Source field         | Format                             |
-|------------|----------------------|------------------------------------|
+| ---------- | -------------------- | ---------------------------------- |
 | **ID**     | `edge.data.id`       | raw string                         |
 | **Source** | `edge.data.source`   | raw string                         |
 | **Target** | `edge.data.target`   | raw string                         |
@@ -522,17 +517,16 @@ inspection of graph contents without relying on the WebGL canvas.
 
 ### Node Details Component (`NodeSidebar`)
 
-MUI `Drawer` (`anchor="right"`, `variant="persistent"`, width 300px) that slides in when a node
-is clicked. Sections:
+MUI `Drawer` (`anchor="right"`, `variant="persistent"`, width 300px) that slides in when a node is clicked. Sections:
 
-- **Header:** entity label, type badge `Chip`, close icon button
-  (`data-testid="close-sidebar"`). Section heading `"Node Details"`.
-- **Metadata:** table of all available `nodeData` fields — `type`, `expanded`, `employees`,
-  `avgSalary`, `contractTotal`, `contractCount`, dates.
-- **Risk Profile:** placeholder section (heading `"Risk Profile"`) reserved for future risk
-  scoring. Shows `"—"` for all scores in v1.
-- **"View Full Profile"** `Button` — navigates to `#/entities/{entityId}` where the full
-  360° entity profile is rendered.
+- **Header:** entity label, type badge `Chip`, close icon button (`data-testid="close-sidebar"`). Section heading
+  `"Node Details"`.
+- **Metadata:** table of all available `nodeData` fields — `type`, `expanded`, `employees`, `avgSalary`,
+  `contractTotal`, `contractCount`, dates.
+- **Risk Profile:** placeholder section (heading `"Risk Profile"`) reserved for future risk scoring. Shows `"—"` for all
+  scores in v1.
+- **"View Full Profile"** `Button` — navigates to `#/entities/{entityId}` where the full 360° entity profile is
+  rendered.
 
 ### Edge Details Component
 
@@ -543,8 +537,8 @@ In v1, clicking a Contract edge displays a lightweight tooltip (MUI `Popover`) c
 - Total value + contract count
 - Date range (`fromDate` – `tillDate`)
 
-Selecting a Contract edge does **not** open the sidebar — the sidebar is node-only in v1.
-Edge popover is dismissed by clicking elsewhere on the canvas.
+Selecting a Contract edge does **not** open the sidebar — the sidebar is node-only in v1. Edge popover is dismissed by
+clicking elsewhere on the canvas.
 
 ---
 
@@ -651,10 +645,10 @@ risk-intelligence/
 > API will be implemented using Next.js API `import type { NextApiRequest, NextApiResponse } from 'next';` route
 > handlers.
 
-> API's will be tested using Jest integration tests that require a running PostgreSQL test database.
-> The viespirkiai.org HTTP client is **mocked** in tests — `docs/examples/` JSON fixtures are used
-> as mock responses so tests never hit the live API. The server is started with `.env.test` config.
-> Run `./bin/run-api-tests.sh` to execute: start test DB → migrate → run Jest → stop DB.
+> API's will be tested using Jest integration tests that require a running PostgreSQL test database. The viespirkiai.org
+> HTTP client is **mocked** in tests — `docs/examples/` JSON fixtures are used as mock responses so tests never hit the
+> live API. The server is started with `.env.test` config. Run `./bin/run-api-tests.sh` to execute: start test DB →
+> migrate → run Jest → stop DB.
 
 ### Core Endpoints
 
@@ -670,13 +664,13 @@ and every subsequent node-click expansion.
 3. Apply filters (yearFrom/yearTo, minValue on aggregate contract edges)
 4. Return Cytoscape.js-compatible response
 
-**No database writes to Entity/Relationship tables.** The parse is stateless and deterministic — given the same
-staging JSON, the same Cytoscape output is produced every time.
+**No database writes to Entity/Relationship tables.** The parse is stateless and deterministic — given the same staging
+JSON, the same Cytoscape output is produced every time.
 
 **Parameters:**
 
 | Param      | Type  | Default  | Description                                               |
-|------------|-------|----------|-----------------------------------------------------------|
+| ---------- | ----- | -------- | --------------------------------------------------------- |
 | `jarKodas` | path  | required | Organization code (company registry number)               |
 | `yearFrom` | query | —        | Filter relationships starting from this year              |
 | `yearTo`   | query | —        | Filter relationships ending before this year              |
@@ -687,7 +681,7 @@ staging JSON, the same Cytoscape output is produced every time.
 **Error responses:**
 
 | Status | Condition                                       |
-|--------|-------------------------------------------------|
+| ------ | ----------------------------------------------- |
 | `400`  | `jarKodas` missing or non-numeric               |
 | `502`  | viespirkiai.org unreachable or returned non-2xx |
 | `500`  | Unexpected parse or database error              |
@@ -700,7 +694,7 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 **Error responses:**
 
 | Status | Condition                                                          |
-|--------|--------------------------------------------------------------------|
+| ------ | ------------------------------------------------------------------ |
 | `400`  | `entityId` has no recognised prefix (`org:`, `person:`, `tender:`) |
 | `404`  | Entity not found in staging cache (not yet expanded)               |
 | `500`  | Unexpected error                                                   |
@@ -709,74 +703,74 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 
 ```json
 {
-  "elements": {
-    "nodes": [
-      {
-        "data": {
-          "id": "org:110053842",
-          "label": "AB Lietuvos geležinkeliai",
-          "type": "PublicCompany",
-          "expanded": true,
-          "employees": 122,
-          "avgSalary": 5023.51
-        }
-      },
-      {
-        "data": {
-          "id": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
-          "label": "ALEKSANDRAS ZUBRIAKOVAS",
-          "type": "Person",
-          "role": "Korporatyvinių reikalų direktorius"
-        }
-      },
-      {
-        "data": {
-          "id": "org:304977594",
-          "label": "AB \"LTG Cargo\"",
-          "type": "PrivateCompany",
-          "expanded": false,
-          "contractTotal": 432081948.06,
-          "contractCount": 79
-        }
-      }
-    ],
-    "edges": [
-      {
-        "data": {
-          "id": "edge:person:026a8bda-org:110053842-Director",
-          "source": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
-          "target": "org:110053842",
-          "type": "Director",
-          "label": "Korporatyvinių reikalų direktorius",
-          "fromDate": "2023-09-25"
-        }
-      },
-      {
-        "data": {
-          "id": "edge:org:110053842-org:304977594-Contract",
-          "source": "org:110053842",
-          "target": "org:304977594",
-          "type": "Contract",
-          "label": "432.1M EUR (79 contracts)",
-          "totalValue": 432081948.06,
-          "count": 79
-        }
-      }
-    ]
-  },
-  "meta": {
-    "anchorId": "org:110053842",
-    "totalNodes": 3,
-    "totalEdges": 2,
-    "generatedAt": "2026-04-13T12:00:00Z"
-  }
+    "elements": {
+        "nodes": [
+            {
+                "data": {
+                    "id": "org:110053842",
+                    "label": "AB Lietuvos geležinkeliai",
+                    "type": "PublicCompany",
+                    "expanded": true,
+                    "employees": 122,
+                    "avgSalary": 5023.51
+                }
+            },
+            {
+                "data": {
+                    "id": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
+                    "label": "ALEKSANDRAS ZUBRIAKOVAS",
+                    "type": "Person",
+                    "role": "Korporatyvinių reikalų direktorius"
+                }
+            },
+            {
+                "data": {
+                    "id": "org:304977594",
+                    "label": "AB \"LTG Cargo\"",
+                    "type": "PrivateCompany",
+                    "expanded": false,
+                    "contractTotal": 432081948.06,
+                    "contractCount": 79
+                }
+            }
+        ],
+        "edges": [
+            {
+                "data": {
+                    "id": "edge:person:026a8bda-org:110053842-Director",
+                    "source": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
+                    "target": "org:110053842",
+                    "type": "Director",
+                    "label": "Korporatyvinių reikalų direktorius",
+                    "fromDate": "2023-09-25"
+                }
+            },
+            {
+                "data": {
+                    "id": "edge:org:110053842-org:304977594-Contract",
+                    "source": "org:110053842",
+                    "target": "org:304977594",
+                    "type": "Contract",
+                    "label": "432.1M EUR (79 contracts)",
+                    "totalValue": 432081948.06,
+                    "count": 79
+                }
+            }
+        ]
+    },
+    "meta": {
+        "anchorId": "org:110053842",
+        "totalNodes": 3,
+        "totalEdges": 2,
+        "generatedAt": "2026-04-13T12:00:00Z"
+    }
 }
 ```
 
 **Node types in response:**
 
 | `expanded` | Meaning                                                       | User action                         |
-|------------|---------------------------------------------------------------|-------------------------------------|
+| ---------- | ------------------------------------------------------------- | ----------------------------------- |
 | `true`     | Full data loaded (people + edges visible)                     | Click → show detail panel           |
 | `false`    | Stub node (only jarKodas + name + aggregate contract summary) | Click → triggers new `/expand` call |
 
@@ -784,8 +778,8 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 
 ## Delivery Stories
 
-| Story                                                            | Status     | Description                                               |
-|------------------------------------------------------------------|------------|-----------------------------------------------------------|
+| Story                                                            | Status      | Description                                               |
+| ---------------------------------------------------------------- | ----------- | --------------------------------------------------------- |
 | [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)       | ✅ Complete | Prisma schema, staging cache, parsers, REST API, tests    |
 | [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md) | ✅ Complete | Frontend: Cytoscape graph, hash routing, filters, Cypress |
 | [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)   | ⏳ Next     | Replace Cytoscape.js with Sigma.js + Graphology (WebGL)   |

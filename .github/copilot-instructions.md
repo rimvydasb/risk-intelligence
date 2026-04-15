@@ -17,7 +17,7 @@ nepotism, conflict-of-interest, and bid-rigging.
 ## Commands
 
 | Task                         | Command                         |
-|------------------------------|---------------------------------|
+| ---------------------------- | ------------------------------- |
 | Dev server                   | `npm run dev`                   |
 | Production build             | `npm run build`                 |
 | Lint                         | `npm run lint`                  |
@@ -47,7 +47,7 @@ nepotism, conflict-of-interest, and bid-rigging.
 ## REST API
 
 | Method | Path                              | Description                             |
-|--------|-----------------------------------|-----------------------------------------|
+| ------ | --------------------------------- | --------------------------------------- |
 | `GET`  | `/api/v1/healthcheck`             | DB status + staging table counts        |
 | `GET`  | `/api/v1/graph/expand/[jarKodas]` | Fetch & expand org node (nodes + edges) |
 | `GET`  | `/api/v1/entity/[entityId]`       | Full entity profile                     |

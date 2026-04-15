@@ -1,7 +1,7 @@
 describe('Toolbar Filters', () => {
     beforeEach(() => {
         cy.visit('/');
-        cy.get('[data-testid="graph-container"]', { timeout: 15000 }).should('be.visible');
+        cy.get('[data-testid="graph-container"]', {timeout: 15000}).should('be.visible');
     });
 
     it('renders filter controls in the toolbar', () => {

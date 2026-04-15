@@ -205,9 +205,7 @@
       }
     ],
     "aprasymas": "Perkamos perkančiosios organizacijos rengiamos televizijos programos „Seimas-tiesiogiai“ retransliavimo Lietuvos Respublikos teritorijoje skaitmeninės antžeminės televizijos tinklu nekoduotu būdu paslaugos, tiekėjui tapus šios programos retransliuotoju",
-    "bvpzKodai": [
-      "64228100"
-    ],
+    "bvpzKodai": ["64228100"],
     "direktyva": "2014/24/ES (Klasikinė)",
     "nutsKodai": "",
     "skelbimai": [
@@ -232,9 +230,7 @@
     "pirkimoObjektoTipas": "Paslaugos",
     "pirkimoVykdytojasId": "1735",
     "pvPirkimoUnikalusID": "",
-    "bvpzKodaiPavadinimai": [
-      "Televizijos programų transliavimo paslaugos"
-    ],
+    "bvpzKodaiPavadinimai": ["Televizijos programų transliavimo paslaugos"],
     "laimetojoNustatymoData": null,
     "pirkimuSuvestinesNuoroda": "1002/2987/3268399",
     "kvietimuIssiuntimoTerminas": "",
@@ -243,9 +239,7 @@
     "pirkimoVykdytojasPavadinimas": "Lietuvos Respublikos Seimo kanceliarija",
     "susipazinimoSuPasiulymaisData": "2026-05-19 10:30",
     "dokumentuIkelimasSuPaaiskinimais": "Taip",
-    "tedNuorodosIPaskelbtusPranesimus": [
-      "https://ted.europa.eu/udl?uri=TED:NOTICE:248187-2026:TEXT:LT:HTML"
-    ],
+    "tedNuorodosIPaskelbtusPranesimus": ["https://ted.europa.eu/udl?uri=TED:NOTICE:248187-2026:TEXT:LT:HTML"],
     "laimetojoNustatymasKiekvienamObjektui": "Ne",
     "pirkimasSkaidomasIDaliuDPSIKategorijas": "Ne",
     "pasiulymuPateikimoTerminasDienosvalandos": "36/3",
@@ -271,9 +265,7 @@
   "scrapeReservation": null,
   "searchTsv": "'7346201':19 'antžeminės':11,34 'būdu':38 'kanceliarija':18 'lietuvos':7,15,30 'nekoduotu':37 'organizacijos':22 'paslaugos':14,39 'perkamos':20 'perkančiosios':21 'programos':2,25,43 'rengiamos':23 'respublikos':8,16,31 'retransliavimo':6,29 'retransliuotoju':44 'seimas':4,27 'seimas-tiesiogiai':3,26 'seimo':17 'skaitmeninės':10,33 'tapus':41 'televizijos':1,12,24,35 'teritorijoje':9,32 'tiekėjui':40 'tiesiogiai':5,28 'tinklu':13,36 'šios':42",
   "numatomaVerteEUR": null,
-  "bvpzKodai": [
-    "64228100"
-  ],
+  "bvpzKodai": ["64228100"],
   "pirkimoObjektoTipas": "Paslaugos",
   "esFinansavimas": false,
   "pirkimoVykdytojasId": "1735",

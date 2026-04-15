@@ -5,7 +5,7 @@ describe('Graph Data Table — view mode toggle', () => {
 
     it('navigates directly to #/table/ and shows both tables', () => {
         cy.visit('http://localhost:3000/#/table/');
-        cy.get('[data-testid="graph-nodes-table"]', { timeout: 15000 }).should('be.visible');
+        cy.get('[data-testid="graph-nodes-table"]', {timeout: 15000}).should('be.visible');
         cy.get('[data-testid="graph-edges-table"]').should('be.visible');
         cy.get('[data-testid="graph-nodes-table"] tbody tr').should('have.length.at.least', 1);
         cy.get('[data-testid="graph-edges-table"] tbody tr').should('have.length.at.least', 1);
@@ -13,14 +13,14 @@ describe('Graph Data Table — view mode toggle', () => {
 
     it('navigates directly to #/graph/ and shows graph, not tables', () => {
         cy.visit('http://localhost:3000/#/graph/');
-        cy.get('[data-testid="graph-container"]', { timeout: 15000 }).should('exist');
+        cy.get('[data-testid="graph-container"]', {timeout: 15000}).should('exist');
         cy.get('[data-testid="graph-nodes-table"]').should('not.exist');
         cy.get('[data-testid="graph-edges-table"]').should('not.exist');
     });
 
     it('clicking table toggle changes URL to #/table/ and shows tables', () => {
         cy.visit('http://localhost:3000/');
-        cy.get('[data-testid="graph-container"]', { timeout: 15000 }).should('exist');
+        cy.get('[data-testid="graph-container"]', {timeout: 15000}).should('exist');
 
         cy.get('[data-testid="view-mode-table"]').click();
 
@@ -31,7 +31,7 @@ describe('Graph Data Table — view mode toggle', () => {
 
     it('clicking graph toggle changes URL to #/graph/ and shows graph', () => {
         cy.visit('http://localhost:3000/#/table/');
-        cy.get('[data-testid="graph-nodes-table"]', { timeout: 15000 }).should('be.visible');
+        cy.get('[data-testid="graph-nodes-table"]', {timeout: 15000}).should('be.visible');
 
         cy.get('[data-testid="view-mode-graph"]').click();
 
@@ -42,7 +42,7 @@ describe('Graph Data Table — view mode toggle', () => {
 
     it('preserves filter params when switching view mode', () => {
         cy.visit('http://localhost:3000/#/table/?yearFrom=2022');
-        cy.get('[data-testid="graph-nodes-table"]', { timeout: 15000 }).should('be.visible');
+        cy.get('[data-testid="graph-nodes-table"]', {timeout: 15000}).should('be.visible');
 
         cy.get('[data-testid="view-mode-graph"]').click();
 
@@ -53,7 +53,7 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.intercept('GET', '/api/v1/graph/expand/**').as('expand');
 
         cy.visit('http://localhost:3000/#/table/');
-        cy.wait('@expand', { timeout: 20000 });
+        cy.wait('@expand', {timeout: 20000});
         cy.get('[data-testid="graph-nodes-table"] tbody tr').should('have.length.at.least', 1);
 
         // Count rows before applying filter
@@ -68,23 +68,21 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.wait('@expand').its('request.url').should('include', 'year=2022');
 
         // Table is repopulated (anchor org always present)
-        cy.get('[data-testid="graph-nodes-table"] tbody tr', { timeout: 15000 })
-            .should('have.length.at.least', 1);
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
     });
 
     it('changing filter again re-fetches without accumulating stale rows', () => {
         cy.intercept('GET', '/api/v1/graph/expand/**').as('expand');
 
         cy.visit('http://localhost:3000/#/table/');
-        cy.wait('@expand', { timeout: 20000 });
+        cy.wait('@expand', {timeout: 20000});
 
         // Apply first filter (2022)
         cy.get('[data-testid="filter-year-from"]').parent().click();
         cy.contains('[role="option"]', '2022').click();
         cy.get('[data-testid="filter-apply"]').click();
         cy.wait('@expand').its('request.url').should('include', 'year=2022');
-        cy.get('[data-testid="graph-nodes-table"] tbody tr', { timeout: 15000 })
-            .its('length').as('countAfterFirst');
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).its('length').as('countAfterFirst');
 
         // Change to a different filter (2024)
         cy.get('[data-testid="filter-year-from"]').parent().click();
@@ -92,8 +90,7 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.get('[data-testid="filter-apply"]').click();
         cy.wait('@expand').its('request.url').should('include', 'year=2024');
 
-        cy.get('[data-testid="graph-nodes-table"] tbody tr', { timeout: 15000 })
-            .its('length').as('countAfterSecond');
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).its('length').as('countAfterSecond');
 
         // Row count must not have grown by accumulation — it must reflect only the
         // second filter's result, i.e. <= (first result + second result combined).
@@ -107,7 +104,7 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.intercept('GET', '/api/v1/graph/expand/**').as('expand');
 
         cy.visit('http://localhost:3000/#/table/');
-        cy.wait('@expand', { timeout: 20000 });
+        cy.wait('@expand', {timeout: 20000});
 
         // Apply filter
         cy.get('[data-testid="filter-year-from"]').parent().click();
@@ -127,8 +124,7 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.get('[data-testid="filter-reset"]').should('not.exist');
 
         // Table stays populated (data served from cache or re-fetched)
-        cy.get('[data-testid="graph-nodes-table"] tbody tr', { timeout: 15000 })
-            .should('have.length.at.least', 1);
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
     });
 
     it('org:126280418 shows resolved company name in table, not Nežinomas', () => {
@@ -136,7 +132,7 @@ describe('Graph Data Table — view mode toggle', () => {
         // The expand endpoint must enrich it before returning — this test verifies the table
         // reflects the real name fetched from viespirkiai.org.
         cy.visit('http://localhost:3000/#/table/');
-        cy.get('[data-testid="graph-nodes-table"]', { timeout: 20000 }).should('be.visible');
+        cy.get('[data-testid="graph-nodes-table"]', {timeout: 20000}).should('be.visible');
 
         cy.get('[data-testid="graph-nodes-table"] tbody tr')
             .contains('[data-testid="node-id"]', 'org:126280418')

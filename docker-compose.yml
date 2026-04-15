@@ -1,27 +1,27 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: risk-intelligence-db
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=risk_intelligence
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    postgres:
+        image: postgres:16-alpine
+        container_name: risk-intelligence-db
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=risk_intelligence
+        ports:
+            - '5432:5432'
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
 
-  postgres-test:
-    image: postgres:16-alpine
-    container_name: risk-intelligence-db-test
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=risk_intelligence_test
-    ports:
-      - "5433:5432"
-    tmpfs:
-      - /var/lib/postgresql/data  # wiped on container stop — always a clean slate
+    postgres-test:
+        image: postgres:16-alpine
+        container_name: risk-intelligence-db-test
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=postgres
+            - POSTGRES_DB=risk_intelligence_test
+        ports:
+            - '5433:5432'
+        tmpfs:
+            - /var/lib/postgresql/data # wiped on container stop — always a clean slate
 
 volumes:
-  postgres_data:
+    postgres_data:

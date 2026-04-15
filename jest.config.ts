@@ -9,11 +9,7 @@ const createJestConfig = nextJest({
 // Integration tests (staging, graph orchestration, route handlers) require a running
 // PostgreSQL test database.  They are excluded by default and only enabled when
 // RUN_INTEGRATION=true (set by bin/run-api-tests.sh).
-const integrationPatterns = [
-  '<rootDir>/src/lib/staging/',
-  '<rootDir>/src/lib/graph/',
-  '<rootDir>/src/app/api/',
-];
+const integrationPatterns = ['<rootDir>/src/lib/staging/', '<rootDir>/src/lib/graph/', '<rootDir>/src/app/api/'];
 
 const config: Config = {
     coverageProvider: 'v8',
@@ -23,9 +19,9 @@ const config: Config = {
         '^@/(.*)$': '<rootDir>/src/$1',
     },
     testPathIgnorePatterns: [
-      '/node_modules/',
-      '/.next/',
-      ...(process.env.RUN_INTEGRATION !== 'true' ? integrationPatterns : []),
+        '/node_modules/',
+        '/.next/',
+        ...(process.env.RUN_INTEGRATION !== 'true' ? integrationPatterns : []),
     ],
 };
 

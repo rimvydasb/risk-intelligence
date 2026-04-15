@@ -1,3 +1,3 @@
 export interface EntityDetailViewProps {
-  entityId: string;
+    entityId: string;
 }

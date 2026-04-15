@@ -2,24 +2,21 @@
 
 ## Summary
 
-Implement the complete backend for the Risk Intelligence System: Prisma schema, database setup,
-viespirkiai.org HTTP client, staging cache layer, in-memory parsers, and Next.js API route handlers.
-All REST endpoints must be covered by Jest integration tests that run against a real PostgreSQL
-test database using `docs/examples/` as fixture data. A `bin/run-api-tests.sh` shell script
-(modelled on `bin/run-cypress-tests.sh`) provides a one-command way to spin up the test database,
-seed fixtures, run the tests, and tear down.
+Implement the complete backend for the Risk Intelligence System: Prisma schema, database setup, viespirkiai.org HTTP
+client, staging cache layer, in-memory parsers, and Next.js API route handlers. All REST endpoints must be covered by
+Jest integration tests that run against a real PostgreSQL test database using `docs/examples/` as fixture data. A
+`bin/run-api-tests.sh` shell script (modelled on `bin/run-cypress-tests.sh`) provides a one-command way to spin up the
+test database, seed fixtures, run the tests, and tear down.
 
 ---
 
 ## Context
 
-The graph is populated lazily: the user opens the app → the app calls
-`GET /api/v1/graph/expand/{jarKodas}` → the route handler checks the staging cache → fetches from
-viespirkiai.org if stale/missing → parses the raw JSON in-memory → returns Cytoscape.js-compatible
-elements. There are no intermediate Entity/Relationship database tables in v1.
+The graph is populated lazily: the user opens the app → the app calls `GET /api/v1/graph/expand/{jarKodas}` → the route
+handler checks the staging cache → fetches from viespirkiai.org if stale/missing → parses the raw JSON in-memory →
+returns Cytoscape.js-compatible elements. There are no intermediate Entity/Relationship database tables in v1.
 
-See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full data model, staging schema, and API
-response format.
+See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full data model, staging schema, and API response format.
 
 ---
 
@@ -32,8 +29,8 @@ response format.
    `{ id, type, label, data, relationships }` for entity.
 5. Staging cache TTL is respected: a fresh staging row is not re-fetched from viespirkiai.org.
 6. A stale / missing staging row triggers a viespirkiai.org fetch, stores the result, then parses.
-7. All parsers correctly derive `OrganizationEntity`, `PersonEntity`, `TenderEntity`, and
-   `Relationship` from the sample fixtures in `docs/examples/`.
+7. All parsers correctly derive `OrganizationEntity`, `PersonEntity`, `TenderEntity`, and `Relationship` from the sample
+   fixtures in `docs/examples/`.
 8. All Jest tests pass with `NODE_ENV=test` and `.env.test` credentials.
 9. `bin/run-api-tests.sh` runs end-to-end (Docker DB up → migrate → seed → test → exit).
 10. `npm run lint` and `npm test` both pass on `main`.
@@ -54,21 +51,21 @@ STAGING_TTL_SUTARTIS_HOURS=168
 STAGING_TTL_PIRKIMAS_HOURS=24
 ```
 
-**`docker-compose.yml`** — add a dedicated `postgres-test` service alongside the existing `postgres`
-so developers can run both databases simultaneously without conflicts:
+**`docker-compose.yml`** — add a dedicated `postgres-test` service alongside the existing `postgres` so developers can
+run both databases simultaneously without conflicts:
 
 ```yaml
 postgres-test:
-  image: postgres:16-alpine
-  container_name: risk-intelligence-db-test
-  environment:
-    - POSTGRES_USER=postgres
-    - POSTGRES_PASSWORD=postgres
-    - POSTGRES_DB=risk_intelligence_test
-  ports:
-    - "5433:5432"        # different host port — no clash with dev DB on 5432
-  tmpfs:
-    - /var/lib/postgresql/data   # in-memory; wiped on container stop
+    image: postgres:16-alpine
+    container_name: risk-intelligence-db-test
+    environment:
+        - POSTGRES_USER=postgres
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_DB=risk_intelligence_test
+    ports:
+        - '5433:5432' # different host port — no clash with dev DB on 5432
+    tmpfs:
+        - /var/lib/postgresql/data # in-memory; wiped on container stop
 ```
 
 ---
@@ -89,19 +86,19 @@ generator client {
 
 model StagingAsmuo {
   jarKodas  String   @id
-  data      Json     
+  data      Json
   fetchedAt DateTime @default(now()) @updatedAt
 }
 
 model StagingSutartis {
   sutartiesUnikalusID String   @id
-  data                Json     
+  data                Json
   fetchedAt           DateTime @default(now()) @updatedAt
 }
 
 model StagingPirkimas {
   pirkimoId String   @id
-  data      Json     
+  data      Json
   fetchedAt DateTime @default(now()) @updatedAt
 }
 ```
@@ -191,7 +188,7 @@ src/
 ```typescript
 import {PrismaClient} from '@prisma/client';
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+const globalForPrisma = globalThis as unknown as {prisma: PrismaClient};
 
 export const db =
     globalForPrisma.prisma ??
@@ -204,15 +201,15 @@ if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db;
 
 #### `src/lib/viespirkiai/client.ts` — HTTP Client
 
-Typed wrapper around `axios`. Base URL from `VIESPIRKIAI_BASE_URL` env var. Throws `ViespirkiaiError`
-(defined in `types.ts`) on non-2xx so callers can distinguish upstream failures from local errors.
+Typed wrapper around `axios`. Base URL from `VIESPIRKIAI_BASE_URL` env var. Throws `ViespirkiaiError` (defined in
+`types.ts`) on non-2xx so callers can distinguish upstream failures from local errors.
 
 ```typescript
-export async function fetchAsmuo(jarKodas: string): Promise<AsmuoRaw>
+export async function fetchAsmuo(jarKodas: string): Promise<AsmuoRaw>;
 
-export async function fetchSutartis(id: string): Promise<SutartisRaw>
+export async function fetchSutartis(id: string): Promise<SutartisRaw>;
 
-export async function fetchPirkimas(id: string): Promise<PirkamasRaw>
+export async function fetchPirkimas(id: string): Promise<PirkamasRaw>;
 ```
 
 #### `src/lib/staging/types.ts` — TTL helper
@@ -221,10 +218,10 @@ export async function fetchPirkimas(id: string): Promise<PirkamasRaw>
 export interface CacheEntry<T> {
     key: string;
     data: T;
-    fetchedAt: Date
+    fetchedAt: Date;
 }
 
-export function isFresh(entry: CacheEntry<unknown>, ttlHours: number): boolean
+export function isFresh(entry: CacheEntry<unknown>, ttlHours: number): boolean;
 ```
 
 #### `src/lib/parsers/asmuo.ts` — Core Parser
@@ -232,7 +229,7 @@ export function isFresh(entry: CacheEntry<unknown>, ttlHours: number): boolean
 Transforms raw `asmuo` JSON into Cytoscape elements. Pure function — no I/O.
 
 | Source field                      | Produces                                                      |
-|-----------------------------------|---------------------------------------------------------------|
+| --------------------------------- | ------------------------------------------------------------- |
 | `jar`                             | Org node (`expanded: true`)                                   |
 | `sodra`                           | enriches Org node (`employees`, `avgSalary`)                  |
 | `pinreg.darbovietes[]`            | Person node + Director / Employment / Official edge → Org     |
@@ -246,7 +243,7 @@ Edge IDs are deterministic: `edge:{source}-{target}-{type}[-{qualifier}]`
 #### `src/lib/graph/expand.ts` — Orchestrator
 
 ```typescript
-export async function expandOrg(jarKodas: string, filters?: GraphFilters): Promise<ExpandResult>
+export async function expandOrg(jarKodas: string, filters?: GraphFilters): Promise<ExpandResult>;
 ```
 
 Sequence: `getAsmuo(jarKodas)` → if stale/null: `fetchAsmuo` → `upsertAsmuo` → `parseAsmuo(raw, filters)` → return.
@@ -275,61 +272,61 @@ Sequence: `getAsmuo(jarKodas)` → if stale/null: `fetchAsmuo` → `upsertAsmuo`
 
 #### `src/lib/viespirkiai/__tests__/client.test.ts` (unit — mocked axios)
 
-| # | Scenario                     | Expected                                |
-|---|------------------------------|-----------------------------------------|
-| 1 | fetchAsmuo — 200 OK          | Returns typed AsmuoRaw                  |
-| 2 | fetchAsmuo — 404             | Throws ViespirkiaiError with status 404 |
-| 3 | fetchAsmuo — network timeout | Throws ViespirkiaiError                 |
-| 4 | Base URL from env var        | axios called with correct URL           |
+| #   | Scenario                     | Expected                                |
+| --- | ---------------------------- | --------------------------------------- |
+| 1   | fetchAsmuo — 200 OK          | Returns typed AsmuoRaw                  |
+| 2   | fetchAsmuo — 404             | Throws ViespirkiaiError with status 404 |
+| 3   | fetchAsmuo — network timeout | Throws ViespirkiaiError                 |
+| 4   | Base URL from env var        | axios called with correct URL           |
 
 #### `src/lib/staging/__tests__/*.test.ts` (integration — real test DB)
 
-| # | Scenario                               | Expected               |
-|---|----------------------------------------|------------------------|
-| 1 | getAsmuo — no row                      | Returns null           |
-| 2 | upsertAsmuo then getAsmuo — fresh      | Returns data           |
-| 3 | upsertAsmuo with old fetchedAt — stale | Returns null           |
-| 4 | upsertAsmuo twice — idempotent         | No duplicate key error |
+| #   | Scenario                               | Expected               |
+| --- | -------------------------------------- | ---------------------- |
+| 1   | getAsmuo — no row                      | Returns null           |
+| 2   | upsertAsmuo then getAsmuo — fresh      | Returns data           |
+| 3   | upsertAsmuo with old fetchedAt — stale | Returns null           |
+| 4   | upsertAsmuo twice — idempotent         | No duplicate key error |
 
 #### `src/lib/parsers/__tests__/*.test.ts` (unit — fixture JSON)
 
-| # | Scenario                     | Expected                                                                 |
-|---|------------------------------|--------------------------------------------------------------------------|
-| 1 | parseAsmuo(110053842)        | anchor Org node `expanded: true`, ≥1 Person, Director + Employment edges |
-| 2 | parseAsmuo(307562016)        | anchor Org node only — no Person nodes (empty pinreg)                    |
-| 3 | parseAsmuo — topPirkejai     | stub Org nodes `expanded: false`, Contract edges with totalValue         |
-| 4 | parseAsmuo — yearFrom filter | edges before yearFrom excluded                                           |
-| 5 | parseAsmuo — minValue filter | contract edges below threshold excluded                                  |
-| 6 | parseSutartis(2008059225)    | buyer + supplier Org nodes, Contract edge with verte                     |
-| 7 | parsePirkimas(7346201)       | TenderEntity node, procuring Org node                                    |
+| #   | Scenario                     | Expected                                                                 |
+| --- | ---------------------------- | ------------------------------------------------------------------------ |
+| 1   | parseAsmuo(110053842)        | anchor Org node `expanded: true`, ≥1 Person, Director + Employment edges |
+| 2   | parseAsmuo(307562016)        | anchor Org node only — no Person nodes (empty pinreg)                    |
+| 3   | parseAsmuo — topPirkejai     | stub Org nodes `expanded: false`, Contract edges with totalValue         |
+| 4   | parseAsmuo — yearFrom filter | edges before yearFrom excluded                                           |
+| 5   | parseAsmuo — minValue filter | contract edges below threshold excluded                                  |
+| 6   | parseSutartis(2008059225)    | buyer + supplier Org nodes, Contract edge with verte                     |
+| 7   | parsePirkimas(7346201)       | TenderEntity node, procuring Org node                                    |
 
 #### `src/lib/graph/__tests__/expand.test.ts` (integration — test DB + mocked viespirkiai)
 
-| # | Scenario                        | Expected                                        |
-|---|---------------------------------|-------------------------------------------------|
-| 1 | Cache miss → mock fetch → parse | ExpandResult with elements, staging row written |
-| 2 | Cache hit (fresh)               | ExpandResult returned, viespirkiai NOT called   |
-| 3 | Cache stale                     | viespirkiai called once, cache refreshed        |
-| 4 | viespirkiai 404                 | Throws ViespirkiaiError                         |
+| #   | Scenario                        | Expected                                        |
+| --- | ------------------------------- | ----------------------------------------------- |
+| 1   | Cache miss → mock fetch → parse | ExpandResult with elements, staging row written |
+| 2   | Cache hit (fresh)               | ExpandResult returned, viespirkiai NOT called   |
+| 3   | Cache stale                     | viespirkiai called once, cache refreshed        |
+| 4   | viespirkiai 404                 | Throws ViespirkiaiError                         |
 
 #### `src/lib/graph/__tests__/entity.test.ts` (integration — test DB)
 
-| # | Scenario               | Expected                                 |
-|---|------------------------|------------------------------------------|
-| 1 | org: prefix, cached    | EntityDetailResult with full org profile |
-| 2 | person: prefix, cached | EntityDetailResult with person profile   |
-| 3 | Entity not in cache    | Returns null                             |
+| #   | Scenario               | Expected                                 |
+| --- | ---------------------- | ---------------------------------------- |
+| 1   | org: prefix, cached    | EntityDetailResult with full org profile |
+| 2   | person: prefix, cached | EntityDetailResult with person profile   |
+| 3   | Entity not in cache    | Returns null                             |
 
 #### Route handler tests (HTTP level — Next.js test client)
 
-| # | Endpoint | Scenario                     | Expected                  |
-|---|----------|------------------------------|---------------------------|
-| 1 | expand   | Valid jarKodas, cache seeded | 200, `{ elements, meta }` |
-| 2 | expand   | Non-numeric jarKodas         | 400                       |
-| 3 | expand   | viespirkiai mock → 404       | 502                       |
-| 4 | entity   | Valid org: entityId, cached  | 200, entity payload       |
-| 5 | entity   | Unknown entityId prefix      | 400                       |
-| 6 | entity   | Valid prefix, not in cache   | 404                       |
+| #   | Endpoint | Scenario                     | Expected                  |
+| --- | -------- | ---------------------------- | ------------------------- |
+| 1   | expand   | Valid jarKodas, cache seeded | 200, `{ elements, meta }` |
+| 2   | expand   | Non-numeric jarKodas         | 400                       |
+| 3   | expand   | viespirkiai mock → 404       | 502                       |
+| 4   | entity   | Valid org: entityId, cached  | 200, entity payload       |
+| 5   | entity   | Unknown entityId prefix      | 400                       |
+| 6   | entity   | Valid prefix, not in cache   | 404                       |
 
 ---
 
@@ -392,8 +389,8 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 
 ### Phase 2 — viespirkiai HTTP Client: Raw Data Fetched and Typed
 
-> **Testable:** `npm test -- --testPathPattern="src/lib/viespirkiai"` passes.
-> Developer can call `fetchAsmuo('110053842')` and receive a typed `AsmuoRaw` object.
+> **Testable:** `npm test -- --testPathPattern="src/lib/viespirkiai"` passes. Developer can call
+> `fetchAsmuo('110053842')` and receive a typed `AsmuoRaw` object.
 
 - [x] Implement `src/lib/viespirkiai/types.ts` — `AsmuoRaw`, `SutartisRaw`, `PirkamasRaw`, `ViespirkiaiError`
 - [x] Implement `src/lib/viespirkiai/client.ts` — `fetchAsmuo`, `fetchSutartis`, `fetchPirkimas`
@@ -403,24 +400,23 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 
 ### Phase 3 — Staging Cache: Responses Cached with TTL
 
-> **Testable:** `npm test -- --testPathPattern="src/lib/staging"` passes.
-> Cache correctly returns `null` for missing/stale rows and returns data for fresh rows.
+> **Testable:** `npm test -- --testPathPattern="src/lib/staging"` passes. Cache correctly returns `null` for
+> missing/stale rows and returns data for fresh rows.
 
 - [x] Implement `src/lib/staging/types.ts` — `CacheEntry<T>`, `isFresh()` helper
 - [x] Implement `src/lib/staging/asmuo.ts`, `sutartis.ts`, `pirkimas.ts`
 - [x] Write `src/lib/staging/__tests__/asmuo.test.ts`, `sutartis.test.ts`, `pirkimas.test.ts` — 4 tests each (real test
-  DB)
+      DB)
 
 ---
 
 ### Phase 4 — Parsers: JSON → Graph Entities
 
-> **Testable:** `npm test -- --testPathPattern="src/lib/parsers"` passes.
-> `parseAsmuo` on `110053842.json` produces the correct nodes and edge types.
-> Empty `pinreg` in `307562016.json` produces only the anchor org node.
+> **Testable:** `npm test -- --testPathPattern="src/lib/parsers"` passes. `parseAsmuo` on `110053842.json` produces the
+> correct nodes and edge types. Empty `pinreg` in `307562016.json` produces only the anchor org node.
 
-- [x] Implement `src/types/graph.ts` — shared interfaces (`TemporalEntity`, `OrganizationEntity`,
-  `PersonEntity`, `TenderEntity`, `Relationship`, `CytoscapeResponse`)
+- [x] Implement `src/types/graph.ts` — shared interfaces (`TemporalEntity`, `OrganizationEntity`, `PersonEntity`,
+      `TenderEntity`, `Relationship`, `CytoscapeResponse`)
 - [x] Implement `src/lib/parsers/types.ts` — `CytoscapeNode`, `CytoscapeEdge`, `CytoscapeElements`, `FilterParams`
 - [x] Implement `src/lib/parsers/asmuo.ts` — core parser (all mapping rules)
 - [x] Implement `src/lib/parsers/sutartis.ts` — Contract edge parser
@@ -433,9 +429,9 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 
 ### Phase 5 — Graph Orchestration: Full Expand Pipeline
 
-> **Testable:** `npm test -- --testPathPattern="src/lib/graph"` passes.
-> `expandOrg('110053842')` returns a valid `ExpandResult` with Cytoscape elements.
-> Filters (yearFrom, minValue) are applied correctly. Cache is populated on first call.
+> **Testable:** `npm test -- --testPathPattern="src/lib/graph"` passes. `expandOrg('110053842')` returns a valid
+> `ExpandResult` with Cytoscape elements. Filters (yearFrom, minValue) are applied correctly. Cache is populated on
+> first call.
 
 - [x] Implement `src/lib/graph/types.ts` — `ExpandResult`, `EntityDetailResult`, `GraphFilters`
 - [x] Implement `src/lib/graph/expand.ts` — orchestrator (staging → fetch if stale → parse → filter)
@@ -447,13 +443,13 @@ Each phase ends with a **verified, testable business capability**. Later phases 
 
 ### Phase 6 — REST Endpoints: HTTP API Live and Tested
 
-> **Testable:** `./bin/run-api-tests.sh` passes all tests.
-> `curl http://localhost:3000/api/v1/graph/expand/110053842` returns valid Cytoscape JSON.
-> HTTP error codes (400, 404, 502, 500) are correct in all edge cases.
+> **Testable:** `./bin/run-api-tests.sh` passes all tests. `curl http://localhost:3000/api/v1/graph/expand/110053842`
+> returns valid Cytoscape JSON. HTTP error codes (400, 404, 502, 500) are correct in all edge cases.
 
 - [x] Implement `src/app/api/v1/graph/expand/[jarKodas]/route.ts` — thin handler delegating to `graph.expandOrg`
 - [x] Implement `src/app/api/v1/entity/[entityId]/route.ts` — thin handler delegating to `graph.getEntityDetail`
 - [x] Write route handler tests — 6 HTTP-level tests
 - [x] Verify `bin/run-api-tests.sh` end-to-end (DB up → migrate → all tests → DB stop)
-- [ ] Run `npm run lint` — zero errors ⚠️ pre-existing ESLint 10 / `eslint-config-next` incompatibility (`contextOrFilename.getFilename`); not introduced by this story
+- [ ] Run `npm run lint` — zero errors ⚠️ pre-existing ESLint 10 / `eslint-config-next` incompatibility
+      (`contextOrFilename.getFilename`); not introduced by this story
 - [x] Run `npm test` — all tests pass (51 tests across 11 suites)

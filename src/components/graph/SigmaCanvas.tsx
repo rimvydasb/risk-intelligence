@@ -19,9 +19,11 @@ const FA2Worker = typeof window !== 'undefined' ? require('graphology-layout-for
 // ── MUI icon SVG paths (viewBox 0 0 24 24) ───────────────────────────────
 const MUI_ICON_PATHS: Record<string, string> = {
     // Business icon — PrivateCompany
-    PrivateCompany: 'M12 7V3H2v18h20V7zM6 19H4v-2h2zm0-4H4v-2h2zm0-4H4V9h2zm0-4H4V5h2zm4 12H8v-2h2zm0-4H8v-2h2zm0-4H8V9h2zm0-4H8V5h2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8zm-2-8h-2v2h2zm0 4h-2v2h2z',
+    PrivateCompany:
+        'M12 7V3H2v18h20V7zM6 19H4v-2h2zm0-4H4v-2h2zm0-4H4V9h2zm0-4H4V5h2zm4 12H8v-2h2zm0-4H8v-2h2zm0-4H8V9h2zm0-4H8V5h2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8zm-2-8h-2v2h2zm0 4h-2v2h2z',
     // DomainAdd icon — PublicCompany
-    PublicCompany: 'M12 7V3H2v18h14v-2h-4v-2h2v-2h-2v-2h2v-2h-2V9h8v6h2V7zM6 19H4v-2h2zm0-4H4v-2h2zm0-4H4V9h2zm0-4H4V5h2zm4 12H8v-2h2zm0-4H8v-2h2zm0-4H8V9h2zm0-4H8V5h2zm14 12v2h-2v2h-2v-2h-2v-2h2v-2h2v2zm-6-8h-2v2h2zm0 4h-2v2h2z',
+    PublicCompany:
+        'M12 7V3H2v18h14v-2h-4v-2h2v-2h-2v-2h2v-2h-2V9h8v6h2V7zM6 19H4v-2h2zm0-4H4v-2h2zm0-4H4V9h2zm0-4H4V5h2zm4 12H8v-2h2zm0-4H8v-2h2zm0-4H8V9h2zm0-4H8V5h2zm14 12v2h-2v2h-2v-2h-2v-2h2v-2h2v2zm-6-8h-2v2h2zm0 4h-2v2h2z',
     // AccountBalance icon — Institution
     Institution: 'M4 10h3v7H4zm6.5 0h3v7h-3zM2 19h20v3H2zm15-9h3v7h-3zm-5-9L2 6v2h20V6z',
     // Person icon — Person
@@ -41,7 +43,7 @@ function makeIconDataUri(nodeType: string): string {
 }
 
 // ── Node size / color by type ─────────────────────────────────────────────
-const NODE_TYPE_CONFIG: Record<string, { color: string; size: number }> = {
+const NODE_TYPE_CONFIG: Record<string, {color: string; size: number}> = {
     PublicCompany: {color: '#1976d2', size: 22},
     PrivateCompany: {color: '#388e3c', size: 12},
     Institution: {color: '#7b1fa2', size: 26},
@@ -52,7 +54,7 @@ const NODE_TYPE_CONFIG: Record<string, { color: string; size: number }> = {
 const DEFAULT_NODE = {color: '#546e7a', size: 10};
 
 // ── Edge color by type ────────────────────────────────────────────────────
-const EDGE_TYPE_CONFIG: Record<string, { color: string; size: number }> = {
+const EDGE_TYPE_CONFIG: Record<string, {color: string; size: number}> = {
     Contract: {color: '#64b5f6', size: 1.5},
     Employment: {color: '#78909c', size: 1.0},
     Official: {color: '#78909c', size: 1.0},
@@ -84,7 +86,7 @@ function drawNodeLabelBottom(context: CanvasRenderingContext2D, data: any, setti
 
 interface XY {
     x: number;
-    y: number
+    y: number;
 }
 
 // Place new nodes near their connected anchor nodes so FA2 has a good starting point.
@@ -97,7 +99,8 @@ function placeNewNodesNearAnchors(
     const positions = new Map<string, XY>();
 
     // Compute graph centroid as fallback
-    let cx = 0, cy = 0;
+    let cx = 0,
+        cy = 0;
     if (existingPositions.size > 0) {
         for (const pos of existingPositions.values()) {
             cx += pos.x;
@@ -114,9 +117,10 @@ function placeNewNodesNearAnchors(
         const id = node.data.id;
 
         // Find a connected existing node to use as anchor
-        const connectedEdge = edges.find(e =>
-            (e.data.source === id && existingPositions.has(e.data.target)) ||
-            (e.data.target === id && existingPositions.has(e.data.source)),
+        const connectedEdge = edges.find(
+            (e) =>
+                (e.data.source === id && existingPositions.has(e.data.target)) ||
+                (e.data.target === id && existingPositions.has(e.data.source)),
         );
 
         let anchor: XY;
@@ -164,12 +168,12 @@ const AUTO_LAYOUT_DURATION_MS = 2000;
 const BALANCE_LAYOUT_DURATION_MS = 5000;
 
 export default function SigmaCanvas({
-                                        elements,
-                                        onNodeClick,
-                                        onBackgroundClick,
-                                        cyRef,
-                                        balanceTrigger,
-                                    }: SigmaCanvasProps) {
+    elements,
+    onNodeClick,
+    onBackgroundClick,
+    cyRef,
+    balanceTrigger,
+}: SigmaCanvasProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const sigmaRef = useRef<SigmaInstance | null>(null);
     const graphRef = useRef<MultiDirectedGraph | null>(null);
@@ -238,9 +242,9 @@ export default function SigmaCanvas({
             settings: {
                 gravity: 1,
                 scalingRatio: 50, // Increased from 8
-                slowDown: 10,     // Slightly faster convergence
+                slowDown: 10, // Slightly faster convergence
                 adjustSizes: true, // Crucial: prevents overlap based on node size
-                strongGravityMode: true // Keeps clusters tighter while internal nodes push apart
+                strongGravityMode: true, // Keeps clusters tighter while internal nodes push apart
             },
         });
         balanceWorkerRef.current = supervisor;
@@ -288,23 +292,23 @@ export default function SigmaCanvas({
             itemSizeRatio: 1.0, // if you remove it, nodes will stay the same when zoom in or out
             labelFont: 'Arial, Roboto, sans-serif',
             labelSize: 10,
-            labelColor: { color: '#e0e0e0' },
+            labelColor: {color: '#e0e0e0'},
             labelDensity: 0.07,
             labelGridCellSize: 60,
             labelRenderedSizeThreshold: 6,
             defaultDrawNodeLabel: drawNodeLabelBottom,
             edgeLabelFont: 'Arial, Roboto, sans-serif',
             edgeLabelSize: 9,
-            edgeLabelColor: { color: '#aaaaaa' },
+            edgeLabelColor: {color: '#aaaaaa'},
             stagePadding: 30,
-            edgeProgramClasses: { arrow: EdgeArrowProgram },
-            nodeProgramClasses: { icon: NodeIconProgram },
+            edgeProgramClasses: {arrow: EdgeArrowProgram},
+            nodeProgramClasses: {icon: NodeIconProgram},
             nodeReducer: buildNodeReducer(selectedNodeRef.current),
             edgeReducer: buildEdgeReducer(),
             zIndex: true,
         });
 
-        sigma.on('clickNode', (payload: { node: string }) => {
+        sigma.on('clickNode', (payload: {node: string}) => {
             selectedNodeRef.current = payload.node;
             sigma.setSettings({nodeReducer: buildNodeReducer(payload.node)});
             const attrs = graph.getNodeAttributes(payload.node);
@@ -341,8 +345,8 @@ export default function SigmaCanvas({
         const graph = graphRef.current;
         if (!sigma || !graph || !elements) return;
 
-        const newNodes = elements.nodes.filter(n => !graph.hasNode(n.data.id));
-        const newEdges = elements.edges.filter(e => !graph.hasEdge(e.data.id));
+        const newNodes = elements.nodes.filter((n) => !graph.hasNode(n.data.id));
+        const newEdges = elements.edges.filter((e) => !graph.hasEdge(e.data.id));
         if (newNodes.length === 0 && newEdges.length === 0) return;
 
         const existingPositions = getExistingPositions();
