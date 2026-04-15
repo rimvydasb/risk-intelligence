@@ -41,10 +41,13 @@ when a user opens a contract detail panel (existing `fetchSutartis` is already t
 
 When a node is first opened (no filter set), default to **last 12 months** of contracts:
 
-- `yearFrom = currentYear - 1`
-- `yearTo = currentYear`
+- `dateFrom = January 1st of (currentYear - 1)` — e.g. `"2025-01-01"`
+- `dateTill = December 31st of currentYear` — e.g. `"2026-12-31"`
 
-This limits both what is scraped _displayed_ and what dominates the table view.
+Dates are carried as **ISO date strings** (`YYYY-MM-DD`) through every layer (filter types, API
+query params, parser). The UI year-picker converts to ISO: year `2025` as "from" → `"2025-01-01"`;
+year `2026` as "till" → `"2026-12-31"`. This leaves room for future sub-year precision without any
+further type changes.
 
 ---
 
@@ -52,7 +55,7 @@ This limits both what is scraped _displayed_ and what dominates the table view.
 
 ### New Data Structure — `ContractSummary`
 
-Added to `src/lib/parsers/types.ts` (parsed/cleaned data, not a raw wire shape — see Open Question #2):
+Added to `src/lib/parsers/types.ts` (parsed/cleaned data, not a raw wire shape):
 
 ```typescript
 /** Scraped contract summary — no JSON blob needed for graph painting. */
@@ -140,16 +143,21 @@ sequenceDiagram
 
 ## Changes to Existing Components
 
-| File                                       | Change                                                                                                                                                                 |
-|--------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `prisma/schema.prisma`                     | Add `StagingSutartisList` model                                                                                                                                        |
-| `src/lib/viespirkiai/types.ts`             | Add `ContractSummary` type                                                                                                                                             |
-| `src/lib/viespirkiai/client.ts`            | Add `getHtml(path)` private helper (returns raw `string`); add `fetchSutartisList(buyerCode, supplierCode): Promise<ContractSummary[]>` — HTML scraper with pagination |
-| `src/lib/staging/sutartisList.ts`          | New: `getSutartisList` / `upsertSutartisList`                                                                                                                          |
-| `src/lib/parsers/sutartis.ts`              | Add `parseSutartisSummary(summaries, filters)` — converts `ContractSummary[]` to Cytoscape nodes+edges                                                                 |
-| `src/lib/graph/expand.ts`                  | Post-parse enrichment: replace aggregated Contract edges with individual dated contract nodes/edges                                                                    |
-| `src/components/graph/GraphView.tsx`       | Default `yearFrom = currentYear - 1`, `yearTo = currentYear` in initial `FilterState`                                                                                  |
-| `src/components/graph/GraphNodesTable.tsx` | Verify `From`/`Till` columns render correctly for Contract nodes (columns already exist)                                                                               |
+| File                                       | Change                                                                                                                                                                          |
+|--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `prisma/schema.prisma`                     | Add `StagingSutartisList` model                                                                                                                                                  |
+| `src/lib/parsers/types.ts`                 | Add `ContractSummary` type; rename `year?: number` → `yearFrom?: string` and `yearTo?: number` → `yearTo?: string` (ISO dates) in `FilterParams`                                |
+| `src/lib/viespirkiai/client.ts`            | Add `getHtml(path)` private helper (returns raw `string`, `responseType: 'text'`); add `fetchSutartisList(buyerCode, supplierCode): Promise<ContractSummary[]>` — HTML scraper with pagination |
+| `src/lib/staging/sutartisList.ts`          | New: `getSutartisList` / `upsertSutartisList`                                                                                                                                    |
+| `src/lib/parsers/sutartis.ts`              | Add `parseSutartisSummary(summaries, filters)` — converts `ContractSummary[]` to Cytoscape nodes+edges                                                                           |
+| `src/lib/graph/expand.ts`                  | Post-parse enrichment: replace aggregated Contract edges with individual dated contract nodes/edges                                                                              |
+| `src/lib/graph/types.ts`                   | Update `GraphFilters` to mirror new `FilterParams` (`yearFrom?: string`, `yearTo?: string`)                                                                                      |
+| `src/app/api/v1/graph/expand/[jarKodas]/route.ts` | Read `yearFrom` and `yearTo` ISO date strings from query params (remove legacy `year` integer param)                                                                    |
+| `src/components/services/useExpandOrg.ts` | Update `ExpandOrgFilters`: `year?: number` → `yearFrom?: string`, `yearTo?: string`; update `fetchExpandOrg` URL builder accordingly                                             |
+| `src/components/graph/types.ts`            | Update `FilterState`: `year?: number` → `yearFrom?: string`, `yearTo?: string`                                                                                                   |
+| `src/components/graph/GraphView.tsx`       | Set initial `FilterState` with `dateFrom`/`dateTill` defaults (last 12 months); update `handleApplyFilters` to pass ISO strings                                                  |
+| `src/components/graph/toolbar/GraphToolbar.tsx` | Year picker converts selected year to ISO: `yearFrom` year → `"YYYY-01-01"`, `yearTo` year → `"YYYY-12-31"`                                                               |
+| `src/components/graph/GraphNodesTable.tsx` | Verify `From`/`Till` columns render correctly for Contract nodes (columns already exist)                                                                                         |
 
 ---
 
@@ -205,17 +213,19 @@ async function fetchSutartisList(buyerCode: string, supplierCode: string): Promi
 
 ## Filter Compatibility
 
-Year-range filters are applied to individual contract nodes:
+Date-range filters are carried as **ISO date strings** (`YYYY-MM-DD`) at every layer. Filters are
+applied to individual contract nodes:
 
-- If `filters.yearFrom` is set: exclude contracts where `fromDate` year < `yearFrom`.
-- If `filters.yearTo` is set: exclude contracts where `tillDate` year > `yearTo` (or `fromDate` if `tillDate` is null).
+- If `filters.yearFrom` is set: exclude contracts where `fromDate < yearFrom` (string comparison on
+  ISO dates is lexicographic and correct).
+- If `filters.yearTo` is set: exclude contracts where `(tillDate ?? fromDate) > yearTo`.
 - Contracts with **null dates are always included** (unknown date ≠ out of range).
 - Org stub nodes that become disconnected after contract filtering are removed from elements.
 
 The default filter applied when no explicit filter is set:
 
-- `yearFrom = currentYear - 1`
-- `yearTo = currentYear`
+- `yearFrom = "${currentYear - 1}-01-01"` (e.g. `"2025-01-01"`)
+- `yearTo   = "${currentYear}-12-31"`     (e.g. `"2026-12-31"`)
 
 ---
 
@@ -228,37 +238,18 @@ The default filter applied when no explicit filter is set:
 
 ---
 
-## Open Questions
+## Clarifications
 
-1. **Year filter type mismatch end-to-end — `year` vs `yearFrom`/`yearTo`**: The existing filter pipeline has a split
-   personality. `FilterParams` (used by parsers) and `ExpandOrgFilters` (used by `useExpandOrg`) only have
-   `year: number` (a single point). `FilterState` in the frontend has both `year` (used as `yearFrom`) and `yearTo`.
-   `GraphView.handleApplyFilters` sends `yearFrom` and `yearTo` as URL query params, but the API route only reads
-   `?year=` — so `yearFrom`/`yearTo` are silently dropped today. This story's contract filtering needs a proper
-   `yearFrom`/`yearTo` range in the type system, the API route, and `expandOrg`. This must be resolved before Phase 3
-   can be implemented correctly.
-
-   **Answer:** Rename `year` to `yearFrom` and ensure we carry on the whole date including month and day across all
-   layers. This is necessary because in the future we will need to make date filtering more precise that just a year,
-   but this will be done in the future.
-
-2. **`ContractSummary` type placement**: The story places `ContractSummary` in `src/lib/viespirkiai/types.ts` alongside
-   raw API response shapes (`AsmuoRaw`, `SutartisRaw`). `ContractSummary` is _parsed_ data (already cleaned values, ISO
-   dates) — not a raw response. The existing `types.ts` convention is strictly for raw wire shapes.
-
-   **Answer:** Place `ContractSummary` in `src/lib/parsers/types.ts` alongside other parsed output
-   types.
-
-3. **Concurrency for pair fetching**: The story currently states pairs are fetched "sequentially" in the Out of Scope.
-   For the anchor org `110053842` this means ~16 pairs × up to 2 pages each = ~32 HTTP requests in series, adding
-   significant latency on a cache miss.
-
-   **Answer:** Keep sequential — simpler, easier to reason about, no risk of overwhelming the upstream server.
-   Acceptable if TTL caching means cache misses are rare. Also, in the future we will likely will have direct access to
-   the data without any fetching, this is just for v1.
-
-Additional very important note! no backwards compatibility is required for this system! We're developing the whole
-system that is not in production.
+- **No backwards compatibility required** — the system is not in production. All renames and type
+  changes can be applied freely.
+- **Year filter → ISO date strings** — `FilterParams.year: number` is renamed to
+  `yearFrom: string` (`YYYY-MM-DD`) and `yearTo: string` (`YYYY-MM-DD`) across all layers. UI year
+  pickers convert: "from year" → `YYYY-01-01`, "to year" → `YYYY-12-31`. Future sub-year precision
+  requires no further type changes.
+- **`ContractSummary` belongs in `src/lib/parsers/types.ts`** — it is parsed/cleaned data, not a
+  raw wire shape. `viespirkiai/types.ts` stays strictly for raw API response types.
+- **Pair fetching is sequential** — v1 simplicity; no risk of overwhelming the upstream server.
+  Once the system has direct DB access (v2), scraping and its latency disappear entirely.
 
 ---
 
@@ -267,13 +258,18 @@ system that is not in production.
 **Phase 1 — Database & staging layer**
 
 - [ ] Ensure project compiles and all existing tests pass (`npm test`)
-- [ ] **Prerequisite — fix year filter type mismatch** (see Open Question #1): rename `year` → `yearFrom` in
-  `FilterParams`, `GraphFilters`, `ExpandOrgFilters`; add `yearTo?: number`; update API route to read both
-  `yearFrom` and `yearTo`; update `parseAsmuo` person filter to use `yearFrom`; update `useExpandOrg`, `GraphView`,
-  and `GraphToolbar` accordingly
+- [ ] **Prerequisite — rename year filter to ISO date strings across all layers**:
+  - `FilterParams` (`src/lib/parsers/types.ts`): `year?: number` → `yearFrom?: string`, add `yearTo?: string`
+  - `GraphFilters` (`src/lib/graph/types.ts`): mirror the same change
+  - API route (`src/app/api/v1/graph/expand/[jarKodas]/route.ts`): read `yearFrom` and `yearTo` as ISO date strings; remove legacy `year` integer param
+  - `parseAsmuo` (`src/lib/parsers/asmuo.ts`): update person-relationship filter to compare against `yearFrom` ISO date
+  - `ExpandOrgFilters` (`src/components/services/useExpandOrg.ts`): `year?: number` → `yearFrom?: string`, `yearTo?: string`; update URL builder
+  - `FilterState` (`src/components/graph/types.ts`): same rename
+  - `GraphToolbar`: year picker converts year number to ISO on emit (`yearFrom` → `"YYYY-01-01"`, `yearTo` → `"YYYY-12-31"`)
+  - Update all existing tests that reference `filters.year`
 - [ ] Add `StagingSutartisList` model to `prisma/schema.prisma` (see schema above)
 - [ ] Run `npx prisma migrate dev --name add-staging-sutartis-list`
-- [ ] Add `ContractSummary` type to `src/lib/parsers/types.ts` (see Open Question #2)
+- [ ] Add `ContractSummary` type to `src/lib/parsers/types.ts`
 - [ ] Create `src/lib/staging/sutartisList.ts` with `getSutartisList` / `upsertSutartisList` (follow same pattern as
   `staging/sutartis.ts`; TTL 24 h via `STAGING_TTL_SUTARTIS_LIST_HOURS` env var)
 - [ ] Add unit tests for staging helpers (mock `db`)
@@ -328,8 +324,8 @@ system that is not in production.
 
 **Phase 4 — Default filter and table columns**
 
-- [ ] In `src/components/graph/GraphView.tsx`, set initial filter state: `yearFrom = currentYear - 1`,
-  `yearTo = currentYear`
+- [ ] In `src/components/graph/GraphView.tsx`, set initial `FilterState`:
+  `yearFrom = "${currentYear - 1}-01-01"`, `yearTo = "${currentYear}-12-31"`
 - [ ] Verify `GraphNodesTable` `From`/`Till` columns display `fromDate`/`tillDate` correctly for Contract nodes —
   columns already exist, but confirm `data-testid="node-from"` and `data-testid="node-till"` render real dates (not
   `—`) once enrichment is in place
