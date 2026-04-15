@@ -79,6 +79,7 @@ export default function GraphView({ viewMode = 'graph' }: GraphViewProps) {
     (newFilters: FilterState) => {
       setFilters(newFilters);
       setExpandTarget(ANCHOR_JAR_KODAS);
+      setGraphElements(EMPTY_ELEMENTS);
       const params: Record<string, string> = {};
       if (newFilters.year) params.yearFrom = String(newFilters.year);
       if (newFilters.yearTo) params.yearTo = String(newFilters.yearTo);

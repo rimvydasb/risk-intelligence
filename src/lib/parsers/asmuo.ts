@@ -54,6 +54,8 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
       employees: raw.sodra?.draustieji ?? null,
       avgSalary: raw.sodra?.vidutinisAtlyginimas ?? null,
       expanded: true,
+      fromDate: raw.jar?.registravimoData ?? null,
+      tillDate: null,
     },
   });
 

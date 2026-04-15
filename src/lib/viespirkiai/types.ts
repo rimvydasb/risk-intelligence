@@ -71,8 +71,10 @@ export interface AsmuoRaw {
 export interface SutartisRaw {
   sutartiesUnikalusID: string;
   pavadinimas?: string;
+  sudarymoData?: string | null;
   galiojimoData?: string | null;
   paskelbimoData?: string | null;
+  faktineIvykdimoData?: string | null;
   perkanciojiOrganizacija?: string;
   perkanciosiosOrganizacijosKodas?: string;
   tiekejas?: string;
