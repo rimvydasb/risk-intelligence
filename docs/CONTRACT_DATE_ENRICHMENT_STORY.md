@@ -8,6 +8,19 @@ The graph currently shows **aggregated contract edges** (`org:buyer → org:anch
 
 The `Contract` table is also missing `fromDate` and `tillDate` columns even though this data is available in the source.
 
+### Graph model — ContractEntity nodes (hub-and-spoke)
+
+Contracts are painted as **`ContractEntity` nodes** rather than direct org→org edges. One contract node sits between the
+buyer org and the supplier org, connected by `Signed` edges:
+
+```
+org:buyer  ──(Signed/Buyer)──▶  contract:X  ◀──(Signed/Supplier)──  org:supplier
+```
+
+`Relationship.type = 'Contract'` (a direct org→org edge) is **reserved for future use** and must not be painted in the
+current implementation. The graph type system (`src/types/graph.ts`) defines both `ContractEntity` and `Relationship`
+with the `'Contract'` type.
+
 ### The Key Insight — Scrape HTML, Not JSON
 
 The contract list HTML page for any buyer+supplier pair:
@@ -68,22 +81,46 @@ interface ContractSummary {
 }
 ```
 
-### New Database Table — `StagingSutartisList`
+### New Database Table — `StagingSutartis` (merged)
 
-Caches the scraped `ContractSummary[]` per buyer+supplier pair (TTL: 24 h).
+`StagingSutartis` is the single table for all contract data. It is normalised to **one row per contract**. The `data`
+column is **nullable** — it is only populated the first time a user clicks a contract node (lazy JSON fetch). All
+columns needed to paint a `ContractEntity` node come from HTML scraping and are always present.
+
+`StagingSutartisList` is dropped entirely — its role is covered by querying `StagingSutartis` by `buyerCode` +
+`supplierCode`.
 
 ```prisma
-model StagingSutartisList {
-  id           String   @id @default(cuid())
-  buyerCode    String   
-  supplierCode String   
-  contracts    Json     // ContractSummary[]
-  fetchedAt    DateTime 
+model StagingSutartis {
+  sutartiesUnikalusID String    @id
+  buyerCode           String
+  supplierCode        String
+  name                String
+  fromDate            String?   // ISO date scraped from HTML (e.g. "2025-07-22")
+  tillDate            String?   // ISO date scraped from HTML; null for single-day contracts
+  value               Float?    // contract value in EUR, scraped from HTML
+  fetchedAt           DateTime  // when this row was upserted from HTML scraping (TTL 24 h)
+  data                Json?     // full JSON from /sutartis/{id}.json — null until user clicks contract node
+  dataFetchedAt       DateTime? // when data was populated; null means not yet fetched
 
-  @@unique([buyerCode, supplierCode])
-  @@map("staging_sutartis_list")
+  @@index([buyerCode, supplierCode])
+  @@map("staging_sutartis")
 }
 ```
+
+**TTL rules:**
+- Scraped columns (`name`, `fromDate`, `tillDate`, `value`): stale after 24 h — checked via `fetchedAt`.
+  To determine if a pair's list is stale, read `MAX(fetchedAt)` for `buyerCode+supplierCode`.
+- `data` column: never expires once populated (contract JSON is immutable after publication).
+
+**Staging module — `src/lib/staging/sutartis.ts`** replaces both old modules:
+
+| Function | Description |
+|---|---|
+| `getSutartisContracts(buyerCode, supplierCode)` | Returns `ContractSummary[]` if fresh, `null` if stale/missing |
+| `upsertSutartisContracts(summaries, buyerCode, supplierCode)` | Bulk upsert scraped rows (no `data`) |
+| `getSutartisDetail(sutartiesUnikalusID)` | Returns `SutartisRaw` from `data` column if populated, else `null` |
+| `upsertSutartisDetail(sutartiesUnikalusID, data)` | Fills `data` + `dataFetchedAt` column (on-demand fetch) |
 
 ### Structural Diagram
 
@@ -91,7 +128,7 @@ model StagingSutartisList {
 graph LR
 subgraph New
 A[fetchSutartisList\nclient.ts\nHTML scraper] -->|pages 1,2,…|B[viespirkiai.org\n/?buyer=X&supplier=Y]
-C[staging/sutartisList.ts\nStagingSutartisList] -->|ContractSummary\ [\ ]|D
+C[staging/sutartis.ts\nStagingSutartis] -->|ContractSummary\ [\ ]|D
 end
 
 subgraph Existing
@@ -105,14 +142,14 @@ A --> C
 C -->|summaries|H
 ```
 
-### Behavioral Diagram
+### Behavioral Diagram — Graph Expansion
 
 ```mermaid
 sequenceDiagram
     participant API as GET /api/v1/graph/expand/[jarKodas]
     participant EXP as expandOrg()
     participant STGA as StagingAsmuo
-    participant STGL as StagingSutartisList (new)
+    participant STS as StagingSutartis (merged)
     participant VPK as viespirkiai.org
     API ->> EXP: expandOrg(jarKodas, filters)
     EXP ->> STGA: getAsmuo(jarKodas)
@@ -123,20 +160,43 @@ sequenceDiagram
     EXP ->> EXP: parseAsmuo() → graph elements\n(aggregated Contract edges — temporary)
 
     loop for each resolvable buyer/supplier pair
-        EXP ->> STGL: getSutartisList(buyerCode, supplierCode)
-        alt list cache miss
+        EXP ->> STS: getSutartisContracts(buyerCode, supplierCode)
+        alt list cache miss / stale
             loop page = 1, 2, … until empty
                 EXP ->> VPK: GET /?perkanciosiosOrganizacijosKodas=B\n&tiekejoKodas=S&page=N (HTML)
                 EXP ->> EXP: parse <article class="result-card"> elements\n→ ContractSummary[]
             end
-            EXP ->> STGL: upsertSutartisList(buyerCode, supplierCode, summaries)
+            EXP ->> STS: upsertSutartisContracts(summaries)
         end
 
-        EXP ->> EXP: parseSutartisSummary(summaries, filters)\n→ contract nodes + edges with fromDate/tillDate
+        EXP ->> EXP: parseSutartisSummary(summaries, filters)\n→ ContractEntity nodes + Signed edges with fromDate/tillDate
         EXP ->> EXP: remove original aggregated Contract edge for this pair
     end
 
-    EXP -->> API: ExpandResult (individual contracts with dates)
+    EXP -->> API: ExpandResult (individual ContractEntity nodes with dates)
+```
+
+### Behavioral Diagram — Contract Detail (on click)
+
+```mermaid
+sequenceDiagram
+    participant UI as Graph UI
+    participant API as GET /api/v1/entity/contract:[id]
+    participant ENT as getEntityDetail()
+    participant STS as StagingSutartis
+    participant VPK as viespirkiai.org
+    UI ->> API: click ContractEntity node → GET /api/v1/entity/contract:2008059225
+    API ->> ENT: getEntityDetail("contract:2008059225")
+    ENT ->> STS: getSutartisDetail("2008059225")
+    alt data already populated
+        STS -->> ENT: SutartisRaw (from data column)
+    else data is null
+        ENT ->> VPK: GET /sutartis/2008059225.json
+        ENT ->> STS: upsertSutartisDetail("2008059225", rawData)
+        STS -->> ENT: SutartisRaw
+    end
+    ENT -->> API: ContractEntity detail
+    API -->> UI: full contract detail (sidebar / entity panel)
 ```
 
 ---
@@ -145,19 +205,22 @@ sequenceDiagram
 
 | File                                       | Change                                                                                                                                                                          |
 |--------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `prisma/schema.prisma`                     | Add `StagingSutartisList` model                                                                                                                                                  |
-| `src/lib/parsers/types.ts`                 | Add `ContractSummary` type; rename `year?: number` → `yearFrom?: string` and `yearTo?: number` → `yearTo?: string` (ISO dates) in `FilterParams`                                |
-| `src/lib/viespirkiai/client.ts`            | Add `getHtml(path)` private helper (returns raw `string`, `responseType: 'text'`); add `fetchSutartisList(buyerCode, supplierCode): Promise<ContractSummary[]>` — HTML scraper with pagination |
-| `src/lib/staging/sutartisList.ts`          | New: `getSutartisList` / `upsertSutartisList`                                                                                                                                    |
-| `src/lib/parsers/sutartis.ts`              | Add `parseSutartisSummary(summaries, filters)` — converts `ContractSummary[]` to Cytoscape nodes+edges                                                                           |
-| `src/lib/graph/expand.ts`                  | Post-parse enrichment: replace aggregated Contract edges with individual dated contract nodes/edges                                                                              |
-| `src/lib/graph/types.ts`                   | Update `GraphFilters` to mirror new `FilterParams` (`yearFrom?: string`, `yearTo?: string`)                                                                                      |
-| `src/app/api/v1/graph/expand/[jarKodas]/route.ts` | Read `yearFrom` and `yearTo` ISO date strings from query params (remove legacy `year` integer param)                                                                    |
-| `src/components/services/useExpandOrg.ts` | Update `ExpandOrgFilters`: `year?: number` → `yearFrom?: string`, `yearTo?: string`; update `fetchExpandOrg` URL builder accordingly                                             |
-| `src/components/graph/types.ts`            | Update `FilterState`: `year?: number` → `yearFrom?: string`, `yearTo?: string`                                                                                                   |
-| `src/components/graph/GraphView.tsx`       | Set initial `FilterState` with `dateFrom`/`dateTill` defaults (last 12 months); update `handleApplyFilters` to pass ISO strings                                                  |
-| `src/components/graph/toolbar/GraphToolbar.tsx` | Year picker converts selected year to ISO: `yearFrom` year → `"YYYY-01-01"`, `yearTo` year → `"YYYY-12-31"`                                                               |
-| `src/components/graph/GraphNodesTable.tsx` | Verify `From`/`Till` columns render correctly for Contract nodes (columns already exist)                                                                                         |
+| `prisma/schema.prisma`                     | Merge `StagingSutartisList` into `StagingSutartis`: add `buyerCode`, `supplierCode`, `name`, `fromDate`, `tillDate`, `value`, `dataFetchedAt`; make `data` nullable; drop `StagingSutartisList` |
+| `src/lib/staging/sutartis.ts`              | Replace with 4 functions: `getSutartisContracts`, `upsertSutartisContracts`, `getSutartisDetail`, `upsertSutartisDetail`; delete `src/lib/staging/sutartisList.ts`               |
+| `src/lib/parsers/types.ts`                 | ✅ Add `ContractSummary` type; rename `year?: number` → `yearFrom?: string`, `yearTo?: string` (ISO dates) in `FilterParams`                                                    |
+| `src/lib/viespirkiai/client.ts`            | ✅ Add `getHtml(path)` helper; add `fetchSutartisList(buyerCode, supplierCode): Promise<ContractSummary[]>` — HTML scraper with pagination                                       |
+| `src/lib/staging/sutartisList.ts`          | ✅ Created (to be deleted in Phase 6 — replaced by `sutartis.ts`)                                                                                                                |
+| `src/lib/parsers/sutartis.ts`              | ✅ Add `parseSutartisSummary(summaries, filters)` — converts `ContractSummary[]` to Cytoscape nodes+edges                                                                        |
+| `src/lib/graph/expand.ts`                  | ✅ Post-parse enrichment: replace aggregated Contract edges with individual dated ContractEntity nodes/edges; update to call `getSutartisContracts` (Phase 6)                    |
+| `src/lib/graph/types.ts`                   | ✅ `GraphFilters` mirrors `FilterParams` (`yearFrom?: string`, `yearTo?: string`)                                                                                                |
+| `src/app/api/v1/graph/expand/[jarKodas]/route.ts` | ✅ Reads `yearFrom` and `yearTo` ISO date strings from query params                                                                                                      |
+| `src/components/services/useExpandOrg.ts` | ✅ `ExpandOrgFilters` updated; URL builder updated                                                                                                                               |
+| `src/components/graph/types.ts`            | ✅ `FilterState` uses `yearFrom?: string`, `yearTo?: string`                                                                                                                     |
+| `src/components/graph/GraphView.tsx`       | ✅ Initial `FilterState` defaults to last 12 months                                                                                                                              |
+| `src/components/graph/toolbar/GraphToolbar.tsx` | ✅ Year picker converts to ISO on emit; `isNonDefault` compares against defaults                                                                                            |
+| `src/types/graph.ts`                       | ✅ Add `ContractEntity` interface extending `TemporalEntity`; note `Relationship.type='Contract'` reserved for future                                                            |
+| `src/lib/graph/entity.ts`                  | Add `contract:` case to `getEntityDetail()`: call `getSutartisDetail` → if null, fetch JSON → `upsertSutartisDetail` → return full detail                                        |
+| `src/components/graph/GraphNodesTable.tsx` | ✅ `From`/`Till` columns render correctly for ContractEntity nodes                                                                                                               |
 
 ---
 
@@ -231,7 +294,7 @@ The default filter applied when no explicit filter is set:
 
 ## Out of Scope
 
-- Fetching individual `/sutartis/{id}.json` blobs during graph expansion (lazy, on detail click).
+- Fetching all `/sutartis/{id}.json` blobs eagerly during graph expansion (lazy fetch on click only).
 - Recursive expansion of supplier/buyer orgs through their own contract pairs.
 - Rate limiting / back-off (pairs are fetched sequentially within expandOrg; HTTP timeout is 15 s).
 - Contracts between two non-anchor orgs (only direct anchor pairs are enriched).
@@ -255,10 +318,10 @@ The default filter applied when no explicit filter is set:
 
 ## Tasks
 
-**Phase 1 — Database & staging layer**
+**Phase 1 — Database & staging layer** ✅
 
-- [ ] Ensure project compiles and all existing tests pass (`npm test`)
-- [ ] **Prerequisite — rename year filter to ISO date strings across all layers**:
+- [x] Ensure project compiles and all existing tests pass (`npm test`)
+- [x] **Prerequisite — rename year filter to ISO date strings across all layers**:
   - `FilterParams` (`src/lib/parsers/types.ts`): `year?: number` → `yearFrom?: string`, add `yearTo?: string`
   - `GraphFilters` (`src/lib/graph/types.ts`): mirror the same change
   - API route (`src/app/api/v1/graph/expand/[jarKodas]/route.ts`): read `yearFrom` and `yearTo` as ISO date strings; remove legacy `year` integer param
@@ -267,82 +330,83 @@ The default filter applied when no explicit filter is set:
   - `FilterState` (`src/components/graph/types.ts`): same rename
   - `GraphToolbar`: year picker converts year number to ISO on emit (`yearFrom` → `"YYYY-01-01"`, `yearTo` → `"YYYY-12-31"`)
   - Update all existing tests that reference `filters.year`
-- [ ] Add `StagingSutartisList` model to `prisma/schema.prisma` (see schema above)
-- [ ] Run `npx prisma migrate dev --name add-staging-sutartis-list`
-- [ ] Add `ContractSummary` type to `src/lib/parsers/types.ts`
-- [ ] Create `src/lib/staging/sutartisList.ts` with `getSutartisList` / `upsertSutartisList` (follow same pattern as
-  `staging/sutartis.ts`; TTL 24 h via `STAGING_TTL_SUTARTIS_LIST_HOURS` env var)
-- [ ] Add unit tests for staging helpers (mock `db`)
-- [ ] Verify build and all tests pass
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Add `StagingSutartisList` model to `prisma/schema.prisma` (intermediate — replaced in Phase 6)
+- [x] Add `ContractSummary` type to `src/lib/parsers/types.ts`
+- [x] Create `src/lib/staging/sutartisList.ts` with `getSutartisList` / `upsertSutartisList` (intermediate — replaced in Phase 6)
+- [x] Verify build and all tests pass
 
-**Phase 2 — HTML scraper**
+**Phase 2 — HTML scraper** ✅
 
-- [ ] Add `fetchSutartisList(buyerCode, supplierCode): Promise<ContractSummary[]>` to `src/lib/viespirkiai/client.ts`:
-    - Add `getHtml(path: string): Promise<string>` private helper (reuse the same axios instance but return
-      `res.data as string` without JSON parsing; set `responseType: 'text'`)
-    - Fetches HTML pages, parses `<article class="result-card …">` elements
-    - Extracts `sutartiesUnikalusID`, `name`, `fromDate`, `tillDate`, `value`
-    - Paginates (`page=1, 2, …`, max 20 pages) until a page returns 0 articles
-    - Returns deduplicated `ContractSummary[]`
-- [ ] Add unit tests:
-    - mock HTML with 2 articles → correct `ContractSummary[]` returned
-    - single-date article → `fromDate` set, `tillDate` null
-    - page 2 returns empty → loop stops, returns only page 1 results
-    - HTTP error → returns empty array (non-throwing)
-- [ ] Verify build and all tests pass
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Add `fetchSutartisList(buyerCode, supplierCode): Promise<ContractSummary[]>` to `src/lib/viespirkiai/client.ts`
+- [x] Add `getHtml(path: string): Promise<string>` private helper
+- [x] Parses `<article class="result-card …">` elements, extracts `sutartiesUnikalusID`, `name`, `fromDate`, `tillDate`, `value`
+- [x] Paginates (`page=1, 2, …`, max 20 pages) until a page returns 0 articles
+- [x] Unit tests: 2-article page, single-date article, empty page 2, HTTP error → empty array
+- [x] Verify build and all tests pass
 
-**Phase 3 — Parser and expandOrg enrichment**
+**Phase 3 — Parser and expandOrg enrichment** ✅
 
-- [ ] Add
-  `parseSutartisSummary(summaries: ContractSummary[], anchorId: string, partnerId: string, isAnchorBuyer: boolean, filters?: GraphFilters): CytoscapeElements`
-  to `src/lib/parsers/sutartis.ts`:
-    - One contract node per summary (type `'Contract'`)
-    - Two edges per contract pointing TO the contract node (same pattern as `parseSutartis`):
-      `{ source: buyerOrgId, target: contractId, label: 'Buyer' }` and
-      `{ source: supplierOrgId, target: contractId, label: 'Supplier' }`
-    - `isAnchorBuyer` resolves which of `anchorId`/`partnerId` is buyer/supplier
-    - Apply year/value filters (see Filter Compatibility section)
-- [ ] In `src/lib/graph/expand.ts`, add `enrichContractEdges()` post-parse step:
-    - Identify all `Contract`-type edges in elements
-    - Determine buyer/supplier: if `edge.data.source === anchorId` then anchor is buyer (topTiekejai); if
-      `edge.data.target === anchorId` then partner is buyer (topPirkejai)
-    - Extract `jarKodas` from the non-anchor org ID (`id.replace('org:', '')`)
-    - Skip pairs where partner `jarKodas` is not resolvable via `isResolvableJarKodas()`
-    - Fetch `ContractSummary[]` from staging (cache) or `fetchSutartisList` (scrape)
-    - Call `parseSutartisSummary` with correct `isAnchorBuyer` flag for each pair
-    - Remove the original aggregated edge for any pair that produced ≥ 1 contract node
-    - Add individual contract nodes/edges to elements
-- [ ] Add unit tests:
-    - `"replaces aggregated edge with individual contract nodes"` — mock summaries
-    - `"keeps aggregated edge when scrape returns empty"` — mock empty list
-    - `"applies yearFrom filter"` — filters out contract outside date range
-    - `"skips unresolvable codes (0, 803)"`
-- [ ] Verify build and all tests pass
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Add `parseSutartisSummary(summaries, anchorId, partnerId, isAnchorBuyer, filters?)` to `src/lib/parsers/sutartis.ts`
+- [x] One `ContractEntity` node per summary + two `Signed` edges (Buyer / Supplier)
+- [x] `isAnchorBuyer` resolves edge direction
+- [x] Apply `yearFrom` / `yearTo` / `minContractValue` filters
+- [x] Add `enrichContractEdges()` post-parse step in `src/lib/graph/expand.ts`
+- [x] Unit tests: replaces aggregated edge, keeps edge when empty, yearFrom filter, skips unresolvable codes
+- [x] Verify build and all tests pass
 
-**Phase 4 — Default filter and table columns**
+**Phase 4 — Default filter and table columns** ✅
 
-- [ ] In `src/components/graph/GraphView.tsx`, set initial `FilterState`:
-  `yearFrom = "${currentYear - 1}-01-01"`, `yearTo = "${currentYear}-12-31"`
-- [ ] Verify `GraphNodesTable` `From`/`Till` columns display `fromDate`/`tillDate` correctly for Contract nodes —
-  columns already exist, but confirm `data-testid="node-from"` and `data-testid="node-till"` render real dates (not
-  `—`) once enrichment is in place
-- [ ] Verify UI compiles and graph opens with 1-year default window
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Set initial `FilterState` in `GraphView.tsx`: `yearFrom = "${currentYear - 1}-01-01"`, `yearTo = "${currentYear}-12-31"`
+- [x] `GraphNodesTable` `From`/`Till` columns render `fromDate`/`tillDate` for ContractEntity nodes
+- [x] `isNonDefault` in `GraphToolbar` compares against computed defaults; `handleReset` restores defaults
+- [x] Verify UI compiles and graph opens with 1-year default window
 
-**Phase 5 — Cypress E2E tests & documentation**
+**Phase 5 — Cypress E2E tests & documentation** ✅
 
-- [ ] Add Cypress test in `cypress/e2e/graph-data-table.cy.ts`:
-    - `"contract nodes have fromDate and tillDate in table"` — assert at least one Contract row has non-empty `fromDate`
-      cell
-    - `"default date filter shows only last-12-month contracts"` — verify table contains contracts from the expected
-      year range on first load
-- [ ] Update `docs/ARCHITECTURE.md`:
-    - Add `StagingSutartisList` to the data-flow sequence diagram
-    - Mention `fetchSutartisList` HTML scraper in the viespirkiai client section
-- [ ] Run `npm run lint` — fix any issues
-- [ ] Run `npm test` and `./bin/run-cypress-tests.sh` — all must pass
-- [ ] Review implementation against this story
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Cypress test: `"contract nodes have fromDate and tillDate in table"` — Contract row has non-empty `fromDate`
+- [x] Cypress test: `"resetting filter re-fetches without year param"`
+- [x] Add `ContractEntity` to `src/types/graph.ts`; update `ARCHITECTURE.md` entity types and edge tables
+- [x] All 87 unit tests + 19 Cypress E2E tests pass
+
+---
+
+**Phase 6 — Merge `StagingSutartisList` into `StagingSutartis`**
+
+Collapse the two separate staging tables into a single `StagingSutartis` with individual columns per contract and a
+nullable `data` column.
+
+- [ ] Update `prisma/schema.prisma`:
+    - Add columns to `StagingSutartis`: `buyerCode String`, `supplierCode String`, `name String`,
+      `fromDate String?`, `tillDate String?`, `value Float?`, `dataFetchedAt DateTime?`
+    - Make `data Json` → `data Json?` (nullable)
+    - Add `@@index([buyerCode, supplierCode])`
+    - Drop `StagingSutartisList` model
+- [ ] Run `npx prisma migrate dev --name merge-staging-sutartis`
+- [ ] Rewrite `src/lib/staging/sutartis.ts` with 4 functions:
+    - `getSutartisContracts(buyerCode, supplierCode): Promise<ContractSummary[] | null>` — reads rows for pair,
+      returns `null` if `MAX(fetchedAt)` is stale (TTL 24 h) or no rows exist
+    - `upsertSutartisContracts(summaries, buyerCode, supplierCode): Promise<void>` — bulk upsert scraped rows
+      (does **not** touch `data` or `dataFetchedAt`)
+    - `getSutartisDetail(sutartiesUnikalusID): Promise<SutartisRaw | null>` — returns `data` column if present,
+      else `null`
+    - `upsertSutartisDetail(sutartiesUnikalusID, data: SutartisRaw): Promise<void>` — fills `data` +
+      `dataFetchedAt`; **only** called by the entity detail route on contract click
+- [ ] Delete `src/lib/staging/sutartisList.ts`
+- [ ] Update `src/lib/graph/expand.ts` → replace `getSutartisList` / `upsertSutartisList` calls with
+  `getSutartisContracts` / `upsertSutartisContracts`
+- [ ] Update all unit test mocks that reference `sutartisList.ts` or `StagingSutartisList`
+- [ ] Verify `npm test` passes
+
+**Phase 7 — On-demand contract JSON fetch on node click**
+
+When a user clicks a `ContractEntity` node the sidebar calls `GET /api/v1/entity/contract:{id}`. This triggers a
+lazy fetch of the full `/sutartis/{id}.json` blob and stores it in `StagingSutartis.data`.
+
+- [ ] In `src/lib/graph/entity.ts`, add the `contract:` case to `getEntityDetail()`:
+    1. Strip prefix → `sutartiesUnikalusID = entityId.replace('contract:', '')`
+    2. Call `getSutartisDetail(id)` — if `data` is present, return it directly
+    3. Else call `fetchSutartis(id)` (existing viespirkiai client function)
+    4. Call `upsertSutartisDetail(id, raw)` to persist the JSON
+    5. Return the full detail (mapped to entity shape)
+- [ ] Add unit test: `"returns cached data when data column is populated"`, `"fetches and stores when data is null"`
+- [ ] Verify `npm test` and `./bin/run-cypress-tests.sh` pass

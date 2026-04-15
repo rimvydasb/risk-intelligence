@@ -1,8 +1,8 @@
 import type {CytoscapeNodeData} from '@/types/graph';
 
 export interface FilterState {
-    year?: number;
-    yearTo?: number;
+    yearFrom?: string;
+    yearTo?: string;
     minContractValue?: number;
 }
 

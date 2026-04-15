@@ -64,8 +64,8 @@ describe('parseAsmuo — Lietuvos geležinkeliai (full fixture)', () => {
 
     it('year filter excludes person edges outside the year', () => {
         const {edges: allEdges} = parseAsmuo(lgFixture);
-        const {edges: filteredEdges} = parseAsmuo(lgFixture, {year: 1900});
-        // 1900 should exclude all temporal person edges
+        const {edges: filteredEdges} = parseAsmuo(lgFixture, {yearFrom: '1900-01-01', yearTo: '1900-12-31'});
+        // 1900 should exclude all temporal person edges that started after 1900
         const personEdgesAll = allEdges.filter((e) => e.data.type === 'Employment');
         const personEdgesFiltered = filteredEdges.filter((e) => e.data.type === 'Employment');
         // filtered should have fewer or equal

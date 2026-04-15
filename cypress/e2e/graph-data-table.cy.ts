@@ -64,8 +64,8 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.contains('[role="option"]', '2022').click();
         cy.get('[data-testid="filter-apply"]').click();
 
-        // A new expand request must include the year query param
-        cy.wait('@expand').its('request.url').should('include', 'year=2022');
+        // A new expand request must include the yearFrom query param
+        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2022-01-01');
 
         // Table is repopulated (anchor org always present)
         cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
@@ -81,14 +81,14 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.get('[data-testid="filter-year-from"]').parent().click();
         cy.contains('[role="option"]', '2022').click();
         cy.get('[data-testid="filter-apply"]').click();
-        cy.wait('@expand').its('request.url').should('include', 'year=2022');
+        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2022-01-01');
         cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).its('length').as('countAfterFirst');
 
         // Change to a different filter (2024)
         cy.get('[data-testid="filter-year-from"]').parent().click();
         cy.contains('[role="option"]', '2024').click();
         cy.get('[data-testid="filter-apply"]').click();
-        cy.wait('@expand').its('request.url').should('include', 'year=2024');
+        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2024-01-01');
 
         cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).its('length').as('countAfterSecond');
 
@@ -110,7 +110,7 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.get('[data-testid="filter-year-from"]').parent().click();
         cy.contains('[role="option"]', '2023').click();
         cy.get('[data-testid="filter-apply"]').click();
-        cy.wait('@expand').its('request.url').should('include', 'year=2023');
+        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2023-01-01');
 
         // Reset — React Query may serve the no-filter result from cache (no new network
         // call is guaranteed), so we test URL + UI state, not a third network request.
@@ -141,5 +141,21 @@ describe('Graph Data Table — view mode toggle', () => {
             .should('not.contain', 'Nežinomas')
             .and('not.contain', 'Nezinomas')
             .and('not.be.empty');
+    });
+
+    it('contract nodes in table have fromDate populated', () => {
+        cy.visit('http://localhost:3000/#/table/');
+        cy.get('[data-testid="graph-nodes-table"]', {timeout: 30000}).should('be.visible');
+
+        // Wait for table to load contract rows
+        cy.get('[data-testid="graph-nodes-table"] tbody tr').should('have.length.at.least', 1);
+
+        // Find a Contract-type row and verify its From date is not empty
+        cy.get('[data-testid="graph-nodes-table"] tbody tr')
+            .filter(':has([data-testid="node-type"]:contains("Contract"))')
+            .first()
+            .within(() => {
+                cy.get('[data-testid="node-from"]').should('not.contain', '—');
+            });
     });
 });

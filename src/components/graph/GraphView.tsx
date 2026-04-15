@@ -36,7 +36,10 @@ export default function GraphView({viewMode = 'graph'}: GraphViewProps) {
     const [graphElements, setGraphElements] = useState<CytoscapeElements>(EMPTY_ELEMENTS);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedNodeData, setSelectedNodeData] = useState<CytoscapeNodeData | null>(null);
-    const [filters, setFilters] = useState<FilterState>({});
+const now = new Date();
+    const defaultYearFrom = `${now.getFullYear() - 1}-01-01`;
+    const defaultYearTo = `${now.getFullYear()}-12-31`;
+    const [filters, setFilters] = useState<FilterState>({yearFrom: defaultYearFrom, yearTo: defaultYearTo});
     const [expandTarget, setExpandTarget] = useState<string>(ANCHOR_JAR_KODAS);
     const [balanceTrigger, setBalanceTrigger] = useState(0);
     const cyRef = useRef(null);
@@ -72,8 +75,8 @@ export default function GraphView({viewMode = 'graph'}: GraphViewProps) {
             setExpandTarget(ANCHOR_JAR_KODAS);
             setGraphElements(EMPTY_ELEMENTS);
             const params: Record<string, string> = {};
-            if (newFilters.year) params.yearFrom = String(newFilters.year);
-            if (newFilters.yearTo) params.yearTo = String(newFilters.yearTo);
+            if (newFilters.yearFrom) params.yearFrom = newFilters.yearFrom;
+            if (newFilters.yearTo) params.yearTo = newFilters.yearTo;
             if (newFilters.minContractValue) params.minContractValue = String(newFilters.minContractValue);
             replace('/', Object.keys(params).length > 0 ? params : undefined);
         },

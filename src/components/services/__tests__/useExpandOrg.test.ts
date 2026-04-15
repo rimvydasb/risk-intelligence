@@ -44,12 +44,15 @@ describe('useExpandOrg', () => {
             json: async () => ({elements: mockElements, meta: {}}),
         } as unknown as Response);
 
-        const {result} = renderHook(() => useExpandOrg('110053842', {year: 2022, minContractValue: 5000}), {
-            wrapper: makeWrapper(),
-        });
+        const {result} = renderHook(
+            () => useExpandOrg('110053842', {yearFrom: '2022-01-01', yearTo: '2022-12-31', minContractValue: 5000}),
+            {wrapper: makeWrapper()},
+        );
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true));
-        expect(global.fetch).toHaveBeenCalledWith('/api/v1/graph/expand/110053842?year=2022&minContractValue=5000');
+        expect(global.fetch).toHaveBeenCalledWith(
+            '/api/v1/graph/expand/110053842?yearFrom=2022-01-01&yearTo=2022-12-31&minContractValue=5000',
+        );
     });
 
     it('is disabled when jarKodas is empty', () => {

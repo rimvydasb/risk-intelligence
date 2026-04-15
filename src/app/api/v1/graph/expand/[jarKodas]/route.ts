@@ -16,13 +16,20 @@ export async function GET(request: NextRequest, {params}: {params: Promise<{jarK
     const {searchParams} = request.nextUrl;
     const filters: GraphFilters = {};
 
-    const year = searchParams.get('year');
-    if (year !== null) {
-        const y = Number(year);
-        if (!Number.isInteger(y) || y < 1900 || y > 2100) {
-            return NextResponse.json({error: 'Invalid year parameter', code: 'INVALID_YEAR'}, {status: 400});
+    const yearFrom = searchParams.get('yearFrom');
+    if (yearFrom !== null) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(yearFrom)) {
+            return NextResponse.json({error: 'Invalid yearFrom parameter — expected YYYY-MM-DD', code: 'INVALID_YEAR_FROM'}, {status: 400});
         }
-        filters.year = y;
+        filters.yearFrom = yearFrom;
+    }
+
+    const yearTo = searchParams.get('yearTo');
+    if (yearTo !== null) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(yearTo)) {
+            return NextResponse.json({error: 'Invalid yearTo parameter — expected YYYY-MM-DD', code: 'INVALID_YEAR_TO'}, {status: 400});
+        }
+        filters.yearTo = yearTo;
     }
 
     const minValue = searchParams.get('minContractValue');

@@ -16,11 +16,16 @@ function formatContractValue(verte?: number | null): string {
     return `€${verte.toFixed(0)}`;
 }
 
-function withinYear(fromDate: string | null | undefined, tillDate: string | null | undefined, year: number): boolean {
-    const start = fromDate ? new Date(fromDate).getFullYear() : null;
-    const end = tillDate ? new Date(tillDate).getFullYear() : null;
-    if (start !== null && start > year) return false;
-    if (end !== null && end < year) return false;
+function withinDateRange(
+    fromDate: string | null | undefined,
+    tillDate: string | null | undefined,
+    yearFrom: string | undefined,
+    yearTo: string | undefined,
+): boolean {
+    // Relationship ended before filter start
+    if (yearFrom && tillDate && tillDate < yearFrom) return false;
+    // Relationship started after filter end
+    if (yearTo && fromDate && fromDate > yearTo) return false;
     return true;
 }
 
@@ -57,7 +62,7 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
 
     // ── Employees (darbovietes) ───────────────────────────────────────────
     for (const d of raw.pinreg?.darbovietes ?? []) {
-        if (filters?.year && !withinYear(d.nuo, d.iki, filters.year)) continue;
+        if ((filters?.yearFrom || filters?.yearTo) && !withinDateRange(d.nuo, d.iki, filters.yearFrom, filters.yearTo)) continue;
         const personId = `person:${d.deklaracija}`;
         const edgeId = `edge:${personId}:${anchorId}:Employment:${d.deklaracija}`;
 
@@ -90,7 +95,7 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
     // `deklaracija` here is the declarant (employee) UUID, not the spouse.
     // Spouse has no UUID — synthesise from declarant UUID.
     for (const s of raw.pinreg?.sutuoktinioDarbovietes ?? []) {
-        if (filters?.year && !withinYear(s.nuo, s.iki, filters.year)) continue;
+        if ((filters?.yearFrom || filters?.yearTo) && !withinDateRange(s.nuo, s.iki, filters.yearFrom, filters.yearTo)) continue;
         const declarantId = `person:${s.deklaracija}`;
         const spouseId = `person:spouse-${s.deklaracija}`;
         const edgeId = `edge:${declarantId}:${spouseId}:Spouse:${s.deklaracija}`;
@@ -136,7 +141,7 @@ export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElem
 
     // ── Related persons (rysiaiSuJa) ──────────────────────────────────────
     for (const r of raw.pinreg?.rysiaiSuJa ?? []) {
-        if (filters?.year && !withinYear(r.rysioPradzia, r.rysioPabaiga, filters.year)) continue;
+        if ((filters?.yearFrom || filters?.yearTo) && !withinDateRange(r.rysioPradzia, r.rysioPabaiga, filters.yearFrom, filters.yearTo)) continue;
         const personId = `person:${r.deklaracija}`;
         const edgeId = `edge:${personId}:${anchorId}:${r.rysioTipas ?? 'Official'}:${r.deklaracija}`;
 

@@ -77,18 +77,19 @@ elements. No separate entity/relationship tables are needed for v1 — the cache
 
 Entity IDs use a **namespace prefix** to prevent collisions between entity types:
 
-| Entity Type  | ID Format              | Example                                       |
-| ------------ | ---------------------- | --------------------------------------------- |
-| Organization | `org:{jarKodas}`       | `org:110053842`                               |
-| Person       | `person:{deklaracija}` | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
-| Tender       | `tender:{pirkimoId}`   | `tender:7346201`                              |
+| Entity Type  | ID Format                    | Example                                       |
+| ------------ | ---------------------------- | --------------------------------------------- |
+| Organization | `org:{jarKodas}`             | `org:110053842`                               |
+| Person       | `person:{deklaracija}`       | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
+| Tender       | `tender:{pirkimoId}`         | `tender:7346201`                              |
+| Contract     | `contract:{sutartiesUnikalusID}` | `contract:2008059225`                     |
 
 ```typescript
 interface TemporalEntity {
-    id: string; // namespaced ID (see convention above)
+    id: string;        // namespaced ID (see convention above)
     name: string;
-    fromDate: Date;
-    tillDate: Date | null; // null means "present"
+    fromDate: string | null; // ISO date string (YYYY-MM-DD); null = unknown
+    tillDate: string | null; // null means "present" or unknown
 }
 
 /**
@@ -118,7 +119,7 @@ interface OrganizationEntity extends TemporalEntity {
  * @example: [110053842.json](examples/asmuo/110053842.json)
  */
 interface PersonEntity extends TemporalEntity {
-    data: Record<string, any>; // pinreg.darbovietes[].*
+    data: Record<string, unknown>; // pinreg.darbovietes[].*
 }
 
 /**
@@ -132,11 +133,34 @@ interface PersonEntity extends TemporalEntity {
 interface TenderEntity extends TemporalEntity {}
 
 /**
+ * ContractEntity represents a public procurement contract as a graph NODE (hub-and-spoke model).
+ * One contract node sits between a buyer org and a supplier org, connected by Signed edges.
+ * This lets one contract cleanly reference exactly one buyer and one supplier.
+ *
+ * id       - "contract:" + sutartiesUnikalusID
+ * name     - pavadinimas
+ * fromDate - earliest date among (sudarymoData / paskelbimoData / galiojimoData / faktineIvykdimoData)
+ *            or first <time datetime="…"> from the HTML contract list page
+ * tillDate - latest of the same date fields; null when only one date is available
+ * value    - contract value in EUR (verte)
+ *
+ * Note: Relationship.type = 'Contract' is reserved for a future edge-based representation.
+ * Currently contracts are only painted as ContractEntity nodes.
+ *
+ * @example https://viespirkiai.org/sutartis/2008059225.json
+ */
+interface ContractEntity extends TemporalEntity {
+    contractId: string;   // raw sutartiesUnikalusID
+    value: number | null; // contract value in EUR
+}
+
+/**
  * Relationship represents a directed edge between two entities.
  * Not an entity itself — identified by (source, target, type, fromDate).
  *
+ * Note: 'Contract' is reserved for future use. Contracts are currently painted as ContractEntity nodes.
+ *
  * @example:
- *  type: 'Contract', label: '1200 EUR', fromDate: paskelbimoData, tillDate: galiojimoData
  *  type: 'Director', label: 'Korporatyvinių reikalų direktorius', fromDate: rysioPradzia
  */
 interface Relationship {
@@ -144,9 +168,9 @@ interface Relationship {
     source: string; // entity id (namespaced)
     target: string; // entity id (namespaced)
     label?: string; // display text (role name, contract value, etc.)
-    fromDate?: Date;
-    tillDate?: Date;
-    data?: Record<string, any>; // extra metadata (verte, pareigos, etc.)
+    fromDate?: string; // ISO date string
+    tillDate?: string; // ISO date string
+    data?: Record<string, unknown>; // extra metadata (verte, pareigos, etc.)
 }
 ```
 
@@ -422,13 +446,21 @@ at this container. `bin/run-api-tests.sh` manages its lifecycle automatically.
 | OrganizationEntity | Institution      | pavadinimas | fixed size | fixed color         | `AccountBalance` |
 | PersonEntity       | Person           | name        | fixed size | risk score gradient | `Person`         |
 | TenderEntity       | Tender           | pavadinimas | log(verte) | risk score gradient | `Assignment`     |
+| ContractEntity     | Contract         | name / value | log(verte) | risk score gradient | `Description`    |
 
 **Edges:**
 
 | Entity                  | Relationship Type | Edge Label | Edge Width  | Edge Color (TBC)    | Edge Style |
 | ----------------------- | ----------------- | ---------- | ----------- | ------------------- | ---------- |
-| Relationship (Contract) | Contract          | verte      | log(verte)  | risk score gradient | solid      |
-| Relationship            | (others)          | role       | fixed width | risk score gradient | dashed     |
+| Relationship            | Employment        | role       | fixed width | risk score gradient | dashed     |
+| Relationship            | Director          | role       | fixed width | risk score gradient | dashed     |
+| Relationship            | Official          | role       | fixed width | risk score gradient | dashed     |
+| Relationship            | Shareholder       | role       | fixed width | risk score gradient | dashed     |
+| Relationship            | Spouse            | —          | fixed width | risk score gradient | dotted     |
+| Relationship            | Signed            | Buyer / Supplier | fixed width | — | solid    |
+
+> **Note:** `Relationship.type = 'Contract'` (direct org→org edge) is reserved for future use.
+> Currently contracts are painted as `ContractEntity` nodes connected to both buyer and supplier via `Signed` edges.
 
 **Graph Data Model:**
 
@@ -452,7 +484,8 @@ uses `incremental: false`; node expansion uses `incremental: true` to preserve e
 | Official    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed       |
 | Shareholder | Person → Organization       | `pinreg.rysiaiSuJa[]`                                        | dashed       |
 | Spouse      | Person → Person             | `pinreg.sutuoktinioDarbovietes[]`                            | dotted       |
-| Contract    | Organization → Organization | `sutartys.topPirkejai[]` / `topTiekejai[]` (aggregate in v1) | solid        |
+| Signed      | Organization → Contract     | HTML scraping via `fetchSutartisList`                        | solid        |
+| Signed      | Contract → Organization     | HTML scraping via `fetchSutartisList`                        | solid        |
 
 ### Filter Component (`GraphToolbar`)
 

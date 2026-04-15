@@ -46,8 +46,12 @@ export function GraphToolbar({
     onBalanceGraph,
 }: GraphToolbarProps) {
     const {navigate, params} = useHashRouter();
-    const [localYearFrom, setLocalYearFrom] = useState<number | ''>(filters.year ?? '');
-    const [localYearTo, setLocalYearTo] = useState<number | ''>('');
+    const [localYearFrom, setLocalYearFrom] = useState<number | ''>(
+        filters.yearFrom ? new Date(filters.yearFrom).getFullYear() : '',
+    );
+    const [localYearTo, setLocalYearTo] = useState<number | ''>(
+        filters.yearTo ? new Date(filters.yearTo).getFullYear() : '',
+    );
     const [localMinValue, setLocalMinValue] = useState<string>(
         filters.minContractValue !== undefined ? String(filters.minContractValue) : '',
     );
@@ -64,7 +68,14 @@ export function GraphToolbar({
         [navigate, params, viewMode],
     );
 
-    const isNonDefault = localYearFrom !== '' || localYearTo !== '' || localMinValue !== '';
+    const now = new Date();
+    const DEFAULT_YEAR_FROM = now.getFullYear() - 1;
+    const DEFAULT_YEAR_TO = now.getFullYear();
+
+    const isNonDefault =
+        (localYearFrom !== '' && localYearFrom !== DEFAULT_YEAR_FROM) ||
+        (localYearTo !== '' && localYearTo !== DEFAULT_YEAR_TO) ||
+        localMinValue !== '';
 
     const nodeOptions = useMemo(
         () =>
@@ -76,23 +87,23 @@ export function GraphToolbar({
 
     const handleApply = useCallback(() => {
         const newFilters: FilterState = {};
-        if (localYearFrom !== '') newFilters.year = Number(localYearFrom);
-        if (localYearTo !== '') newFilters.yearTo = Number(localYearTo);
+        if (localYearFrom !== '') newFilters.yearFrom = `${localYearFrom}-01-01`;
+        if (localYearTo !== '') newFilters.yearTo = `${localYearTo}-12-31`;
         if (localMinValue !== '') newFilters.minContractValue = Number(localMinValue);
         onApplyFilters(newFilters);
     }, [localYearFrom, localYearTo, localMinValue, onApplyFilters]);
 
     const handleReset = useCallback(() => {
-        setLocalYearFrom('');
-        setLocalYearTo('');
+        setLocalYearFrom(DEFAULT_YEAR_FROM);
+        setLocalYearTo(DEFAULT_YEAR_TO);
         setLocalMinValue('');
         onApplyFilters({});
-    }, [onApplyFilters]);
+    }, [DEFAULT_YEAR_FROM, DEFAULT_YEAR_TO, onApplyFilters]);
 
     // Sync from external filter changes
     useEffect(() => {
-        setLocalYearFrom(filters.year ?? '');
-        setLocalYearTo(filters.yearTo ?? '');
+        setLocalYearFrom(filters.yearFrom ? new Date(filters.yearFrom).getFullYear() : '');
+        setLocalYearTo(filters.yearTo ? new Date(filters.yearTo).getFullYear() : '');
         setLocalMinValue(filters.minContractValue !== undefined ? String(filters.minContractValue) : '');
     }, [filters]);
 

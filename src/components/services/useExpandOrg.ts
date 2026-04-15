@@ -2,7 +2,8 @@ import {useQuery} from '@tanstack/react-query';
 import type {CytoscapeElements} from '@/types/graph';
 
 export interface ExpandOrgFilters {
-    year?: number;
+    yearFrom?: string;
+    yearTo?: string;
     minContractValue?: number;
 }
 
@@ -19,7 +20,8 @@ export interface ExpandOrgResult {
 
 async function fetchExpandOrg(jarKodas: string, filters: ExpandOrgFilters): Promise<ExpandOrgResult> {
     const params = new URLSearchParams();
-    if (filters.year !== undefined) params.set('year', String(filters.year));
+    if (filters.yearFrom !== undefined) params.set('yearFrom', filters.yearFrom);
+    if (filters.yearTo !== undefined) params.set('yearTo', filters.yearTo);
     if (filters.minContractValue !== undefined) params.set('minContractValue', String(filters.minContractValue));
     const query = params.toString() ? '?' + params.toString() : '';
     const res = await fetch(`/api/v1/graph/expand/${encodeURIComponent(jarKodas)}${query}`);

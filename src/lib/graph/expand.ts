@@ -1,7 +1,9 @@
 import {getAsmuo, upsertAsmuo} from '@/lib/staging/asmuo';
-import {fetchAsmuo} from '@/lib/viespirkiai/client';
+import {getSutartisList, upsertSutartisList} from '@/lib/staging/sutartisList';
+import {fetchAsmuo, fetchSutartisList} from '@/lib/viespirkiai/client';
 import {parseAsmuo} from '@/lib/parsers/asmuo';
-import type {CytoscapeNode} from '@/types/graph';
+import {parseSutartisSummary} from '@/lib/parsers/sutartis';
+import type {CytoscapeElements, CytoscapeNode} from '@/types/graph';
 import type {GraphFilters, ExpandResult} from './types';
 
 const NEZINOMAS_LABELS = new Set(['Nežinomas', 'Nezinomas']);
@@ -30,6 +32,46 @@ async function enrichStubNode(node: CytoscapeNode): Promise<void> {
     }
 }
 
+/**
+ * Replace aggregated Contract edges with individual contract nodes+edges scraped from
+ * viespirkiai.org HTML contract list pages. Sequentially fetches each anchor↔partner pair.
+ * Org nodes that become disconnected after all contracts are replaced (e.g. filtered out) are
+ * removed.
+ */
+async function enrichContractEdges(
+    elements: CytoscapeElements,
+    anchorId: string,
+    filters: GraphFilters | undefined,
+): Promise<void> {
+    const contractEdges = elements.edges.filter((e) => e.data.type === 'Contract');
+    if (contractEdges.length === 0) return;
+
+    const anchorJarKodas = anchorId.replace('org:', '');
+
+    // Remove aggregated Contract edges — replaced by individual contract nodes+edges
+    elements.edges = elements.edges.filter((e) => e.data.type !== 'Contract');
+
+    for (const edge of contractEdges) {
+        const isAnchorBuyer = edge.data.source === anchorId;
+        const partnerId = String(isAnchorBuyer ? edge.data.target : edge.data.source);
+        const partnerJarKodas = partnerId.replace('org:', '');
+
+        const buyerCode = isAnchorBuyer ? anchorJarKodas : partnerJarKodas;
+        const supplierCode = isAnchorBuyer ? partnerJarKodas : anchorJarKodas;
+
+        let entry = await getSutartisList(buyerCode, supplierCode);
+        if (!entry) {
+            const contracts = await fetchSutartisList(buyerCode, supplierCode);
+            await upsertSutartisList(buyerCode, supplierCode, contracts);
+            entry = {data: contracts, fetchedAt: new Date()};
+        }
+
+        const {nodes, edges} = parseSutartisSummary(entry.data, anchorId, partnerId, isAnchorBuyer, filters);
+        elements.nodes.push(...nodes);
+        elements.edges.push(...edges);
+    }
+}
+
 export async function expandOrg(jarKodas: string, filters?: GraphFilters): Promise<ExpandResult> {
     const anchorId = `org:${jarKodas}`;
 
@@ -50,6 +92,9 @@ export async function expandOrg(jarKodas: string, filters?: GraphFilters): Promi
         (n) => n.data.expanded === false && NEZINOMAS_LABELS.has(n.data.label as string),
     );
     await Promise.all(stubsToEnrich.map(enrichStubNode));
+
+    // Replace aggregated Contract edges with individual dated contract nodes+edges.
+    await enrichContractEdges(elements, anchorId, filters);
 
     return {
         elements,

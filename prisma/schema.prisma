@@ -24,3 +24,14 @@ model StagingPirkimas {
   data      Json
   fetchedAt DateTime @default(now())
 }
+
+model StagingSutartisList {
+  id           String   @id @default(cuid())
+  buyerCode    String
+  supplierCode String
+  contracts    Json
+  fetchedAt    DateTime @default(now())
+
+  @@unique([buyerCode, supplierCode])
+  @@map("staging_sutartis_list")
+}
