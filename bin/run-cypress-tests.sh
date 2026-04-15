@@ -23,11 +23,7 @@ if [ -d "$SCREENSHOTS_DIR" ]; then
     rm -rf "$SCREENSHOTS_DIR"/*
 fi
 
-# 4. Seed database with example data so graph has nodes to render
-echo "Seeding database with example data..."
-npm run db:seed
-
-# 5. Start server in background
+# 3. Start server in background
 nohup npm run dev -- -p $PORT > server.log 2>&1 &
 SERVER_PID=$!
 echo "Server started with PID $SERVER_PID"
@@ -39,7 +35,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# 6. Wait for server to be up
+# 4. Wait for server to be up
 count=0
 until curl -s --head http://localhost:$PORT | grep "200 OK" > /dev/null; do
   if [ $count -ge 30 ]; then
@@ -54,5 +50,5 @@ done
 
 echo "Server is up! Running Cypress..."
 
-# 7. Run Cypress tests
+# 5. Run Cypress tests
 CI=1 CYPRESS_COMMERCIAL_RECOMMENDATIONS=false npm run cypress:run -- --quiet --reporter list "$@"

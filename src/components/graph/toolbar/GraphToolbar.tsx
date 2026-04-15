@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Autocomplete,
   Box,
@@ -13,12 +13,17 @@ import {
   Typography,
   InputLabel,
   FormControl,
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import HubIcon from '@mui/icons-material/Hub';
+import TableChartIcon from '@mui/icons-material/TableChart';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import type { CytoscapeNodeData, CytoscapeElements } from '@/types/graph';
 import type { FilterState } from '../types';
+import { useHashRouter } from '@/hooks/useHashRouter';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 2009 }, (_, i) => 2010 + i);
@@ -26,6 +31,7 @@ const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 2009 }, (_, i) => 2010 
 export interface GraphToolbarProps {
   elements: CytoscapeElements;
   filters: FilterState;
+  viewMode?: 'graph' | 'table';
   onApplyFilters: (filters: FilterState) => void;
   onNodeSelect: (nodeId: string, data: CytoscapeNodeData) => void;
   onBalanceGraph?: () => void;
@@ -34,14 +40,26 @@ export interface GraphToolbarProps {
 export function GraphToolbar({
   elements,
   filters,
+  viewMode = 'graph',
   onApplyFilters,
   onNodeSelect,
   onBalanceGraph,
 }: GraphToolbarProps) {
+  const { navigate, params } = useHashRouter();
   const [localYearFrom, setLocalYearFrom] = useState<number | ''>( filters.year ?? '');
   const [localYearTo, setLocalYearTo] = useState<number | ''>('');
   const [localMinValue, setLocalMinValue] = useState<string>(
     filters.minContractValue !== undefined ? String(filters.minContractValue) : '',
+  );
+
+  const handleViewModeToggle = useCallback(
+    (_: React.MouseEvent<HTMLElement>, newMode: 'graph' | 'table' | null) => {
+      if (!newMode || newMode === viewMode) return;
+      const filterParams: Record<string, string> = {};
+      params.forEach((value, key) => { filterParams[key] = value; });
+      navigate(`/${newMode}/`, Object.keys(filterParams).length > 0 ? filterParams : undefined);
+    },
+    [navigate, params, viewMode],
   );
 
   const isNonDefault =
@@ -192,6 +210,24 @@ export function GraphToolbar({
             Balance
           </Button>
         )}
+
+        {/* View mode toggle */}
+        <ToggleButtonGroup
+          value={viewMode}
+          exclusive
+          onChange={handleViewModeToggle}
+          size="small"
+          sx={{ ml: 1 }}
+        >
+          <ToggleButton value="graph" data-testid="view-mode-graph" sx={{ color: '#e0e0e0', borderColor: '#555' }}>
+            <AccountTreeIcon fontSize="small" sx={{ mr: 0.5 }} />
+            Graph
+          </ToggleButton>
+          <ToggleButton value="table" data-testid="view-mode-table" sx={{ color: '#e0e0e0', borderColor: '#555' }}>
+            <TableChartIcon fontSize="small" sx={{ mr: 0.5 }} />
+            Table
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Toolbar>
     </AppBar>
   );

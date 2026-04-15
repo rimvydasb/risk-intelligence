@@ -122,41 +122,41 @@ sequenceDiagram
 
 **Phase 1 — GraphNodesTable & GraphEdgesTable**
 
-- [ ] Create `src/components/graph/GraphNodesTable.tsx` — renders MUI `Table` with columns defined above;
+- [x] Create `src/components/graph/GraphNodesTable.tsx` — renders MUI `Table` with columns defined above;
   `data-testid="graph-nodes-table"`; each data cell carries its `data-testid` attribute
-- [ ] Create `src/components/graph/GraphEdgesTable.tsx` — renders MUI `Table` with columns defined above;
+- [x] Create `src/components/graph/GraphEdgesTable.tsx` — renders MUI `Table` with columns defined above;
   `data-testid="graph-edges-table"`; each data cell carries its `data-testid` attribute
-- [ ] Create `src/components/graph/GraphDataTable.tsx` — stacks the two tables inside a scrollable `Box`; accepts
+- [x] Create `src/components/graph/GraphDataTable.tsx` — stacks the two tables inside a scrollable `Box`; accepts
   `elements: CytoscapeElements` prop
-- [ ] Add unit tests under `src/components/graph/__tests__/` for `GraphNodesTable` and `GraphEdgesTable` (render rows,
+- [x] Add unit tests under `src/components/graph/__tests__/` for `GraphNodesTable` and `GraphEdgesTable` (render rows,
   format values)
-- [ ] Ensure project compiles and existing tests are passing
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Ensure project compiles and existing tests are passing
+- [x] Mark all checkboxes as done in this document once verified
 
 **Phase 2 — URL routing + Toggle in GraphToolbar & GraphView wiring**
 
-- [ ] Update `page.tsx`: map route `/table/` (and `/table`) → `viewMode="table"`; `/graph/` and `/` →
+- [x] Update `page.tsx`: map route `/table/` (and `/table`) → `viewMode="table"`; `/graph/` and `/` →
   `viewMode="graph"`; pass as prop to `GraphView`
-- [ ] Update `GraphView` to accept `viewMode: 'graph' | 'table'` prop; conditionally render `SigmaCanvas` vs
+- [x] Update `GraphView` to accept `viewMode: 'graph' | 'table'` prop; conditionally render `SigmaCanvas` vs
   `GraphDataTable`; pass `elements` to `GraphDataTable`
-- [ ] Add `viewMode` and `onViewModeChange` props to `GraphToolbar`; the handler calls
+- [x] Add `viewMode` and `onViewModeChange` props to `GraphToolbar`; the handler calls
   `navigate('/table/', filterParams)` or `navigate('/graph/', filterParams)` preserving active filter query params
-- [ ] Add MUI `ToggleButtonGroup` to `GraphToolbar` right side with `data-testid="view-mode-graph"` and
+- [x] Add MUI `ToggleButtonGroup` to `GraphToolbar` right side with `data-testid="view-mode-graph"` and
   `data-testid="view-mode-table"`
-- [ ] Update `GraphToolbar` unit tests to cover new toggle props
-- [ ] Ensure project compiles and existing tests are passing
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Update `GraphToolbar` unit tests to cover new toggle props
+- [x] Ensure project compiles and existing tests are passing
+- [x] Mark all checkboxes as done in this document once verified
 
 **Phase 3 — Cypress E2E coverage + cleanup**
 
-- [ ] Add Cypress test: navigate directly to `#/table/`, assert `graph-nodes-table` and `graph-edges-table` are visible
+- [x] Add Cypress test: navigate directly to `#/table/`, assert `graph-nodes-table` and `graph-edges-table` are visible
   and contain at least one row each
-- [ ] Add Cypress test: navigate directly to `#/graph/`, assert `graph-container` is visible and tables are absent
-- [ ] Add Cypress test: start on `#/`, click `view-mode-table` toggle, assert URL changes to `#/table/` and tables
+- [x] Add Cypress test: navigate directly to `#/graph/`, assert `graph-container` is visible and tables are absent
+- [x] Add Cypress test: start on `#/`, click `view-mode-table` toggle, assert URL changes to `#/table/` and tables
   appear
-- [ ] Add Cypress test: filter params are preserved when switching view mode (e.g. `#/table/?yearFrom=2022` → toggle to
+- [x] Add Cypress test: filter params are preserved when switching view mode (e.g. `#/table/?yearFrom=2022` → toggle to
   graph → URL is `#/graph/?yearFrom=2022`)
-- [ ] Update required documentation after the implementation is complete
-- [ ] Perform linting and formatting to maintain code quality and consistency
-- [ ] Review the implementation to ensure it meets the requirements and follows best practices
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Update required documentation after the implementation is complete
+- [x] Perform linting and formatting to maintain code quality and consistency
+- [x] Review the implementation to ensure it meets the requirements and follows best practices
+- [x] Mark all checkboxes as done in this document once verified

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Box, CircularProgress, Alert, Typography, Button } from '@mui/material';
 import { GraphToolbar } from './toolbar/GraphToolbar';
+import { GraphDataTable } from './GraphDataTable';
 import { NodeSidebar } from './NodeSidebar';
 import { useExpandOrg } from '@/components/services/useExpandOrg';
 import { useHealthcheck } from '@/components/services/useHealthcheck';
@@ -32,7 +33,11 @@ function mergeElements(existing: CytoscapeElements, incoming: CytoscapeElements)
   };
 }
 
-export default function GraphView() {
+interface GraphViewProps {
+  viewMode?: 'graph' | 'table';
+}
+
+export default function GraphView({ viewMode = 'graph' }: GraphViewProps) {
   const { replace, navigate } = useHashRouter();
   const [graphElements, setGraphElements] = useState<CytoscapeElements>(EMPTY_ELEMENTS);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -130,6 +135,7 @@ export default function GraphView() {
       <GraphToolbar
         elements={graphElements}
         filters={filters}
+        viewMode={viewMode}
         onApplyFilters={handleApplyFilters}
         onBalanceGraph={handleBalanceGraph}
         onNodeSelect={(nodeId, data) => {
@@ -145,37 +151,43 @@ export default function GraphView() {
       )}
 
       <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden', position: 'relative' }}>
-        <Box sx={{ flexGrow: 1, position: 'relative' }}>
-          {isLoading && graphElements.nodes.length === 0 && (
-            <Box
-              sx={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                background: 'rgba(10,10,10,0.7)',
-                zIndex: 10,
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          )}
-          <SigmaCanvas
-            elements={graphElements}
-            onNodeClick={handleNodeClick}
-            onBackgroundClick={handleBackgroundClick}
-            cyRef={cyRef}
-            balanceTrigger={balanceTrigger}
-          />
-        </Box>
+        {viewMode === 'table' ? (
+          <GraphDataTable elements={graphElements} />
+        ) : (
+          <Box sx={{ flexGrow: 1, position: 'relative' }}>
+            {isLoading && graphElements.nodes.length === 0 && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(10,10,10,0.7)',
+                  zIndex: 10,
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            )}
+            <SigmaCanvas
+              elements={graphElements}
+              onNodeClick={handleNodeClick}
+              onBackgroundClick={handleBackgroundClick}
+              cyRef={cyRef}
+              balanceTrigger={balanceTrigger}
+            />
+          </Box>
+        )}
 
-        <NodeSidebar
-          nodeId={selectedNodeId}
-          nodeData={selectedNodeData}
-          onClose={handleBackgroundClick}
-          onViewFullProfile={handleViewFullProfile}
-        />
+        {viewMode === 'graph' && (
+          <NodeSidebar
+            nodeId={selectedNodeId}
+            nodeData={selectedNodeData}
+            onClose={handleBackgroundClick}
+            onViewFullProfile={handleViewFullProfile}
+          />
+        )}
       </Box>
     </Box>
   );

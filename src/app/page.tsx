@@ -14,5 +14,6 @@ export default function Home() {
     return <EntityDetailView entityId={entityId} />;
   }
 
-  return <GraphView />;
+  const viewMode = route.startsWith('/table') ? 'table' : 'graph';
+  return <GraphView viewMode={viewMode} />;
 }
