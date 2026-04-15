@@ -63,6 +63,25 @@ const EDGE_TYPE_CONFIG: Record<string, { color: string; size: number }> = {
 
 const DEFAULT_EDGE = {color: '#546e7a', size: 0.8};
 
+// Draw node label centered below the node circle instead of to its right.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function drawNodeLabelBottom(context: CanvasRenderingContext2D, data: any, settings: any): void {
+    if (!data.label) return;
+    const size: number = settings.labelSize;
+    const font: string = settings.labelFont;
+    const weight: string = settings.labelWeight ?? 'normal';
+    const color: string = settings.labelColor?.attribute
+        ? (data[settings.labelColor.attribute] ?? settings.labelColor.color ?? '#000')
+        : (settings.labelColor?.color ?? '#000');
+    context.fillStyle = color;
+    context.font = `${weight} ${size}px ${font}`;
+    context.textAlign = 'center';
+    context.textBaseline = 'top';
+    context.fillText(data.label, data.x, data.y + data.size + 3);
+    context.textAlign = 'left';
+    context.textBaseline = 'alphabetic';
+}
+
 interface XY {
     x: number;
     y: number
@@ -273,6 +292,7 @@ export default function SigmaCanvas({
             labelDensity: 0.07,
             labelGridCellSize: 60,
             labelRenderedSizeThreshold: 6,
+            defaultDrawNodeLabel: drawNodeLabelBottom,
             edgeLabelFont: 'Arial, Roboto, sans-serif',
             edgeLabelSize: 9,
             edgeLabelColor: { color: '#aaaaaa' },

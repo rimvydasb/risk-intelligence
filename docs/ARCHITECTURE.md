@@ -50,7 +50,9 @@ data model.
 
 ## Technology Stack
 
-1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization. Layout engine: **fCoSE** (`cytoscape-fcose`) — fast compound spring embedder that prevents node/label overlap in star and mixed topologies.
+1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization. Layout engine: *
+   *fCoSE** (`cytoscape-fcose`) — fast compound spring embedder that prevents node/label overlap in star and mixed
+   topologies.
 2. **Design System:** Material UI for consistent styling and responsive design.
 3. **Midlayer:** TanStack React Query for data fetching and caching, ensuring efficient API interactions. React
    useContext for global state management.
@@ -458,8 +460,53 @@ MUI `AppBar` + `Toolbar` pinned to the top of the graph canvas. Contains:
   query string and re-fetches the current anchor with the new filters.
 - **Reset** `Button` (`data-testid="filter-reset"`) — only visible when non-default filters are
   active. Clears state and removes itself.
+- **View mode toggle** `ToggleButtonGroup` (right side) — switches between `"graph"` and `"table"`
+  modes by navigating to `#/graph/` or `#/table/`. Filter query params are preserved across the
+  switch. `data-testid="view-mode-graph"` / `data-testid="view-mode-table"`.
 
 Filter state is encoded in the hash fragment: `#/?yearFrom=2022&yearTo=2022&minContractValue=100000`.
+
+**Hash routes for view mode:**
+
+| Route      | View            |
+|------------|-----------------|
+| `#/`       | graph (default) |
+| `#/graph/` | graph           |
+| `#/table/` | table           |
+
+`page.tsx` reads the route and passes `viewMode` as a prop to `GraphView`.
+
+### Graph Data Table (`GraphDataTable`)
+
+An alternative read-only view of the in-memory graph, rendered as plain MUI tables. Activated via
+the view-mode toggle in `GraphToolbar`. Primary use-cases: Cypress test assertions and human
+inspection of graph contents without relying on the WebGL canvas.
+
+`GraphDataTable` wraps two sub-components in a scrollable `Box`:
+
+**`GraphNodesTable`** (`data-testid="graph-nodes-table"`)
+
+| Column       | Source field         | Format                             |
+|--------------|----------------------|------------------------------------|
+| **ID**       | `node.data.id`       | raw string                         |
+| **Label**    | `node.data.label`    | raw string                         |
+| **Type**     | `node.data.type`     | raw string                         |
+| **Expanded** | `node.data.expanded` | `"yes"` / `"no"` / `"—"`           |
+| **From**     | `node.data.fromDate` | `YYYY-MM-DD` or `"—"`              |
+| **Till**     | `node.data.tillDate` | `YYYY-MM-DD` / `"present"` / `"—"` |
+
+**`GraphEdgesTable`** (`data-testid="graph-edges-table"`)
+
+| Column     | Source field         | Format                             |
+|------------|----------------------|------------------------------------|
+| **ID**     | `edge.data.id`       | raw string                         |
+| **Source** | `edge.data.source`   | raw string                         |
+| **Target** | `edge.data.target`   | raw string                         |
+| **Type**   | `edge.data.type`     | raw string                         |
+| **Label**  | `edge.data.label`    | raw string or `"—"`                |
+| **Value**  | `edge.data.value`    | `€X.XM` / `€X,XXX` / `"—"`         |
+| **From**   | `edge.data.fromDate` | `YYYY-MM-DD` or `"—"`              |
+| **Till**   | `edge.data.tillDate` | `YYYY-MM-DD` / `"present"` / `"—"` |
 
 ### Node Details Component (`NodeSidebar`)
 
@@ -526,9 +573,13 @@ risk-intelligence/
 │   │   │   ├── types.ts          # GraphState, FilterState
 │   │   │   ├── GraphView.tsx     # Root graph page: toolbar + canvas + sidebar
 │   │   │   ├── CytoscapeCanvas.tsx   # Cytoscape.js mount (SSR-safe, dynamic import)
+│   │   │   ├── SigmaCanvas.tsx       # Sigma/WebGL canvas (browser-only, dynamic import)
 │   │   │   ├── NodeSidebar.tsx   # Right panel shown on node click
+│   │   │   ├── GraphDataTable.tsx    # Table view wrapper (GraphNodesTable + GraphEdgesTable)
+│   │   │   ├── GraphNodesTable.tsx   # MUI table of all graph nodes (no pagination)
+│   │   │   ├── GraphEdgesTable.tsx   # MUI table of all graph edges (no pagination)
 │   │   │   ├── toolbar/
-│   │   │   │   └── GraphToolbar.tsx  # Search autocomplete + filter inputs + apply/reset
+│   │   │   │   └── GraphToolbar.tsx  # Search autocomplete + filter inputs + view-mode toggle + apply/reset
 │   │   │   └── __tests__/
 │   │   ├── entity/               # Full 360° entity profile page
 │   │   │   ├── types.ts          # EntityDetailViewProps
@@ -721,8 +772,8 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 
 ## Delivery Stories
 
-| Story                                                              | Status       | Description                                               |
-|--------------------------------------------------------------------|--------------|-----------------------------------------------------------|
-| [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)        | ✅ Complete  | Prisma schema, staging cache, parsers, REST API, tests    |
-| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md)  | ✅ Complete  | Frontend: Cytoscape graph, hash routing, filters, Cypress |
-| [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)  | ⏳ Next      | Replace Cytoscape.js with Sigma.js + Graphology (WebGL)   |
+| Story                                                            | Status     | Description                                               |
+|------------------------------------------------------------------|------------|-----------------------------------------------------------|
+| [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)       | ✅ Complete | Prisma schema, staging cache, parsers, REST API, tests    |
+| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md) | ✅ Complete | Frontend: Cytoscape graph, hash routing, filters, Cypress |
+| [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)   | ⏳ Next     | Replace Cytoscape.js with Sigma.js + Graphology (WebGL)   |
