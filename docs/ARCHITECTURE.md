@@ -361,11 +361,12 @@ without triggering additional fetches. Stubs are expanded when the user clicks t
 
 #### Freshness TTL Strategy
 
-| Staging Table     | TTL      | Rationale                                                |
-|-------------------|----------|----------------------------------------------------------|
-| `StagingAsmuo`    | 24 hours | Employee/governance data changes infrequently            |
-| `StagingSutartis` | 7 days   | Contract data is essentially immutable after publication |
-| `StagingPirkimas` | 24 hours | Active tenders may update (new bids, status changes)     |
+| Staging Table          | TTL      | Rationale                                                         |
+|------------------------|----------|-------------------------------------------------------------------|
+| `StagingAsmuo`         | 24 hours | Employee/governance data changes infrequently                     |
+| `StagingSutartis`      | 7 days   | Contract data is essentially immutable after publication          |
+| `StagingSutartisList`  | 24 hours | Contract-ID list per buyer/supplier pair; new contracts may be awarded |
+| `StagingPirkimas`      | 24 hours | Active tenders may update (new bids, status changes)              |
 
 ### Staging Storage Schema
 
@@ -380,6 +381,17 @@ model StagingSutartis {
   sutartiesUnikalusID String   @id
   data                Json     
   fetchedAt           DateTime @default(now())
+}
+
+model StagingSutartisList {
+  id           String   @id @default(cuid())
+  buyerCode    String
+  supplierCode String
+  contractIds  String[]
+  fetchedAt    DateTime
+
+  @@unique([buyerCode, supplierCode])
+  @@map("staging_sutartis_list")
 }
 
 model StagingPirkimas {
@@ -550,7 +562,7 @@ risk-intelligence/
 │   └── run-api-tests.sh          # API integration test runner (starts test DB, runs Jest)
 ├── cypress/                      # E2E & GUI Testing (Specs, Screenshots, Videos)
 ├── prisma/
-│   ├── schema.prisma             # StagingAsmuo, StagingSutartis, StagingPirkimas models
+│   ├── schema.prisma             # StagingAsmuo, StagingSutartis, StagingSutartisList, StagingPirkimas models
 │   └── migrations/               # Generated migration files
 ├── public/                       # Static Assets
 ├── src/
@@ -600,7 +612,7 @@ risk-intelligence/
 │   │   │
 │   │   ├── viespirkiai/          # Raw HTTP layer — viespirkiai.org API
 │   │   │   ├── types.ts          # AsmuoRaw, SutartisRaw, PirkamasRaw, ViespirkiaiError
-│   │   │   ├── client.ts         # fetchAsmuo / fetchSutartis / fetchPirkimas
+│   │   │   ├── client.ts         # fetchAsmuo / fetchSutartis / fetchPirkimas / fetchSutartisList
 │   │   │   └── __tests__/
 │   │   │       └── client.test.ts
 │   │   ├── staging/              # PostgreSQL cache — stores raw API responses with TTL
