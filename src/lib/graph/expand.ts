@@ -1,5 +1,5 @@
 import {getAsmuo, upsertAsmuo} from '@/lib/staging/asmuo';
-import {getSutartisList, upsertSutartisList} from '@/lib/staging/sutartisList';
+import {getSutartisContracts, upsertSutartisContracts} from '@/lib/staging/sutartis';
 import {fetchAsmuo, fetchSutartisList} from '@/lib/viespirkiai/client';
 import {parseAsmuo} from '@/lib/parsers/asmuo';
 import {parseSutartisSummary} from '@/lib/parsers/sutartis';
@@ -59,14 +59,14 @@ async function enrichContractEdges(
         const buyerCode = isAnchorBuyer ? anchorJarKodas : partnerJarKodas;
         const supplierCode = isAnchorBuyer ? partnerJarKodas : anchorJarKodas;
 
-        let entry = await getSutartisList(buyerCode, supplierCode);
+        let entry = await getSutartisContracts(buyerCode, supplierCode);
         if (!entry) {
             const contracts = await fetchSutartisList(buyerCode, supplierCode);
-            await upsertSutartisList(buyerCode, supplierCode, contracts);
-            entry = {data: contracts, fetchedAt: new Date()};
+            await upsertSutartisContracts(contracts, buyerCode, supplierCode);
+            entry = contracts;
         }
 
-        const {nodes, edges} = parseSutartisSummary(entry.data, anchorId, partnerId, isAnchorBuyer, filters);
+        const {nodes, edges} = parseSutartisSummary(entry, anchorId, partnerId, isAnchorBuyer, filters);
         elements.nodes.push(...nodes);
         elements.edges.push(...edges);
     }

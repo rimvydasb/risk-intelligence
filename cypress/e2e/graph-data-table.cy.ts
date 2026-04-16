@@ -158,4 +158,36 @@ describe('Graph Data Table — view mode toggle', () => {
                 cy.get('[data-testid="node-from"]').should('not.contain', '—');
             });
     });
+
+    it('contract nodes in table have tillDate populated', () => {
+        cy.visit('http://localhost:3000/#/table/');
+        cy.get('[data-testid="graph-nodes-table"]', {timeout: 30000}).should('be.visible');
+        cy.get('[data-testid="graph-nodes-table"] tbody tr').should('have.length.at.least', 1);
+
+        cy.get('[data-testid="graph-nodes-table"] tbody tr')
+            .filter(':has([data-testid="node-type"]:contains("Contract"))')
+            .first()
+            .within(() => {
+                // tillDate shows either a date or "present" — never empty or "—"
+                cy.get('[data-testid="node-till"]').invoke('text').should('not.be.empty');
+            });
+    });
+
+    it('minContractValue filter re-fetches and includes value param in request', () => {
+        cy.intercept('GET', '/api/v1/graph/expand/**').as('expand');
+
+        cy.visit('http://localhost:3000/#/table/');
+        cy.wait('@expand', {timeout: 20000});
+        cy.get('[data-testid="graph-nodes-table"] tbody tr').should('have.length.at.least', 1);
+
+        // Enter a minimum contract value
+        cy.get('[data-testid="filter-min-value"]').clear().type('10000');
+        cy.get('[data-testid="filter-apply"]').click();
+
+        // A new expand request must include the minContractValue query param
+        cy.wait('@expand').its('request.url').should('include', 'minContractValue=10000');
+
+        // Table must still be populated (anchor always present)
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
+    });
 });

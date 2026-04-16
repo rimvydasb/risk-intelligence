@@ -1,4 +1,6 @@
 import {db} from '@/lib/db';
+import {getSutartisDetail, upsertSutartisDetail} from '@/lib/staging/sutartis';
+import {fetchSutartis} from '@/lib/viespirkiai/client';
 import type {EntityDetailResult} from './types';
 
 export async function getEntityDetail(entityId: string): Promise<EntityDetailResult | null> {
@@ -63,6 +65,22 @@ export async function getEntityDetail(entityId: string): Promise<EntityDetailRes
             type: 'Person',
             label,
             data: person,
+        };
+    }
+
+    // ── Contract lookup (lazy JSON fetch on first click) ─────────────────
+    if (entityId.startsWith('contract:')) {
+        const sutartiesUnikalusID = entityId.slice(9);
+        let raw = await getSutartisDetail(sutartiesUnikalusID);
+        if (!raw) {
+            raw = await fetchSutartis(sutartiesUnikalusID);
+            await upsertSutartisDetail(sutartiesUnikalusID, raw);
+        }
+        return {
+            id: entityId,
+            type: 'Contract',
+            label: raw.pavadinimas ?? sutartiesUnikalusID,
+            data: raw as unknown as Record<string, unknown>,
         };
     }
 

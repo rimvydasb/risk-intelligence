@@ -40,20 +40,35 @@ describe('GET /api/v1/graph/expand/[jarKodas]', () => {
         expect(json.code).toBe('INVALID_JAR_KODAS');
     });
 
-    it('returns 400 for invalid year param', async () => {
-        const res = await GET(makeRequest('http://localhost/api/v1/graph/expand/110053842?year=notanumber'), {
+    it('returns 400 for invalid yearFrom param', async () => {
+        const res = await GET(makeRequest('http://localhost/api/v1/graph/expand/110053842?yearFrom=notadate'), {
             params: Promise.resolve({jarKodas: '110053842'}),
         });
         expect(res.status).toBe(400);
-        expect((await res.json()).code).toBe('INVALID_YEAR');
+        expect((await res.json()).code).toBe('INVALID_YEAR_FROM');
+    });
+
+    it('returns 400 for invalid yearTo param', async () => {
+        const res = await GET(makeRequest('http://localhost/api/v1/graph/expand/110053842?yearTo=notadate'), {
+            params: Promise.resolve({jarKodas: '110053842'}),
+        });
+        expect(res.status).toBe(400);
+        expect((await res.json()).code).toBe('INVALID_YEAR_TO');
     });
 
     it('passes filters to expandOrg', async () => {
         mockExpandOrg.mockResolvedValueOnce(MOCK_RESULT);
-        await GET(makeRequest('http://localhost/api/v1/graph/expand/110053842?year=2022&minContractValue=5000'), {
-            params: Promise.resolve({jarKodas: '110053842'}),
+        await GET(
+            makeRequest(
+                'http://localhost/api/v1/graph/expand/110053842?yearFrom=2022-01-01&yearTo=2022-12-31&minContractValue=5000',
+            ),
+            {params: Promise.resolve({jarKodas: '110053842'})},
+        );
+        expect(mockExpandOrg).toHaveBeenCalledWith('110053842', {
+            yearFrom: '2022-01-01',
+            yearTo: '2022-12-31',
+            minContractValue: 5000,
         });
-        expect(mockExpandOrg).toHaveBeenCalledWith('110053842', {year: 2022, minContractValue: 5000});
     });
 
     it('returns 502 when ViespirkiaiError is thrown', async () => {

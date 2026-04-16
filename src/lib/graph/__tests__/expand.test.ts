@@ -10,6 +10,7 @@ import type {AsmuoRaw} from '@/lib/viespirkiai/types';
 
 jest.mock('@/lib/viespirkiai/client');
 const mockFetchAsmuo = viespirkiai.fetchAsmuo as jest.Mock;
+const mockFetchSutartisList = viespirkiai.fetchSutartisList as jest.Mock;
 
 function loadFixture(): AsmuoRaw {
     return JSON.parse(
@@ -23,8 +24,9 @@ const EMPTY_ASMUO: AsmuoRaw = {jar: undefined};
 beforeEach(async () => {
     await db.stagingAsmuo.deleteMany();
     jest.clearAllMocks();
-    // Default: any enrichment fetch returns an empty record (no real name → label unchanged).
     mockFetchAsmuo.mockResolvedValue(EMPTY_ASMUO);
+    // Default: no contracts for any pair (prevents upsertSutartisContracts from crashing).
+    mockFetchSutartisList.mockResolvedValue([]);
 });
 
 afterAll(async () => {

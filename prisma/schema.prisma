@@ -14,24 +14,22 @@ model StagingAsmuo {
 }
 
 model StagingSutartis {
-  sutartiesUnikalusID String   @id
-  data                Json
-  fetchedAt           DateTime @default(now())
+  sutartiesUnikalusID String    @id
+  buyerCode           String
+  supplierCode        String
+  name                String
+  fromDate            String?
+  tillDate            String?
+  value               Float?
+  fetchedAt           DateTime  @default(now())
+  data                Json?
+  dataFetchedAt       DateTime?
+
+  @@index([buyerCode, supplierCode])
 }
 
 model StagingPirkimas {
   pirkimoId String   @id
   data      Json
   fetchedAt DateTime @default(now())
-}
-
-model StagingSutartisList {
-  id           String   @id @default(cuid())
-  buyerCode    String
-  supplierCode String
-  contracts    Json
-  fetchedAt    DateTime @default(now())
-
-  @@unique([buyerCode, supplierCode])
-  @@map("staging_sutartis_list")
 }
