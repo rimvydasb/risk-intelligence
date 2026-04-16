@@ -10,7 +10,8 @@
     "format": "prettier --write .",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "clean": "rm -rf .next out coverage *.tsbuildinfo server.log"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
