@@ -71,6 +71,93 @@ from viespirkiai.org is cached in **staging tables** (raw JSON) and parsed **on-
 
 ---
 
+## System View
+
+The diagram below shows the major components, their boundaries, and how they communicate. Each layer has a single
+responsibility: the browser renders and holds graph state; API routes delegate to the business logic library; the
+library orchestrates caching, fetching, and parsing; PostgreSQL is the raw-JSON cache; viespirkiai.org is the sole
+external data source.
+
+```mermaid
+graph TB
+    subgraph Browser["🌐 Browser (Client)"]
+        direction TB
+        subgraph UI["UI Layer"]
+            GV["GraphView\n(routing + filter state)"]
+            GT["GraphToolbar\n(year / value filters + view toggle)"]
+            SC["SigmaCanvas\n(WebGL · Sigma.js + Graphology)"]
+            NS["NodeSidebar\n(entity detail drawer)"]
+            GDT["GraphDataTable\n(table view)"]
+        end
+        subgraph RQ["Data Layer — React Query"]
+            UEO["useExpandOrg\nGET /expand/{jarKodas}"]
+            UED["useEntityDetail\nGET /entity/{entityId}"]
+        end
+    end
+
+    subgraph NextJS["⚙️ Next.js Server — API Routes"]
+        RE["GET /api/v1/graph/expand/[jarKodas]"]
+        RN["GET /api/v1/entity/[entityId]"]
+    end
+
+    subgraph Lib["📦 src/lib — Business Logic"]
+        EXP["graph/expand.ts\nexpandOrg()"]
+        ENT["graph/entity.ts\ngetEntityDetail()"]
+        CLI["viespirkiai/client.ts\nfetchAsmuo · fetchSutartisList\nfetchSutartis · fetchPirkimas"]
+        PAR["parsers/\nasmuo · sutartis · pirkimas\n(raw JSON → GraphElements)"]
+        STG["staging/\nasmuo · sutartis · pirkimas\n(cache read / write)"]
+    end
+
+    subgraph PG["🗄️ PostgreSQL"]
+        SA[("StagingAsmuo\njarKodas · data · fetchedAt")]
+        SS[("StagingSutartis\nsutartiesUnikalusID · name\nfromDate · tillDate · value\ndata? (lazy) · fetchedAt")]
+        SP[("StagingPirkimas\npirkimoId · data · fetchedAt")]
+    end
+
+    subgraph Ext["🌍 viespirkiai.org"]
+        EA["/asmuo/{jarKodas}.json"]
+        EH["/?perkančiosios=X&tiekejoKodas=Y\n(HTML — contract list scraping)"]
+        ES["/sutartis/{id}.json"]
+        EP["/viesiejiPirkimai/{id}.json"]
+    end
+
+    GV --> GT
+    GV --> SC
+    GV --> NS
+    GV --> GDT
+    GV --> UEO
+    NS --> UED
+
+    UEO -->|HTTP GET| RE
+    UED -->|HTTP GET| RN
+
+    RE --> EXP
+    RN --> ENT
+
+    EXP --> STG
+    EXP --> CLI
+    EXP --> PAR
+    ENT --> STG
+    ENT --> CLI
+
+    STG <-->|Prisma| SA
+    STG <-->|Prisma| SS
+    STG <-->|Prisma| SP
+
+    CLI -->|JSON| EA
+    CLI -->|JSON| ES
+    CLI -->|JSON| EP
+    CLI -->|HTML scrape| EH
+```
+
+**Key flow:** On first load (or any node click) the browser calls `/expand/{jarKodas}`. `expandOrg()` checks
+`StagingAsmuo` — on a cache miss it fetches from viespirkiai.org, stores the raw JSON, then parses it in-memory into
+`GraphElements`. Contract nodes are built by scraping the HTML pair-list pages and stored in `StagingSutartis` (one row
+per contract; the `data` JSON column is filled lazily only when the user opens a contract's detail panel via
+`/entity/contract:{id}`).
+
+---
+
 ## Basic Data Structures
 
 ### Entity ID Convention
@@ -396,21 +483,22 @@ model StagingAsmuo {
   fetchedAt DateTime @default(now())
 }
 
+// One row per contract. Populated by HTML scraping (fetchSutartisList).
+// The `data` column is null until the user opens the contract detail panel —
+// it is filled lazily by fetchSutartis on the first entity/{id} call.
 model StagingSutartis {
-  sutartiesUnikalusID String   @id
-  data                Json
-  fetchedAt           DateTime @default(now())
-}
+  sutartiesUnikalusID String    @id
+  buyerCode           String
+  supplierCode        String
+  name                String
+  fromDate            String?
+  tillDate            String?
+  value               Float?
+  fetchedAt           DateTime  @default(now())
+  data                Json?
+  dataFetchedAt       DateTime?
 
-model StagingSutartisList {
-  id           String   @id @default(cuid())
-  buyerCode    String
-  supplierCode String
-  contracts    Json     // ContractSummary[]
-  fetchedAt    DateTime
-
-  @@unique([buyerCode, supplierCode])
-  @@map("staging_sutartis_list")
+  @@index([buyerCode, supplierCode])
 }
 
 model StagingPirkimas {
@@ -587,7 +675,7 @@ risk-intelligence/
 │   └── run-api-tests.sh          # API integration test runner (starts test DB, runs Jest)
 ├── cypress/                      # E2E & GUI Testing (Specs, Screenshots, Videos)
 ├── prisma/
-│   ├── schema.prisma             # StagingAsmuo, StagingSutartis, StagingSutartisList, StagingPirkimas models
+│   ├── schema.prisma             # StagingAsmuo, StagingSutartis, StagingPirkimas models
 │   └── migrations/               # Generated migration files
 ├── public/                       # Static Assets
 ├── src/

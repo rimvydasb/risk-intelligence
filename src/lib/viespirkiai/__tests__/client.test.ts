@@ -31,7 +31,7 @@ const ARTICLE_HTML = (id: string, from: string, till: string, amount: string, na
 describe('viespirkiai client', () => {
     beforeEach(() => {
         getMockGet().mockReset();
-        (axios.isAxiosError as jest.Mock).mockReset();
+        (axios.isAxiosError as unknown as jest.Mock).mockReset();
     });
 
     it('fetchAsmuo returns parsed JSON on success', async () => {
@@ -65,7 +65,7 @@ describe('viespirkiai client', () => {
             isAxiosError: true,
             response: {status: 404},
         });
-        (axios.isAxiosError as jest.Mock).mockReturnValue(true);
+        (axios.isAxiosError as unknown as jest.Mock).mockReturnValue(true);
         getMockGet().mockRejectedValueOnce(axiosError);
 
         await expect(fetchAsmuo('999')).rejects.toThrow(ViespirkiaiError);

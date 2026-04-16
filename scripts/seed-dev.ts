@@ -38,7 +38,13 @@ async function main() {
         const data = JSON.parse(fs.readFileSync(path.join(sutartisDir, file), 'utf-8'));
         await db.stagingSutartis.upsert({
             where: {sutartiesUnikalusID},
-            create: {sutartiesUnikalusID, data},
+            create: {
+                sutartiesUnikalusID,
+                buyerCode: String(data.perkanciosiosOrganizacijosKodas ?? ''),
+                supplierCode: String(data.tiekejoKodas ?? ''),
+                name: data.pavadinimas ?? sutartiesUnikalusID,
+                data,
+            },
             update: {data, fetchedAt: new Date()},
         });
         console.log(`  ✓ StagingSutartis: ${sutartiesUnikalusID}`);
