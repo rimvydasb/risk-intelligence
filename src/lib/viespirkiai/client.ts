@@ -46,6 +46,32 @@ async function getHtml(path: string): Promise<string> {
     }
 }
 
+/** Decode common HTML entities */
+function decodeHtmlEntities(s: string): string {
+    return s
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+}
+
+/**
+ * Normalize a raw scraped contract name:
+ *  1. Strip any HTML tags
+ *  2. Decode HTML entities
+ *  3. Remove a leading currency-amount prefix (e.g. "243 053,18 € ")
+ *  4. Collapse all whitespace (newlines, multiple spaces) to a single space
+ *  5. Trim
+ */
+function cleanContractName(raw: string): string {
+    const noTags = raw.replace(/<[^>]+>/g, '');
+    const decoded = decodeHtmlEntities(noTags);
+    const noAmount = decoded.replace(/^[\d\s.,]+€\s*/u, '');
+    return noAmount.replace(/\s+/g, ' ').trim();
+}
+
 /** Parse Lithuanian currency string like "12 110,89 €" → number */
 function parseLtValue(raw: string): number | null {
     const cleaned = raw.replace(/\s/g, '').replace(',', '.').replace('€', '').trim();
@@ -69,7 +95,7 @@ function parseContractArticles(html: string): ContractSummary[] {
 
         // Name from <h3> or first heading-like element
         const nameMatch = /<(?:h2|h3|h4)[^>]*>([\s\S]*?)<\/(?:h2|h3|h4)>/.exec(body);
-        const name = nameMatch ? nameMatch[1].replace(/<[^>]+>/g, '').trim() : '';
+        const name = nameMatch ? cleanContractName(nameMatch[1]) : '';
 
         // Dates from <time datetime="…"> elements (first = fromDate, second = tillDate)
         const timeRe = /<time[^>]*datetime="([^"]*)"[^>]*>/g;

@@ -28,6 +28,13 @@ const ARTICLE_HTML = (id: string, from: string, till: string, amount: string, na
   <span class="amount">${amount}</span>
 </article>`;
 
+/** Simulates real viespirkiai HTML: amount prefix embedded inside <h3>, separated by &nbsp;€ */
+const REAL_ARTICLE_HTML = (id: string, from: string, till: string, rawH3: string) => `
+<article class="result-card card-clickable">
+  <a href="/sutartis/${id}"><h3>${rawH3}</h3></a>
+  <dd class="galiojimas"><time datetime="${from}"></time> – <time datetime="${till}"></time></dd>
+</article>`;
+
 describe('viespirkiai client', () => {
     beforeEach(() => {
         getMockGet().mockReset();
@@ -119,6 +126,57 @@ describe('viespirkiai client', () => {
 
             const contracts = await fetchSutartisList('111111111', '222222222');
             expect(contracts[0]).toMatchObject({fromDate: '2023-03-01', tillDate: null});
+        });
+
+        it('strips leading &nbsp;€ amount prefix from name (inline format)', async () => {
+            // Real-world: <h3> contains "243 053,18&nbsp;€ 23278 Dyzelinių traukinių plovimo paslaugos"
+            const html =
+                REAL_ARTICLE_HTML(
+                    'ctr-10',
+                    '2024-01-01',
+                    '2024-12-31',
+                    '243 053,18&nbsp;€ 23278 Dyzelinių traukinių plovimo paslaugos',
+                );
+            getMockGet().mockResolvedValueOnce({data: html});
+            getMockGet().mockResolvedValueOnce({data: '<html></html>'});
+
+            const contracts = await fetchSutartisList('111111111', '222222222');
+            expect(contracts[0].name).toBe('23278 Dyzelinių traukinių plovimo paslaugos');
+        });
+
+        it('strips leading amount when h3 has amount on first line and name on subsequent lines', async () => {
+            // Real-world: <h3> contains amount, then whitespace/newlines, then the actual name
+            const html =
+                REAL_ARTICLE_HTML(
+                    'ctr-11',
+                    '2023-06-01',
+                    '2023-12-31',
+                    '1 500,00&nbsp;€\n\n                     Draudimo nuo žalos ar nuostolių paslaugos',
+                );
+            getMockGet().mockResolvedValueOnce({data: html});
+            getMockGet().mockResolvedValueOnce({data: '<html></html>'});
+
+            const contracts = await fetchSutartisList('111111111', '222222222');
+            expect(contracts[0].name).toBe('Draudimo nuo žalos ar nuostolių paslaugos');
+        });
+
+        it('decodes HTML entities in contract name', async () => {
+            const html =
+                REAL_ARTICLE_HTML('ctr-12', '2024-01-01', '2024-06-30', '500,00&nbsp;€ Projektavimo &amp; statybos paslaugos');
+            getMockGet().mockResolvedValueOnce({data: html});
+            getMockGet().mockResolvedValueOnce({data: '<html></html>'});
+
+            const contracts = await fetchSutartisList('111111111', '222222222');
+            expect(contracts[0].name).toBe('Projektavimo & statybos paslaugos');
+        });
+
+        it('collapses extra internal whitespace in name', async () => {
+            const html = REAL_ARTICLE_HTML('ctr-13', '2024-01-01', '2024-06-30', '99,00&nbsp;€   Viešųjų   pirkimų   paslaugos');
+            getMockGet().mockResolvedValueOnce({data: html});
+            getMockGet().mockResolvedValueOnce({data: '<html></html>'});
+
+            const contracts = await fetchSutartisList('111111111', '222222222');
+            expect(contracts[0].name).toBe('Viešųjų pirkimų paslaugos');
         });
     });
 });
