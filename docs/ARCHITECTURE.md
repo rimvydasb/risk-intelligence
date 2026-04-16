@@ -127,23 +127,18 @@ graph TB
     GV --> GDT
     GV --> UEO
     NS --> UED
-
     UEO -->|HTTP GET| RE
     UED -->|HTTP GET| RN
-
     RE --> EXP
     RN --> ENT
-
     EXP --> STG
     EXP --> CLI
     EXP --> PAR
     ENT --> STG
     ENT --> CLI
-
     STG <-->|Prisma| SA
     STG <-->|Prisma| SS
     STG <-->|Prisma| SP
-
     CLI -->|JSON| EA
     CLI -->|JSON| ES
     CLI -->|JSON| EP
@@ -164,12 +159,12 @@ per contract; the `data` JSON column is filled lazily only when the user opens a
 
 Entity IDs use a **namespace prefix** to prevent collisions between entity types:
 
-| Entity Type  | ID Format                    | Example                                       |
-| ------------ | ---------------------------- | --------------------------------------------- |
-| Organization | `org:{jarKodas}`             | `org:110053842`                               |
-| Person       | `person:{deklaracija}`       | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
-| Tender       | `tender:{pirkimoId}`         | `tender:7346201`                              |
-| Contract     | `contract:{sutartiesUnikalusID}` | `contract:2008059225`                     |
+| Entity Type  | ID Format                        | Example                                       |
+|--------------|----------------------------------|-----------------------------------------------|
+| Organization | `org:{jarKodas}`                 | `org:110053842`                               |
+| Person       | `person:{deklaracija}`           | `person:026a8bda-cae8-49a8-b812-e1a1b88827d7` |
+| Tender       | `tender:{pirkimoId}`             | `tender:7346201`                              |
+| Contract     | `contract:{sutartiesUnikalusID}` | `contract:2008059225`                         |
 
 ```typescript
 interface TemporalEntity {
@@ -217,7 +212,8 @@ interface PersonEntity extends TemporalEntity {
  * @example https://viespirkiai.org/viesiejiPirkimai/7346201.json
  * @example [7346201.json](examples/viesiejiPirkimai/7346201.json)
  */
-interface TenderEntity extends TemporalEntity {}
+interface TenderEntity extends TemporalEntity {
+}
 
 /**
  * ContractEntity represents a public procurement contract as a graph NODE (hub-and-spoke model).
@@ -349,7 +345,7 @@ all declared employees, their spouses, board members, and summary of contract pa
 **@example:** [110053842.json](examples/asmuo/110053842.json) (AB "Lietuvos geležinkeliai" — trimmed)
 
 | API Section                       | Produces                        | Entity/Edge Type                             | Key Fields                                                                                                |
-| --------------------------------- | ------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+|-----------------------------------|---------------------------------|----------------------------------------------|-----------------------------------------------------------------------------------------------------------|
 | `jar`                             | **OrganizationEntity**          | PrivateCompany / PublicCompany / Institution | `jarKodas` → id, `pavadinimas` → name, `registravimoData` → fromDate, `formosKodas` → type classification |
 | `sodra`                           | enriches **OrganizationEntity** | —                                            | `bendrasDraustujuSkaicius` → employee count, `bendrasVidutinisAtlyginimas` → avg salary                   |
 | `pinreg.darbovietes[]`            | **PersonEntity**                | Person                                       | `deklaracija` → id, `vardas + pavarde` → name, `rysioPradzia` → fromDate                                  |
@@ -365,7 +361,7 @@ all declared employees, their spouses, board members, and summary of contract pa
 #### pareiguTipasPavadinimas → Relationship Type
 
 | pareiguTipasPavadinimas      | → Relationship Type | Notes                                                |
-| ---------------------------- | ------------------- | ---------------------------------------------------- |
+|------------------------------|---------------------|------------------------------------------------------|
 | `Vadovas ar jo pavaduotojas` | **Director**        | CEO / Deputy — high risk for nepotism                |
 | `Darbuotojas`                | **Employment**      | Regular employee                                     |
 | `Pirkimo iniciatorius`       | **Official**        | Procurement initiator — key for conflict of interest |
@@ -375,7 +371,7 @@ all declared employees, their spouses, board members, and summary of contract pa
 #### rysioPobudzioPavadinimas → Relationship Type
 
 | rysioPobudzioPavadinimas  | → Relationship Type | Notes                                     |
-| ------------------------- | ------------------- | ----------------------------------------- |
+|---------------------------|---------------------|-------------------------------------------|
 | `Valdybos narys`          | **Director**        | Board member                              |
 | `Akcininkas`              | **Shareholder**     | Shareholder                               |
 | `Stebėtojų tarybos narys` | **Director**        | Supervisory board member                  |
@@ -388,7 +384,7 @@ The `sutartis` endpoint provides individual contract details — the primary sou
 **@example:** [2008059225.json](examples/sutartis/2008059225.json)
 
 | API Field                                                     | Produces                                         | Entity/Edge Type             | Mapping                                                                                                                               |
-| ------------------------------------------------------------- | ------------------------------------------------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+|---------------------------------------------------------------|--------------------------------------------------|------------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | `perkanciosiosOrganizacijosKodas` + `perkanciojiOrganizacija` | **OrganizationEntity** (buyer)                   | Institution or PublicCompany | `kodas` → id, `pavadinimas` → name                                                                                                    |
 | `tiekejoKodas` + `tiekejas`                                   | **OrganizationEntity** (supplier)                | PrivateCompany               | `kodas` → id, `pavadinimas` → name                                                                                                    |
 | root                                                          | **Relationship** (type=Contract)                 | Contract                     | `sutartiesUnikalusID` → edge id, `pavadinimas` → label, `paskelbimoData` → fromDate, `galiojimoData` → tillDate, `verte` → data.verte |
@@ -404,7 +400,7 @@ The `viesiejiPirkimai` endpoint provides tender/competition details. Tenders gro
 **@example:** [7346201.json](examples/viesiejiPirkimai/7346201.json)
 
 | API Field                                         | Produces                                  | Entity/Edge Type         | Mapping                                                                                                      |
-| ------------------------------------------------- | ----------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------ |
+|---------------------------------------------------|-------------------------------------------|--------------------------|--------------------------------------------------------------------------------------------------------------|
 | root                                              | **TenderEntity**                          | Tender                   | `pirkimoId` → id, `pavadinimas` → name, `paskelbimoData` → fromDate, `pasiulymuPateikimoTerminas` → tillDate |
 | `jarKodas` + `vykdytojoPavadinimas`               | **OrganizationEntity** (procuring entity) | Institution              | `jarKodas` → id, `pavadinimas` → name                                                                        |
 | `sutartys[]`                                      | **Relationship** (type=Contract, ref)     | links Tender → Contracts | contract IDs under this tender                                                                               |
@@ -412,25 +408,54 @@ The `viesiejiPirkimai` endpoint provides tender/competition details. Tenders gro
 
 ### Entity Discovery Chain
 
-The graph is populated **lazily** through user interaction. Each node-click triggers at most **one** viespirkiai fetch.
-Partner organizations appear as unexpanded stub nodes until the user clicks them.
+The graph is populated **lazily** through user interaction. Each node-click triggers at most **one**
+viespirkiai.org fetch for org data. Contract nodes are built by scraping HTML pair-list pages during the same
+`expandOrg()` call and cached in `StagingSutartis`.
 
 ```mermaid
 flowchart TD
-    A["1. User opens app\n→ Fetch asmuo/{anchorJarKodas}"] --> B["Expanded Org Node\n+ Person Nodes\n+ Relationship Edges"]
-    B --> C["Stub Org Nodes\nfrom topPirkejai / topTiekejai\n(name + jarKodas only,\nno fetch needed)"]
-    C --> D{"User clicks\nstub org node?"}
-    D -->|yes| E["2. Fetch asmuo/{stubJarKodas}\n→ Expand stub into full node\n+ its people + edges + new stubs"]
-    D -->|no| F["Graph stays\nas-is"]
-    E --> D
-    B --> G{"User clicks\ncontract edge?"}
-    G -->|yes| H["3. Fetch sutartis/{id}\nfor contract details\n(optional — v1 shows\naggregate values from topPirkejai)"]
-    H --> I{"pirkimoNumeris\nnot null?"}
-    I -->|yes| J["4. Fetch viesiejiPirkimai/{id}\n→ Add TenderEntity"]
-    I -->|no| K["No tender link"]
+    A["GraphView mounts\nanchorJarKodas = '110053842'\nuseExpandOrg(expandTarget, filters)"]
+    A -->|"GET /api/v1/graph/expand/{jarKodas}"| B
+
+    B["expandOrg()\ngraph/expand.ts"]
+    B --> C["getAsmuo(jarKodas)\nstaging/asmuo.ts\n→ checks StagingAsmuo"]
+
+    C -->|"cache miss"| D["fetchAsmuo()\nviespirkiai/client.ts\n→ viespirkiai.org/asmuo/{jarKodas}.json"]
+    D --> E["upsertAsmuo() → StagingAsmuo"]
+    E --> F
+
+    C -->|"cached"| F["parseAsmuo()\n→ Org + Person nodes\n+ Contract aggregate edges\n+ stub Org nodes"]
+
+    F --> G["enrichStubNode() ×N (parallel)\nfor each Nežinomas stub org:\ngetAsmuo / fetchAsmuo → real name"]
+
+    G --> H["enrichContractEdges()\nfor each buyer↔supplier pair\n(sequential)"]
+    H --> I["getSutartisContracts()\nstaging/sutartis.ts → StagingSutartis"]
+    I -->|"cache miss"| J["fetchSutartisList()\nviespirkiai/client.ts\n→ HTML scraping (all pages)"]
+    J --> K["upsertSutartisContracts()\n→ StagingSutartis rows"]
+    K --> L
+    I -->|"cached"| L["parseSutartisSummary()\n→ ContractEntity nodes + Signed edges"]
+    L -->|"next pair"| H
+
+    H -->|"GraphElements"| M["GraphView.mergeElements()\n→ Graphology graph\nSigmaCanvas re-renders"]
+
+    M --> N{User action?}
+
+    N -->|"clicks stub Org node\n(expanded=false)"| O["handleNodeClick()\nsetExpandTarget(jarKodas)"]
+    O -->|"useExpandOrg re-fires"| A
+
+    N -->|"clicks ContractEntity node"| P["NodeSidebar opens\nuseEntityDetail('contract:{id}')"]
+    P -->|"GET /api/v1/entity/contract:{id}"| Q["getEntityDetail()\ngraph/entity.ts"]
+    Q --> R["getSutartisDetail()\nstaging/sutartis.ts"]
+    R -->|"data column is null\n(first click)"| S["fetchSutartis()\nviespirkiai/client.ts\n→ viespirkiai.org/sutartis/{id}.json\nupsertSutartisDetail()"]
+    S --> T["Contract detail shown\nin NodeSidebar"]
+    R -->|"data already populated"| T
+
+    N -->|"no interaction"| M
 ```
 
-This approach guarantees **O(1) viespirkiai fetches per user click** — predictable latency regardless of graph size.
+This guarantees **O(1) viespirkiai.org fetches per org node click** — one `asmuo` JSON fetch plus one HTML-scrape
+per new buyer↔supplier pair (cached on subsequent loads). Individual contract JSON is fetched only on explicit
+contract node click.
 
 ## Staging Storage
 
@@ -442,37 +467,66 @@ intermediate Entity/Relationship database tables in v1.
 
 ```mermaid
 sequenceDiagram
-    participant GUI as RIS GUI
-    participant Service as RIS Service
-    participant Staging as Staging Cache<br/>(PostgreSQL)
-    participant API as Viespirkiai.org API
-    Note over GUI: User clicks an Organization node
-    GUI ->> Service: GET /api/v1/graph/expand/{jarKodas}
-    Service ->> Staging: SELECT data, fetchedAt FROM StagingAsmuo WHERE jarKodas = ?
-    alt Missing or stale (fetchedAt > TTL)
-        Service ->> API: GET /asmuo/{jarKodas}.json
-        API -->> Service: Raw JSON (~50-200KB)
-        Service ->> Staging: UPSERT (jarKodas, data, fetchedAt=now)
-    else Fresh
-        Staging -->> Service: Cached JSON
+    participant GV as GraphView<br/>(useExpandOrg)
+    participant Route as GET /api/v1/graph<br/>/expand/[jarKodas]
+    participant EXP as expandOrg()<br/>graph/expand.ts
+    participant StgA as staging/asmuo.ts<br/>↕ StagingAsmuo
+    participant StgS as staging/sutartis.ts<br/>↕ StagingSutartis
+    participant CLI as viespirkiai/client.ts
+    participant API as viespirkiai.org
+
+    Note over GV: User opens app or clicks a stub Org node
+    GV ->> Route: GET /expand/{jarKodas}?yearFrom=…&yearTo=…
+    Route ->> EXP: expandOrg(jarKodas, filters)
+
+    EXP ->> StgA: getAsmuo(jarKodas)
+    alt Cache miss
+        StgA -->> EXP: null
+        EXP ->> CLI: fetchAsmuo(jarKodas)
+        CLI ->> API: GET /asmuo/{jarKodas}.json
+        API -->> CLI: Raw JSON (~50–200 KB)
+        CLI -->> EXP: AsmuoRaw
+        EXP ->> StgA: upsertAsmuo(jarKodas, raw) → StagingAsmuo
+    else Cached (TTL 24 h)
+        StgA -->> EXP: CacheEntry<AsmuoRaw>
     end
 
-    Note over Service: Parse JSON in-memory:<br/>jar → Org node<br/>pinreg.* → Person nodes + edges<br/>topPirkejai/topTiekejai → stub Org nodes + aggregate contract edges
-    Service -->> GUI: GraphElements { nodes, edges, meta }
-    Note over GUI: Merge new elements into existing graph
+    Note over EXP: parseAsmuo() →<br/>Org + Person nodes + stub Org nodes<br/>+ Contract aggregate edges
+
+    Note over EXP: enrichStubNode() — parallel<br/>for each Nežinomas stub:<br/>getAsmuo / fetchAsmuo → real name
+
+    loop For each buyer↔supplier pair (sequential)
+        EXP ->> StgS: getSutartisContracts(buyerCode, supplierCode)
+        alt Cache miss
+            StgS -->> EXP: null
+            EXP ->> CLI: fetchSutartisList(buyerCode, supplierCode)
+            CLI ->> API: GET /?perkančiosios=X&tiekejoKodas=Y (HTML, all pages)
+            API -->> CLI: HTML pages
+            CLI -->> EXP: ContractSummary[]
+            EXP ->> StgS: upsertSutartisContracts() → StagingSutartis rows
+        else Cached (TTL 7 days)
+            StgS -->> EXP: ContractSummary[]
+        end
+        Note over EXP: parseSutartisSummary() →<br/>ContractEntity nodes + Signed edges
+    end
+
+    EXP -->> Route: ExpandResult { elements, meta }
+    Route -->> GV: GraphResponse JSON
+    Note over GV: mergeElements() → Graphology graph<br/>SigmaCanvas re-renders
 ```
 
-**Key design decision:** The expand endpoint performs at most **one** external fetch per call. Partner organizations
-from `topPirkejai`/`topTiekejai` appear as **stub nodes** (jarKodas + name + aggregate contract value) without
-triggering additional fetches. Stubs are expanded when the user clicks them.
+**Key design decision:** `expandOrg()` performs at most **one** `asmuo` JSON fetch per call (the anchor org). Contract
+data comes from HTML scraping (`fetchSutartisList`), one request per buyer↔supplier pair — cached in `StagingSutartis`
+with a 7-day TTL so subsequent loads are instant. Individual contract JSON (`/sutartis/{id}.json`) is never fetched
+during graph expansion — only on an explicit contract-node click via `/entity/{id}`.
 
 #### Freshness TTL Strategy
 
-| Staging Table         | TTL      | Rationale                                                              |
-| --------------------- | -------- | ---------------------------------------------------------------------- |
-| `StagingAsmuo`        | 24 hours | Employee/governance data changes infrequently                          |
-| `StagingSutartis`     | 7 days   | Contract data is essentially immutable after publication               |
-| `StagingPirkimas`     | 24 hours | Active tenders may update (new bids, status changes)                   |
+| Staging Table     | TTL      | Rationale                                                |
+|-------------------|----------|----------------------------------------------------------|
+| `StagingAsmuo`    | 24 hours | Employee/governance data changes infrequently            |
+| `StagingSutartis` | 7 days   | Contract data is essentially immutable after publication |
+| `StagingPirkimas` | 24 hours | Active tenders may update (new bids, status changes)     |
 
 ### Staging Storage Schema
 
@@ -506,6 +560,7 @@ model StagingPirkimas {
   data      Json
   fetchedAt DateTime @default(now())
 }
+
 ```
 
 ### v2: Graph Store (Future)
@@ -526,25 +581,25 @@ at this container. `bin/run-api-tests.sh` manages its lifecycle automatically.
 
 **Nodes:**
 
-| Entity             | Node/Entity Type | Node Label  | Node Size  | Node Color (TBC)    | Node Icon        |
-| ------------------ | ---------------- | ----------- | ---------- | ------------------- | ---------------- |
-| OrganizationEntity | PrivateCompany   | pavadinimas | log(verte) | risk score gradient | `Business`       |
-| OrganizationEntity | PublicCompany    | pavadinimas | log(verte) | risk score gradient | `DomainAdd`      |
-| OrganizationEntity | Institution      | pavadinimas | fixed size | fixed color         | `AccountBalance` |
-| PersonEntity       | Person           | name        | fixed size | risk score gradient | `Person`         |
-| TenderEntity       | Tender           | pavadinimas | log(verte) | risk score gradient | `Assignment`     |
+| Entity             | Node/Entity Type | Node Label   | Node Size  | Node Color (TBC)    | Node Icon        |
+|--------------------|------------------|--------------|------------|---------------------|------------------|
+| OrganizationEntity | PrivateCompany   | pavadinimas  | log(verte) | risk score gradient | `Business`       |
+| OrganizationEntity | PublicCompany    | pavadinimas  | log(verte) | risk score gradient | `DomainAdd`      |
+| OrganizationEntity | Institution      | pavadinimas  | fixed size | fixed color         | `AccountBalance` |
+| PersonEntity       | Person           | name         | fixed size | risk score gradient | `Person`         |
+| TenderEntity       | Tender           | pavadinimas  | log(verte) | risk score gradient | `Assignment`     |
 | ContractEntity     | Contract         | name / value | log(verte) | risk score gradient | `Description`    |
 
 **Edges:**
 
-| Entity                  | Relationship Type | Edge Label | Edge Width  | Edge Color (TBC)    | Edge Style |
-| ----------------------- | ----------------- | ---------- | ----------- | ------------------- | ---------- |
-| Relationship            | Employment        | role       | fixed width | risk score gradient | dashed     |
-| Relationship            | Director          | role       | fixed width | risk score gradient | dashed     |
-| Relationship            | Official          | role       | fixed width | risk score gradient | dashed     |
-| Relationship            | Shareholder       | role       | fixed width | risk score gradient | dashed     |
-| Relationship            | Spouse            | —          | fixed width | risk score gradient | dotted     |
-| Relationship            | Signed            | Buyer / Supplier | fixed width | — | solid    |
+| Entity       | Relationship Type | Edge Label       | Edge Width  | Edge Color (TBC)    | Edge Style |
+|--------------|-------------------|------------------|-------------|---------------------|------------|
+| Relationship | Employment        | role             | fixed width | risk score gradient | dashed     |
+| Relationship | Director          | role             | fixed width | risk score gradient | dashed     |
+| Relationship | Official          | role             | fixed width | risk score gradient | dashed     |
+| Relationship | Shareholder       | role             | fixed width | risk score gradient | dashed     |
+| Relationship | Spouse            | —                | fixed width | risk score gradient | dotted     |
+| Relationship | Signed            | Buyer / Supplier | fixed width | —                   | solid      |
 
 > **Note:** `Relationship.type = 'Contract'` (direct org→org edge) is reserved for future use.
 > Currently contracts are painted as `ContractEntity` nodes connected to both buyer and supplier via `Signed` edges.
@@ -563,15 +618,15 @@ On initial load a **ForceAtlas2** pass (via `graphology-layout-forceatlas2`) pos
 
 **Edge Types:**
 
-| Edge Type   | Source → Target             | v1 Data Source                                               | Style        |
-| ----------- | --------------------------- | ------------------------------------------------------------ | ------------ |
-| Employment  | Person → Organization       | `pinreg.darbovietes[]`                                       | dashed       |
-| Director    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed, bold |
-| Official    | Person → Organization       | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]`              | dashed       |
-| Shareholder | Person → Organization       | `pinreg.rysiaiSuJa[]`                                        | dashed       |
-| Spouse      | Person → Person             | `pinreg.sutuoktinioDarbovietes[]`                            | dotted       |
-| Signed      | Organization → Contract     | HTML scraping via `fetchSutartisList`                        | solid        |
-| Signed      | Contract → Organization     | HTML scraping via `fetchSutartisList`                        | solid        |
+| Edge Type   | Source → Target         | v1 Data Source                                  | Style        |
+|-------------|-------------------------|-------------------------------------------------|--------------|
+| Employment  | Person → Organization   | `pinreg.darbovietes[]`                          | dashed       |
+| Director    | Person → Organization   | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]` | dashed, bold |
+| Official    | Person → Organization   | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]` | dashed       |
+| Shareholder | Person → Organization   | `pinreg.rysiaiSuJa[]`                           | dashed       |
+| Spouse      | Person → Person         | `pinreg.sutuoktinioDarbovietes[]`               | dotted       |
+| Signed      | Organization → Contract | HTML scraping via `fetchSutartisList`           | solid        |
+| Signed      | Contract → Organization | HTML scraping via `fetchSutartisList`           | solid        |
 
 ### Filter Component (`GraphToolbar`)
 
@@ -595,7 +650,7 @@ Filter state is encoded in the hash fragment: `#/?yearFrom=2022&yearTo=2022&minC
 **Hash routes for view mode:**
 
 | Route      | View            |
-| ---------- | --------------- |
+|------------|-----------------|
 | `#/`       | graph (default) |
 | `#/graph/` | graph           |
 | `#/table/` | table           |
@@ -613,7 +668,7 @@ the WebGL canvas.
 **`GraphNodesTable`** (`data-testid="graph-nodes-table"`)
 
 | Column       | Source field         | Format                             |
-| ------------ | -------------------- | ---------------------------------- |
+|--------------|----------------------|------------------------------------|
 | **ID**       | `node.data.id`       | raw string                         |
 | **Label**    | `node.data.label`    | raw string                         |
 | **Type**     | `node.data.type`     | raw string                         |
@@ -624,7 +679,7 @@ the WebGL canvas.
 **`GraphEdgesTable`** (`data-testid="graph-edges-table"`)
 
 | Column     | Source field         | Format                             |
-| ---------- | -------------------- | ---------------------------------- |
+|------------|----------------------|------------------------------------|
 | **ID**     | `edge.data.id`       | raw string                         |
 | **Source** | `edge.data.source`   | raw string                         |
 | **Target** | `edge.data.target`   | raw string                         |
@@ -789,7 +844,7 @@ JSON, the same graph output is produced every time.
 **Parameters:**
 
 | Param      | Type  | Default  | Description                                               |
-| ---------- | ----- | -------- | --------------------------------------------------------- |
+|------------|-------|----------|-----------------------------------------------------------|
 | `jarKodas` | path  | required | Organization code (company registry number)               |
 | `yearFrom` | query | —        | Filter relationships starting from this year              |
 | `yearTo`   | query | —        | Filter relationships ending before this year              |
@@ -800,7 +855,7 @@ JSON, the same graph output is produced every time.
 **Error responses:**
 
 | Status | Condition                                       |
-| ------ | ----------------------------------------------- |
+|--------|-------------------------------------------------|
 | `400`  | `jarKodas` missing or non-numeric               |
 | `502`  | viespirkiai.org unreachable or returned non-2xx |
 | `500`  | Unexpected parse or database error              |
@@ -813,7 +868,7 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 **Error responses:**
 
 | Status | Condition                                                          |
-| ------ | ------------------------------------------------------------------ |
+|--------|--------------------------------------------------------------------|
 | `400`  | `entityId` has no recognised prefix (`org:`, `person:`, `tender:`) |
 | `404`  | Entity not found in staging cache (not yet expanded)               |
 | `500`  | Unexpected error                                                   |
@@ -822,74 +877,74 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 
 ```json
 {
-    "elements": {
-        "nodes": [
-            {
-                "data": {
-                    "id": "org:110053842",
-                    "label": "AB Lietuvos geležinkeliai",
-                    "type": "PublicCompany",
-                    "expanded": true,
-                    "employees": 122,
-                    "avgSalary": 5023.51
-                }
-            },
-            {
-                "data": {
-                    "id": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
-                    "label": "ALEKSANDRAS ZUBRIAKOVAS",
-                    "type": "Person",
-                    "role": "Korporatyvinių reikalų direktorius"
-                }
-            },
-            {
-                "data": {
-                    "id": "org:304977594",
-                    "label": "AB \"LTG Cargo\"",
-                    "type": "PrivateCompany",
-                    "expanded": false,
-                    "contractTotal": 432081948.06,
-                    "contractCount": 79
-                }
-            }
-        ],
-        "edges": [
-            {
-                "data": {
-                    "id": "edge:person:026a8bda-org:110053842-Director",
-                    "source": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
-                    "target": "org:110053842",
-                    "type": "Director",
-                    "label": "Korporatyvinių reikalų direktorius",
-                    "fromDate": "2023-09-25"
-                }
-            },
-            {
-                "data": {
-                    "id": "edge:org:110053842-org:304977594-Contract",
-                    "source": "org:110053842",
-                    "target": "org:304977594",
-                    "type": "Contract",
-                    "label": "432.1M EUR (79 contracts)",
-                    "totalValue": 432081948.06,
-                    "count": 79
-                }
-            }
-        ]
-    },
-    "meta": {
-        "anchorId": "org:110053842",
-        "totalNodes": 3,
-        "totalEdges": 2,
-        "generatedAt": "2026-04-13T12:00:00Z"
-    }
+  "elements": {
+    "nodes": [
+      {
+        "data": {
+          "id": "org:110053842",
+          "label": "AB Lietuvos geležinkeliai",
+          "type": "PublicCompany",
+          "expanded": true,
+          "employees": 122,
+          "avgSalary": 5023.51
+        }
+      },
+      {
+        "data": {
+          "id": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
+          "label": "ALEKSANDRAS ZUBRIAKOVAS",
+          "type": "Person",
+          "role": "Korporatyvinių reikalų direktorius"
+        }
+      },
+      {
+        "data": {
+          "id": "org:304977594",
+          "label": "AB \"LTG Cargo\"",
+          "type": "PrivateCompany",
+          "expanded": false,
+          "contractTotal": 432081948.06,
+          "contractCount": 79
+        }
+      }
+    ],
+    "edges": [
+      {
+        "data": {
+          "id": "edge:person:026a8bda-org:110053842-Director",
+          "source": "person:026a8bda-cae8-49a8-b812-e1a1b88827d7",
+          "target": "org:110053842",
+          "type": "Director",
+          "label": "Korporatyvinių reikalų direktorius",
+          "fromDate": "2023-09-25"
+        }
+      },
+      {
+        "data": {
+          "id": "edge:org:110053842-org:304977594-Contract",
+          "source": "org:110053842",
+          "target": "org:304977594",
+          "type": "Contract",
+          "label": "432.1M EUR (79 contracts)",
+          "totalValue": 432081948.06,
+          "count": 79
+        }
+      }
+    ]
+  },
+  "meta": {
+    "anchorId": "org:110053842",
+    "totalNodes": 3,
+    "totalEdges": 2,
+    "generatedAt": "2026-04-13T12:00:00Z"
+  }
 }
 ```
 
 **Node types in response:**
 
 | `expanded` | Meaning                                                       | User action                         |
-| ---------- | ------------------------------------------------------------- | ----------------------------------- |
+|------------|---------------------------------------------------------------|-------------------------------------|
 | `true`     | Full data loaded (people + edges visible)                     | Click → show detail panel           |
 | `false`    | Stub node (only jarKodas + name + aggregate contract summary) | Click → triggers new `/expand` call |
 
@@ -897,8 +952,8 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 
 ## Delivery Stories
 
-| Story                                                            | Status      | Description                                               |
-| ---------------------------------------------------------------- | ----------- | --------------------------------------------------------- |
-| [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)       | ✅ Complete | Prisma schema, staging cache, parsers, REST API, tests    |
-| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md) | ✅ Complete | Frontend: graph, hash routing, filters, Cypress |
+| Story                                                            | Status     | Description                                              |
+|------------------------------------------------------------------|------------|----------------------------------------------------------|
+| [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)       | ✅ Complete | Prisma schema, staging cache, parsers, REST API, tests   |
+| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md) | ✅ Complete | Frontend: graph, hash routing, filters, Cypress          |
 | [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)   | ✅ Complete | Replaced Cytoscape.js with Sigma.js + Graphology (WebGL) |
