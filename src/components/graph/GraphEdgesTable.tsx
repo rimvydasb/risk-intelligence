@@ -2,10 +2,10 @@
 
 import React from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
-import type {CytoscapeEdge} from '@/types/graph';
+import type {GraphEdge} from '@/types/graph';
 
 interface GraphEdgesTableProps {
-    edges: CytoscapeEdge[];
+    edges: GraphEdge[];
 }
 
 function formatEdgeValue(value: unknown): string {

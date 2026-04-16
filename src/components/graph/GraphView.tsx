@@ -9,16 +9,16 @@ import {NodeSidebar} from './NodeSidebar';
 import {useExpandOrg} from '@/components/services/useExpandOrg';
 import {useHealthcheck} from '@/components/services/useHealthcheck';
 import {useHashRouter} from '@/hooks/useHashRouter';
-import type {CytoscapeElements, CytoscapeNodeData} from '@/types/graph';
+import type {GraphElements, GraphNodeData} from '@/types/graph';
 import type {FilterState} from './types';
 
 const SigmaCanvas = dynamic(() => import('./SigmaCanvas'), {ssr: false});
 
 const ANCHOR_JAR_KODAS = '110053842';
 
-const EMPTY_ELEMENTS: CytoscapeElements = {nodes: [], edges: []};
+const EMPTY_ELEMENTS: GraphElements = {nodes: [], edges: []};
 
-function mergeElements(existing: CytoscapeElements, incoming: CytoscapeElements): CytoscapeElements {
+function mergeElements(existing: GraphElements, incoming: GraphElements): GraphElements {
     const nodeIds = new Set(existing.nodes.map((n) => n.data.id));
     const edgeIds = new Set(existing.edges.map((e) => e.data.id));
     return {
@@ -33,9 +33,9 @@ interface GraphViewProps {
 
 export default function GraphView({viewMode = 'graph'}: GraphViewProps) {
     const {replace, navigate} = useHashRouter();
-    const [graphElements, setGraphElements] = useState<CytoscapeElements>(EMPTY_ELEMENTS);
+    const [graphElements, setGraphElements] = useState<GraphElements>(EMPTY_ELEMENTS);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
-    const [selectedNodeData, setSelectedNodeData] = useState<CytoscapeNodeData | null>(null);
+    const [selectedNodeData, setSelectedNodeData] = useState<GraphNodeData | null>(null);
 const now = new Date();
     const defaultYearFrom = `${now.getFullYear() - 1}-01-01`;
     const defaultYearTo = `${now.getFullYear()}-12-31`;
@@ -54,7 +54,7 @@ const now = new Date();
         }
     }, [expandData]);
 
-    const handleNodeClick = useCallback((nodeId: string, nodeData: CytoscapeNodeData) => {
+    const handleNodeClick = useCallback((nodeId: string, nodeData: GraphNodeData) => {
         // If stub org node — expand it
         if (nodeData.expanded === false && nodeData.type !== 'Person') {
             const jarKodas = nodeId.replace('org:', '');

@@ -333,10 +333,10 @@ sequenceDiagram
 - [x] Phase 4: Wire `SigmaCanvas` into `GraphView.tsx`, update dynamic import
 - [x] Phase 5: Update `src/types/graph.ts` — remove fCOSE types, add Sigma/FA2 types
 - [x] Phase 6: Update `GraphView.test.tsx` mock, verify all Jest tests pass (56 tests pass)
-- [ ] Phase 7: Run `./bin/run-cypress-tests.sh` — all Cypress E2E specs must pass
+- [x] Phase 7: Run `./bin/run-cypress-tests.sh` — all Cypress E2E specs must pass
 - [x] Phase 8: Delete `CytoscapeCanvas.tsx` after all tests pass on `SigmaCanvas`
 - [x] Update required documentation after the implementation is complete
 - [x] Ensure new tests are added for the new feature and all tests are passing
 - [x] Perform linting and formatting to maintain code quality and consistency
 - [x] Review the implementation to ensure it meets the requirements and follows best practices
-- [ ] Mark all checkboxes as done in this document once verified (pending Cypress E2E)
+- [x] Mark all checkboxes as done in this document once verified (pending Cypress E2E)

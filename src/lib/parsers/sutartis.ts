@@ -1,5 +1,5 @@
 import type {SutartisRaw} from '@/lib/viespirkiai/types';
-import type {CytoscapeElements, CytoscapeNode, CytoscapeEdge} from '@/types/graph';
+import type {GraphElements, GraphNode, GraphEdge} from '@/types/graph';
 import type {ContractSummary, FilterParams} from './types';
 
 /** Returns the earliest and latest ISO date strings from among all known date fields. */
@@ -14,9 +14,9 @@ function contractDateRange(raw: SutartisRaw): {fromDate: string | null; tillDate
     return {fromDate: sorted[0], tillDate: sorted[sorted.length - 1]};
 }
 
-export function parseSutartis(raw: SutartisRaw): CytoscapeElements {
-    const nodes: CytoscapeNode[] = [];
-    const edges: CytoscapeEdge[] = [];
+export function parseSutartis(raw: SutartisRaw): GraphElements {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
 
     const contractId = `contract:${raw.sutartiesUnikalusID}`;
     const buyerCode = raw.perkanciosiosOrganizacijosKodas;
@@ -90,7 +90,7 @@ export function parseSutartis(raw: SutartisRaw): CytoscapeElements {
 }
 
 /**
- * Convert a list of scraped ContractSummary objects into Cytoscape nodes+edges.
+ * Convert a list of scraped ContractSummary objects into graph nodes+edges.
  *
  * Each contract becomes:
  *   - A Contract node
@@ -113,9 +113,9 @@ export function parseSutartisSummary(
     partnerId: string,
     isAnchorBuyer: boolean,
     filters?: FilterParams,
-): CytoscapeElements {
-    const nodes: CytoscapeNode[] = [];
-    const edges: CytoscapeEdge[] = [];
+): GraphElements {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
 
     const buyerId = isAnchorBuyer ? anchorId : partnerId;
     const supplierId = isAnchorBuyer ? partnerId : anchorId;

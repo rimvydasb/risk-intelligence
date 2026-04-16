@@ -4,10 +4,10 @@ import React from 'react';
 import {Box} from '@mui/material';
 import {GraphNodesTable} from './GraphNodesTable';
 import {GraphEdgesTable} from './GraphEdgesTable';
-import type {CytoscapeElements} from '@/types/graph';
+import type {GraphElements} from '@/types/graph';
 
 interface GraphDataTableProps {
-    elements: CytoscapeElements;
+    elements: GraphElements;
 }
 
 export function GraphDataTable({elements}: GraphDataTableProps) {

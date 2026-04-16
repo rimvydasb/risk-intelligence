@@ -1,5 +1,5 @@
 import {useQuery} from '@tanstack/react-query';
-import type {CytoscapeElements} from '@/types/graph';
+import type {GraphElements} from '@/types/graph';
 
 export interface ExpandOrgFilters {
     yearFrom?: string;
@@ -8,7 +8,7 @@ export interface ExpandOrgFilters {
 }
 
 export interface ExpandOrgResult {
-    elements: CytoscapeElements;
+    elements: GraphElements;
     meta: {
         anchorId: string;
         totalNodes: number;

@@ -42,14 +42,14 @@ export interface Relationship {
     data?: Record<string, unknown>;
 }
 
-export interface CytoscapeNodeData {
+export interface GraphNodeData {
     id: string;
     label: string;
     type: string;
     [key: string]: unknown;
 }
 
-export interface CytoscapeEdgeData {
+export interface GraphEdgeData {
     id: string;
     source: string;
     target: string;
@@ -58,21 +58,21 @@ export interface CytoscapeEdgeData {
     [key: string]: unknown;
 }
 
-export interface CytoscapeNode {
-    data: CytoscapeNodeData;
+export interface GraphNode {
+    data: GraphNodeData;
 }
 
-export interface CytoscapeEdge {
-    data: CytoscapeEdgeData;
+export interface GraphEdge {
+    data: GraphEdgeData;
 }
 
-export interface CytoscapeElements {
-    nodes: CytoscapeNode[];
-    edges: CytoscapeEdge[];
+export interface GraphElements {
+    nodes: GraphNode[];
+    edges: GraphEdge[];
 }
 
-export interface CytoscapeResponse {
-    elements: CytoscapeElements;
+export interface GraphResponse {
+    elements: GraphElements;
     meta: {
         anchorId: string;
         totalNodes: number;

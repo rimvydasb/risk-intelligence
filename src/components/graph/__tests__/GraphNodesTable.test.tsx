@@ -4,9 +4,9 @@
 import React from 'react';
 import {render, screen, within} from '@testing-library/react';
 import {GraphNodesTable} from '../GraphNodesTable';
-import type {CytoscapeNode} from '@/types/graph';
+import type {GraphNode} from '@/types/graph';
 
-const nodes: CytoscapeNode[] = [
+const nodes: GraphNode[] = [
     {
         data: {
             id: 'org:123',

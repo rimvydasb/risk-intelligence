@@ -3,7 +3,7 @@ import {getSutartisContracts, upsertSutartisContracts} from '@/lib/staging/sutar
 import {fetchAsmuo, fetchSutartisList} from '@/lib/viespirkiai/client';
 import {parseAsmuo} from '@/lib/parsers/asmuo';
 import {parseSutartisSummary} from '@/lib/parsers/sutartis';
-import type {CytoscapeElements, CytoscapeNode} from '@/types/graph';
+import type {GraphElements, GraphNode} from '@/types/graph';
 import type {GraphFilters, ExpandResult} from './types';
 
 const NEZINOMAS_LABELS = new Set(['Nežinomas', 'Nezinomas']);
@@ -15,7 +15,7 @@ export function isResolvableJarKodas(jarKodas: string): boolean {
 }
 
 /** Fetch the real name for a stub org node that has "Nežinomas" as its label. */
-async function enrichStubNode(node: CytoscapeNode): Promise<void> {
+async function enrichStubNode(node: GraphNode): Promise<void> {
     const jarKodas = node.data.jarKodas as string | undefined;
     if (!jarKodas || !isResolvableJarKodas(jarKodas)) return;
 
@@ -39,7 +39,7 @@ async function enrichStubNode(node: CytoscapeNode): Promise<void> {
  * removed.
  */
 async function enrichContractEdges(
-    elements: CytoscapeElements,
+    elements: GraphElements,
     anchorId: string,
     filters: GraphFilters | undefined,
 ): Promise<void> {

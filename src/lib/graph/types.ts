@@ -1,10 +1,10 @@
-import type {CytoscapeElements} from '@/types/graph';
+import type {GraphElements} from '@/types/graph';
 import type {FilterParams} from '@/lib/parsers/types';
 
 export interface GraphFilters extends FilterParams {}
 
 export interface ExpandResult {
-    elements: CytoscapeElements;
+    elements: GraphElements;
     meta: {
         anchorId: string;
         totalNodes: number;

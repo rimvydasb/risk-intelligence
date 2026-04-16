@@ -1,4 +1,4 @@
-import type {CytoscapeNodeData} from '@/types/graph';
+import type {GraphNodeData} from '@/types/graph';
 
 export interface FilterState {
     yearFrom?: string;
@@ -8,7 +8,7 @@ export interface FilterState {
 
 export interface GraphState {
     selectedNodeId: string | null;
-    selectedNodeData: CytoscapeNodeData | null;
+    selectedNodeData: GraphNodeData | null;
     filters: FilterState;
     pendingExpand: string | null;
 }

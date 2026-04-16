@@ -1,14 +1,14 @@
 import {MultiDirectedGraph} from 'graphology';
-import type {CytoscapeElements} from '@/types/graph';
+import type {GraphElements} from '@/types/graph';
 
 export {MultiDirectedGraph};
 
 /**
- * Converts CytoscapeElements (API response format) into a graphology MultiDirectedGraph.
+ * Converts GraphElements (API response format) into a graphology MultiDirectedGraph.
  * If a graph instance is provided, nodes/edges are merged into it (idempotent).
  * All existing node x/y positions are preserved when merging.
  */
-export function cytoscapeToGraphology(elements: CytoscapeElements, graph?: MultiDirectedGraph): MultiDirectedGraph {
+export function elementsToGraphology(elements: GraphElements, graph?: MultiDirectedGraph): MultiDirectedGraph {
     const g = graph ?? new MultiDirectedGraph();
 
     for (const node of elements.nodes) {

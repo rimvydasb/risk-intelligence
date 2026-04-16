@@ -1,5 +1,5 @@
 import type {AsmuoRaw} from '@/lib/viespirkiai/types';
-import type {CytoscapeElements, CytoscapeNode, CytoscapeEdge} from '@/types/graph';
+import type {GraphElements, GraphNode, GraphEdge} from '@/types/graph';
 import type {FilterParams} from './types';
 
 // Org type mapping from formosKodas
@@ -29,12 +29,12 @@ function withinDateRange(
     return true;
 }
 
-export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): CytoscapeElements {
-    const nodes: CytoscapeNode[] = [];
-    const edges: CytoscapeEdge[] = [];
+export function parseAsmuo(raw: AsmuoRaw, filters?: FilterParams): GraphElements {
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
     const seenNodes = new Set<string>();
 
-    const addNode = (node: CytoscapeNode) => {
+    const addNode = (node: GraphNode) => {
         if (!seenNodes.has(node.data.id)) {
             seenNodes.add(node.data.id);
             nodes.push(node);

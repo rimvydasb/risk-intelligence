@@ -1,8 +1,8 @@
 import type {PirkamasRaw} from '@/lib/viespirkiai/types';
-import type {CytoscapeElements, CytoscapeNode} from '@/types/graph';
+import type {GraphElements, GraphNode} from '@/types/graph';
 
-export function parsePirkimas(raw: PirkamasRaw): CytoscapeElements {
-    const nodes: CytoscapeNode[] = [];
+export function parsePirkimas(raw: PirkamasRaw): GraphElements {
+    const nodes: GraphNode[] = [];
 
     nodes.push({
         data: {

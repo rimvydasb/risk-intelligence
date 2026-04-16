@@ -18,13 +18,13 @@ immerses the user in the graph canvas, beginning with the critical anchor node "
 
 **360 Degree Entity View:** Clicking on any node (company, person, contract) opens a comprehensive profile view. This
 includes all relevant metadata, risk scores (in the future), and a mini graph of immediate relationships. Data fetched
-from viespirkiai.org is cached in **staging tables** (raw JSON) and parsed **on-the-fly** into Cytoscape.js graph
-elements. No separate entity/relationship tables are needed for v1 — the cached JSON IS the data model.
+from viespirkiai.org is cached in **staging tables** (raw JSON) and parsed **on-the-fly** into graph elements
+(nodes + edges). No separate entity/relationship tables are needed for v1 — the cached JSON IS the data model.
 
 ## Main Use Cases
 
-- Graph browser using **Cytoscape.js** to visualize relationships between companies, individuals as nodes and contracts
-  as edges. Interactive filtering by contract timeframe and value.
+- Graph browser using **Sigma.js + Graphology** (WebGL) to visualize relationships between companies, individuals as
+  nodes and contracts as edges. Interactive filtering by contract timeframe and value.
 
 - Nepotism detection — graph browser that helps visually identify if a company has a relationship with an employee
   family members of the contracting authority.
@@ -34,8 +34,8 @@ elements. No separate entity/relationship tables are needed for v1 — the cache
 - **viespirkiai data** - Data scraping from viespirkiai.org (and other public sources in the future) for graph
   construction.
 
-- Graph visualization using **Cytoscape.js** with interactive filters (year, contract value) and node/edge details on
-  click.
+- Graph visualization using **Sigma.js + Graphology** with interactive filters (year, contract value) and node/edge
+  details on click.
 
 ## Future Use Cases (Beyond v1)
 
@@ -49,9 +49,9 @@ elements. No separate entity/relationship tables are needed for v1 — the cache
 
 ## Technology Stack
 
-1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with Cytoscape.js for graph visualization. Layout
-   engine: \* \*fCoSE\*\* (`cytoscape-fcose`) — fast compound spring embedder that prevents node/label overlap in star
-   and mixed topologies.
+1. **Frontend:** Next.js 16 (Hash Based Routing) + React 19, with **Sigma.js 3 + Graphology** for graph visualization
+   (WebGL rendering). Layout engine: **ForceAtlas2** (Web Worker, non-blocking) for initial load; pre-positioning for
+   incremental expansion.
 2. **Design System:** Material UI for consistent styling and responsive design.
 3. **Midlayer:** TanStack React Query for data fetching and caching, ensuring efficient API interactions. React
    useContext for global state management.
@@ -348,7 +348,7 @@ This approach guarantees **O(1) viespirkiai fetches per user click** — predict
 ## Staging Storage
 
 Staging tables are an **HTTP response cache** for viespirkiai.org API calls. They store raw JSON blobs keyed by natural
-identifiers. The service reads from staging and parses **on-the-fly** into Cytoscape elements — there are no
+identifiers. The service reads from staging and parses **on-the-fly** into graph elements — there are no
 intermediate Entity/Relationship database tables in v1.
 
 ### Staging Storage Population Flow
@@ -371,7 +371,7 @@ sequenceDiagram
     end
 
     Note over Service: Parse JSON in-memory:<br/>jar → Org node<br/>pinreg.* → Person nodes + edges<br/>topPirkejai/topTiekejai → stub Org nodes + aggregate contract edges
-    Service -->> GUI: Cytoscape elements { nodes, edges, meta }
+    Service -->> GUI: GraphElements { nodes, edges, meta }
     Note over GUI: Merge new elements into existing graph
 ```
 
@@ -385,7 +385,6 @@ triggering additional fetches. Stubs are expanded when the user clicks them.
 | --------------------- | -------- | ---------------------------------------------------------------------- |
 | `StagingAsmuo`        | 24 hours | Employee/governance data changes infrequently                          |
 | `StagingSutartis`     | 7 days   | Contract data is essentially immutable after publication               |
-| `StagingSutartisList` | 24 hours | Contract-ID list per buyer/supplier pair; new contracts may be awarded |
 | `StagingPirkimas`     | 24 hours | Active tenders may update (new bids, status changes)                   |
 
 ### Staging Storage Schema
@@ -464,16 +463,15 @@ at this container. `bin/run-api-tests.sh` manages its lifecycle automatically.
 
 **Graph Data Model:**
 
-The graph is built from Cytoscape.js elements returned by `/api/v1/graph/expand/{jarKodas}`. Each call returns elements
-for one expanded org + its neighbours. The client **merges** new elements into the existing graph (Cytoscape's
-`cy.add()` is idempotent for same-ID elements).
+The graph is built from `GraphElements` returned by `/api/v1/graph/expand/{jarKodas}`. Each call returns elements for
+one expanded org + its neighbours. The client **merges** new elements into the existing graphology graph (idempotent —
+same-ID nodes/edges are merged, not duplicated).
 
-**Layout Engine: fCoSE**
+**Layout Engine: ForceAtlas2**
 
-The layout uses **fCoSE** (`cytoscape-fcose`) registered once at module level. Key parameters for RIS star topologies:
-`nodeRepulsion: 6000` (separates leaf nodes), `idealEdgeLength: 120` (label breathing room), `gravity: 0.15` (prevents
-tight-ball compaction), `nodeDimensionsIncludeLabels: true` (physical label bounding boxes — no overlap). Initial load
-uses `incremental: false`; node expansion uses `incremental: true` to preserve existing positions.
+On initial load a **ForceAtlas2** pass (via `graphology-layout-forceatlas2`) positions all nodes. On node expansion,
+**pre-positioning** places new nodes outward from the clicked node, then a short ForceAtlas2 pass settles them. The
+"Balance" toolbar button triggers a full FA2 pass.
 
 **Edge Types:**
 
@@ -608,11 +606,11 @@ risk-intelligence/
 │   │   └── globals.css           # Global Styles
 │   ├── components/               # Modular Client UI Components ('use client')
 │   │   ├── Providers.tsx         # ThemeProvider + QueryClientProvider (client shell)
-│   │   ├── graph/                # Cytoscape.js rendering + graph-level state
+│   │   ├── graph/                # Sigma.js rendering + graph-level state
 │   │   │   ├── types.ts          # GraphState, FilterState
 │   │   │   ├── GraphView.tsx     # Root graph page: toolbar + canvas + sidebar
-│   │   │   ├── CytoscapeCanvas.tsx   # Cytoscape.js mount (SSR-safe, dynamic import)
 │   │   │   ├── SigmaCanvas.tsx       # Sigma/WebGL canvas (browser-only, dynamic import)
+│   │   │   ├── adapter.ts            # elementsToGraphology() — GraphElements → graphology graph
 │   │   │   ├── NodeSidebar.tsx   # Right panel shown on node click
 │   │   │   ├── GraphDataTable.tsx    # Table view wrapper (GraphNodesTable + GraphEdgesTable)
 │   │   │   ├── GraphNodesTable.tsx   # MUI table of all graph nodes (no pagination)
@@ -648,8 +646,8 @@ risk-intelligence/
 │   │   │   └── __tests__/
 │   │   │       ├── asmuo.test.ts
 │   │   │       ├── ...
-│   │   ├── parsers/              # Pure functions: raw JSON → Cytoscape elements (no I/O)
-│   │   │   ├── types.ts          # CytoscapeNode, CytoscapeEdge, CytoscapeElements, FilterParams
+│   │   ├── parsers/              # Pure functions: raw JSON → GraphElements (no I/O)
+│   │   │   ├── types.ts          # GraphNode, GraphEdge, GraphElements, FilterParams
 │   │   │   ├── ...
 │   │   │   └── __tests__/
 │   │   │       ├── asmuo.test.ts
@@ -662,7 +660,7 @@ risk-intelligence/
 │   │
 │   └── types/
 │       └── graph.ts              # Shared interfaces: TemporalEntity, OrganizationEntity,
-│                                 # PersonEntity, TenderEntity, Relationship, CytoscapeResponse
+│                                 # PersonEntity, TenderEntity, Relationship, GraphResponse
 ├── docker-compose.yml            # Dev DB (port 5432) + Test DB (port 5433, tmpfs)
 ├── .env                          # Dev environment variables (not committed)
 ├── .env.test                     # Test environment variables (not committed)
@@ -693,12 +691,12 @@ and every subsequent node-click expansion.
 **Behaviour:**
 
 1. Check staging cache for `jarKodas` (fetch from viespirkiai if stale/missing)
-2. Parse cached asmuo JSON **in-memory** → Cytoscape nodes + edges
+2. Parse cached asmuo JSON **in-memory** → graph nodes + edges
 3. Apply filters (yearFrom/yearTo, minValue on aggregate contract edges)
-4. Return Cytoscape.js-compatible response
+4. Return graph-compatible response (GraphElements)
 
 **No database writes to Entity/Relationship tables.** The parse is stateless and deterministic — given the same staging
-JSON, the same Cytoscape output is produced every time.
+JSON, the same graph output is produced every time.
 
 **Parameters:**
 
@@ -732,7 +730,7 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 | `404`  | Entity not found in staging cache (not yet expanded)               |
 | `500`  | Unexpected error                                                   |
 
-### Graph Response Format (Cytoscape.js-compatible)
+### Graph Response Format
 
 ```json
 {
@@ -814,5 +812,5 @@ Used when the user clicks a node to see its detail panel. Reads from staging cac
 | Story                                                            | Status      | Description                                               |
 | ---------------------------------------------------------------- | ----------- | --------------------------------------------------------- |
 | [`BACKEND_REST_API_STORY.md`](./BACKEND_REST_API_STORY.md)       | ✅ Complete | Prisma schema, staging cache, parsers, REST API, tests    |
-| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md) | ✅ Complete | Frontend: Cytoscape graph, hash routing, filters, Cypress |
-| [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)   | ⏳ Next     | Replace Cytoscape.js with Sigma.js + Graphology (WebGL)   |
+| [`GRAPH_VISUALIZATION_STORY.md`](./GRAPH_VISUALIZATION_STORY.md) | ✅ Complete | Frontend: graph, hash routing, filters, Cypress |
+| [`SIGMA_JS_MIGRATION_STORY.md`](./SIGMA_JS_MIGRATION_STORY.md)   | ✅ Complete | Replaced Cytoscape.js with Sigma.js + Graphology (WebGL) |

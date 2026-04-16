@@ -21,7 +21,7 @@ import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import HubIcon from '@mui/icons-material/Hub';
 import TableChartIcon from '@mui/icons-material/TableChart';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
-import type {CytoscapeNodeData, CytoscapeElements} from '@/types/graph';
+import type {GraphNodeData, GraphElements} from '@/types/graph';
 import type {FilterState} from '../types';
 import {useHashRouter} from '@/hooks/useHashRouter';
 
@@ -29,11 +29,11 @@ const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = Array.from({length: CURRENT_YEAR - 2009}, (_, i) => 2010 + i);
 
 export interface GraphToolbarProps {
-    elements: CytoscapeElements;
+    elements: GraphElements;
     filters: FilterState;
     viewMode?: 'graph' | 'table';
     onApplyFilters: (filters: FilterState) => void;
-    onNodeSelect: (nodeId: string, data: CytoscapeNodeData) => void;
+    onNodeSelect: (nodeId: string, data: GraphNodeData) => void;
     onBalanceGraph?: () => void;
 }
 

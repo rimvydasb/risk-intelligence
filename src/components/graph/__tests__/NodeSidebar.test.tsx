@@ -4,9 +4,9 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {NodeSidebar} from '../NodeSidebar';
-import type {CytoscapeNodeData} from '@/types/graph';
+import type {GraphNodeData} from '@/types/graph';
 
-const mockNodeData: CytoscapeNodeData = {
+const mockNodeData: GraphNodeData = {
     id: 'org:110053842',
     label: 'AB "Lietuvos geležinkeliai"',
     type: 'PublicCompany',

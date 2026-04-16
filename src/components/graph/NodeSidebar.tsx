@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import type {CytoscapeNodeData} from '@/types/graph';
+import type {GraphNodeData} from '@/types/graph';
 
 const SIDEBAR_WIDTH = 320;
 
@@ -50,7 +50,7 @@ function formatValue(key: string, value: unknown): string {
 
 export interface NodeSidebarProps {
     nodeId: string | null;
-    nodeData: CytoscapeNodeData | null;
+    nodeData: GraphNodeData | null;
     loading?: boolean;
     onClose: () => void;
     onViewFullProfile: (entityId: string) => void;

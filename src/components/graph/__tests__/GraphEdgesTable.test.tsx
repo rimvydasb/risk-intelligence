@@ -4,9 +4,9 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import {GraphEdgesTable} from '../GraphEdgesTable';
-import type {CytoscapeEdge} from '@/types/graph';
+import type {GraphEdge} from '@/types/graph';
 
-const edges: CytoscapeEdge[] = [
+const edges: GraphEdge[] = [
     {
         data: {
             id: 'contract:1',

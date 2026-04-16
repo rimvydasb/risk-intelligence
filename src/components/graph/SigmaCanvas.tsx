@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useEffect, useRef} from 'react';
-import type {CytoscapeElements, CytoscapeNodeData} from '@/types/graph';
+import type {GraphElements, GraphNodeData} from '@/types/graph';
 import type {MultiDirectedGraph} from './adapter';
 
 // Sigma + Graphology are browser-only (WebGL) — imported at runtime via dynamic() in GraphView
@@ -92,8 +92,8 @@ interface XY {
 // Place new nodes near their connected anchor nodes so FA2 has a good starting point.
 // Without sensible initial positions FA2 may take longer to converge.
 function placeNewNodesNearAnchors(
-    newNodes: CytoscapeElements['nodes'],
-    edges: CytoscapeElements['edges'],
+    newNodes: GraphElements['nodes'],
+    edges: GraphElements['edges'],
     existingPositions: Map<string, XY>,
 ): Map<string, XY> {
     const positions = new Map<string, XY>();
@@ -151,8 +151,8 @@ function placeNewNodesNearAnchors(
 }
 
 export interface SigmaCanvasProps {
-    elements: CytoscapeElements;
-    onNodeClick: (nodeId: string, nodeData: CytoscapeNodeData) => void;
+    elements: GraphElements;
+    onNodeClick: (nodeId: string, nodeData: GraphNodeData) => void;
     onBackgroundClick: () => void;
     cyRef?: React.MutableRefObject<unknown>;
     balanceTrigger?: number;
@@ -312,7 +312,7 @@ export default function SigmaCanvas({
             selectedNodeRef.current = payload.node;
             sigma.setSettings({nodeReducer: buildNodeReducer(payload.node)});
             const attrs = graph.getNodeAttributes(payload.node);
-            onNodeClick(payload.node, {id: payload.node, ...attrs} as CytoscapeNodeData);
+            onNodeClick(payload.node, {id: payload.node, ...attrs} as GraphNodeData);
         });
 
         sigma.on('clickStage', () => {

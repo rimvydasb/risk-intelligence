@@ -2,10 +2,10 @@
 
 import React from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
-import type {CytoscapeNode} from '@/types/graph';
+import type {GraphNode} from '@/types/graph';
 
 interface GraphNodesTableProps {
-    nodes: CytoscapeNode[];
+    nodes: GraphNode[];
 }
 
 function formatExpanded(value: unknown): string {

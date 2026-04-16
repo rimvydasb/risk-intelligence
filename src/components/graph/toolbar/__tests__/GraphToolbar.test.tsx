@@ -3,9 +3,9 @@
  */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import type {CytoscapeElements} from '@/types/graph';
+import type {GraphElements} from '@/types/graph';
 
-const EMPTY_ELEMENTS: CytoscapeElements = {nodes: [], edges: []};
+const EMPTY_ELEMENTS: GraphElements = {nodes: [], edges: []};
 
 const mockNavigate = jest.fn();
 const mockReplace = jest.fn();
