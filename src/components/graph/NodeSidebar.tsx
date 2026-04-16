@@ -76,8 +76,8 @@ export function NodeSidebar({nodeId, nodeData, loading, onClose, onViewFullProfi
                 '& .MuiDrawer-paper': {
                     width: SIDEBAR_WIDTH,
                     boxSizing: 'border-box',
-                    background: '#1a1a2e',
-                    borderLeft: '1px solid #333',
+                    borderLeft: '1px solid',
+                    borderColor: 'divider',
                 },
             }}
         >
@@ -155,16 +155,17 @@ export function NodeSidebar({nodeId, nodeData, loading, onClose, onViewFullProfi
                                     alignItems: 'center',
                                     gap: 1,
                                     background: 'transparent',
-                                    border: '1px solid #1976d2',
+                                    border: '1px solid',
+                                    borderColor: 'primary.main',
                                     borderRadius: 1,
-                                    color: '#1976d2',
+                                    color: 'primary.main',
                                     cursor: 'pointer',
                                     py: 1,
                                     px: 2,
                                     fontFamily: 'inherit',
                                     fontSize: '0.875rem',
                                     fontWeight: 500,
-                                    '&:hover': {background: 'rgba(25,118,210,0.08)'},
+                                    '&:hover': {background: 'action.hover'},
                                 }}
                             >
                                 <OpenInNewIcon fontSize="small" />

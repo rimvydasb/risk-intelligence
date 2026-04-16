@@ -108,9 +108,9 @@ export function GraphToolbar({
     }, [filters]);
 
     return (
-        <AppBar position="static" color="default" elevation={1} sx={{background: '#1a1a2e'}}>
+        <AppBar position="static" color="default" elevation={1}>
             <Toolbar variant="dense" sx={{gap: 1.5, flexWrap: 'wrap', py: 0.5}}>
-                <Typography variant="h6" sx={{fontWeight: 700, color: '#e0e0e0', mr: 1, fontSize: '1rem'}}>
+                <Typography variant="h6" sx={{fontWeight: 700, mr: 1, fontSize: '1rem'}}>
                     Risk Intelligence
                 </Typography>
 
@@ -130,7 +130,6 @@ export function GraphToolbar({
                             placeholder="Search Company or Person..."
                             size="small"
                             variant="outlined"
-                            sx={{background: '#0d0d1a', borderRadius: 1}}
                         />
                     )}
                     sx={{width: 260}}
@@ -188,7 +187,7 @@ export function GraphToolbar({
                     size="small"
                     type="number"
                     slotProps={{input: {inputProps: {'data-testid': 'filter-min-value', min: 0}}}}
-                    sx={{width: 140, background: '#0d0d1a', borderRadius: 1}}
+                    sx={{width: 140}}
                 />
 
                 {/* Apply */}
@@ -225,7 +224,6 @@ export function GraphToolbar({
                         startIcon={<HubIcon />}
                         onClick={onBalanceGraph}
                         data-testid="balance-graph"
-                        sx={{color: '#90caf9', borderColor: '#90caf9'}}
                     >
                         Balance
                     </Button>
@@ -233,19 +231,11 @@ export function GraphToolbar({
 
                 {/* View mode toggle */}
                 <ToggleButtonGroup value={viewMode} exclusive onChange={handleViewModeToggle} size="small" sx={{ml: 1}}>
-                    <ToggleButton
-                        value="graph"
-                        data-testid="view-mode-graph"
-                        sx={{color: '#e0e0e0', borderColor: '#555'}}
-                    >
+                    <ToggleButton value="graph" data-testid="view-mode-graph">
                         <AccountTreeIcon fontSize="small" sx={{mr: 0.5}} />
                         Graph
                     </ToggleButton>
-                    <ToggleButton
-                        value="table"
-                        data-testid="view-mode-table"
-                        sx={{color: '#e0e0e0', borderColor: '#555'}}
-                    >
+                    <ToggleButton value="table" data-testid="view-mode-table">
                         <TableChartIcon fontSize="small" sx={{mr: 0.5}} />
                         Table
                     </ToggleButton>

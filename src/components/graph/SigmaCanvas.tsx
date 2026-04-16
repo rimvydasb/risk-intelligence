@@ -12,6 +12,8 @@ const SigmaRendering = typeof window !== 'undefined' ? require('sigma/rendering'
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const NodeImageLib = typeof window !== 'undefined' ? require('@sigma/node-image') : null;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
+const NodeBorderLib = typeof window !== 'undefined' ? require('@sigma/node-border') : null;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fa2 = typeof window !== 'undefined' ? require('graphology-layout-forceatlas2') : null;
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const FA2Worker = typeof window !== 'undefined' ? require('graphology-layout-forceatlas2/worker') : null;
@@ -30,6 +32,9 @@ const MUI_ICON_PATHS: Record<string, string> = {
     Person: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4m0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4',
     // Assignment icon — Tender
     Tender: 'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1m2 14H7v-2h7zm3-4H7v-2h10zm0-4H7V7h10z',
+    // HistoryEdu icon — Contract
+    Contract:
+        'M9 4v1.38c-.83-.33-1.72-.5-2.61-.5-1.79 0-3.58.68-4.95 2.05l3.33 3.33h1.11v1.11c.86.86 1.98 1.31 3.11 1.36V15H6v3c0 1.1.9 2 2 2h10c1.66 0 3-1.34 3-3V4zm-1.11 6.41V8.26H5.61L4.57 7.22a5.07 5.07 0 0 1 1.82-.34c1.34 0 2.59.52 3.54 1.46l1.41 1.41-.2.2c-.51.51-1.19.8-1.92.8-.47 0-.93-.12-1.33-.34M19 17c0 .55-.45 1-1 1s-1-.45-1-1v-2h-6v-2.59c.57-.23 1.1-.57 1.56-1.03l.2-.2L15.59 14H17v-1.41l-6-5.97V6h8z',
 };
 
 function makeIconDataUri(nodeType: string): string {
@@ -38,32 +43,34 @@ function makeIconDataUri(nodeType: string): string {
     // Explicit width/height ensures the image renders at a predictable size when loaded
     // via <img> (data URIs without .svg extension are loaded with loadRasterImage).
     // btoa (base64) is more reliable than percent-encoding for SVG data URIs.
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><path fill="white" d="${path}"/></svg>`;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="64" height="64"><path fill="#1e293b" d="${path}"/></svg>`;
     return `data:image/svg+xml;base64,${btoa(svg)}`;
 }
 
 // ── Node size / color by type ─────────────────────────────────────────────
 const NODE_TYPE_CONFIG: Record<string, {color: string; size: number}> = {
-    PublicCompany: {color: '#1976d2', size: 22},
-    PrivateCompany: {color: '#388e3c', size: 12},
-    Institution: {color: '#7b1fa2', size: 26},
-    Person: {color: '#f57c00', size: 14},
-    Tender: {color: '#0097a7', size: 18},
+    PublicCompany: {color: '#93c5fd', size: 22},
+    PrivateCompany: {color: '#86efac', size: 12},
+    Institution: {color: '#c4b5fd', size: 26},
+    Person: {color: '#fcd34d', size: 14},
+    Tender: {color: '#67e8f9', size: 18},
+    Contract: {color: '#e2e8f0', size: 14},
 };
 
-const DEFAULT_NODE = {color: '#546e7a', size: 10};
+const DEFAULT_NODE = {color: '#cbd5e1', size: 10};
 
 // ── Edge color by type ────────────────────────────────────────────────────
 const EDGE_TYPE_CONFIG: Record<string, {color: string; size: number}> = {
-    Contract: {color: '#64b5f6', size: 1.5},
-    Employment: {color: '#78909c', size: 1.0},
-    Official: {color: '#78909c', size: 1.0},
-    Director: {color: '#ff1667', size: 1.2},
-    Shareholder: {color: '#ff1667', size: 1.2},
-    Spouse: {color: '#ffcc02', size: 1.0},
+    Contract: {color: '#94a3b8', size: 1.5},
+    Signed: {color: '#94a3b8', size: 1.5},
+    Employment: {color: '#94a3b8', size: 1.0},
+    Official: {color: '#94a3b8', size: 1.0},
+    Director: {color: '#e11d48', size: 1.2},
+    Shareholder: {color: '#e11d48', size: 1.2},
+    Spouse: {color: '#d97706', size: 1.0},
 };
 
-const DEFAULT_EDGE = {color: '#546e7a', size: 0.8};
+const DEFAULT_EDGE = {color: '#94a3b8', size: 0.8};
 
 // Draw node label centered below the node circle instead of to its right.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -83,7 +90,6 @@ function drawNodeLabelBottom(context: CanvasRenderingContext2D, data: any, setti
     context.textAlign = 'left';
     context.textBaseline = 'alphabetic';
 }
-
 interface XY {
     x: number;
     y: number;
@@ -197,15 +203,19 @@ export default function SigmaCanvas({
         return (node: string, data: Record<string, unknown>) => {
             const cfg = NODE_TYPE_CONFIG[data.type as string] ?? DEFAULT_NODE;
             const isExpanded = data.expanded !== false;
+            const isSelected = node === selected;
+            const fillColor = isExpanded ? cfg.color : adjustOpacity(cfg.color, 0.5);
+
             return {
                 x: data.x as number,
                 y: data.y as number,
                 label: (data.label as string | null) ?? node,
-                color: isExpanded ? cfg.color : adjustOpacity(cfg.color, 0.5),
+                color: fillColor,
+                // When selected show a blue border ring; otherwise border matches fill (invisible)
+                borderColor: isSelected ? '#2563eb' : fillColor,
                 size: cfg.size,
-                highlighted: node === selected,
                 image: data.image,
-                pictogramColor: '#ffffff',
+                pictogramColor: '#1e293b',
                 type: 'icon',
             };
         };
@@ -260,16 +270,15 @@ export default function SigmaCanvas({
 
     // Mount Sigma once
     useEffect(() => {
-        if (!containerRef.current || !SigmaLib || !SigmaRendering || !NodeImageLib) return;
+        if (!containerRef.current || !SigmaLib || !SigmaRendering || !NodeImageLib || !NodeBorderLib) return;
 
         const Sigma = SigmaLib.default ?? SigmaLib.Sigma ?? SigmaLib;
-        const {EdgeArrowProgram, NodeCircleProgram, createNodeCompoundProgram} = SigmaRendering;
+        const {EdgeArrowProgram, createNodeCompoundProgram} = SigmaRendering;
         const {createNodeImageProgram} = NodeImageLib;
+        const {NodeBorderProgram} = NodeBorderLib;
 
-        // Compound program: colored circle background + white MUI icon overlay.
-        // crossOrigin: null — avoids CORS attribute being set on data: URIs (causes silent
-        // load failures in Firefox/Safari when crossOrigin="anonymous" is used on data URIs).
-        const WhiteIconProgram = createNodeImageProgram({
+        // Icon program: border disc (for selection ring) + dark icon overlay
+        const DarkIconProgram = createNodeImageProgram({
             keepWithinCircle: true,
             size: {mode: 'force', value: 64},
             drawingMode: 'color',
@@ -278,7 +287,7 @@ export default function SigmaCanvas({
             crossOrigin: null,
             padding: 0.25,
         });
-        const NodeIconProgram = createNodeCompoundProgram([NodeCircleProgram, WhiteIconProgram]);
+        const NodeIconProgram = createNodeCompoundProgram([NodeBorderProgram, DarkIconProgram]);
 
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const graph: MultiDirectedGraph = new (require('graphology').MultiDirectedGraph)();
@@ -292,17 +301,18 @@ export default function SigmaCanvas({
             itemSizeRatio: 1.0, // if you remove it, nodes will stay the same when zoom in or out
             labelFont: 'Arial, Roboto, sans-serif',
             labelSize: 10,
-            labelColor: {color: '#e0e0e0'},
+            labelColor: {color: '#1e293b'},
             labelDensity: 0.07,
             labelGridCellSize: 60,
             labelRenderedSizeThreshold: 6,
             defaultDrawNodeLabel: drawNodeLabelBottom,
             edgeLabelFont: 'Arial, Roboto, sans-serif',
             edgeLabelSize: 9,
-            edgeLabelColor: {color: '#aaaaaa'},
+            edgeLabelColor: {color: '#475569'},
             stagePadding: 30,
             edgeProgramClasses: {arrow: EdgeArrowProgram},
             nodeProgramClasses: {icon: NodeIconProgram},
+            nodeHoverProgramClasses: {icon: NodeIconProgram},
             nodeReducer: buildNodeReducer(selectedNodeRef.current),
             edgeReducer: buildEdgeReducer(),
             zIndex: true,
@@ -401,17 +411,17 @@ export default function SigmaCanvas({
         <div
             ref={containerRef}
             data-testid="graph-container"
-            style={{width: '100%', height: '100%', background: '#0a0a0a'}}
+            style={{width: '100%', height: '100%', background: '#f8fafc'}}
         />
     );
 }
 
 function adjustOpacity(hex: string, opacity: number): string {
-    // Parse #rrggbb and blend with dark background (#0a0a0a = 10,10,10)
+    // Parse #rrggbb and blend with light background (#f8fafc ≈ 248,250,252)
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
-    const bg = 10;
+    const bg = 250;
     const nr = Math.round(r * opacity + bg * (1 - opacity));
     const ng = Math.round(g * opacity + bg * (1 - opacity));
     const nb = Math.round(b * opacity + bg * (1 - opacity));

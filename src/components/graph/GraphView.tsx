@@ -178,7 +178,7 @@ const now = new Date();
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    background: 'rgba(10,10,10,0.7)',
+                                    background: 'rgba(248,250,252,0.7)',
                                     zIndex: 10,
                                 }}
                             >
