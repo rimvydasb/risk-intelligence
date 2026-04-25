@@ -5,17 +5,16 @@ import {
     Autocomplete,
     Box,
     Button,
-    MenuItem,
-    Select,
     TextField,
     Toolbar,
     AppBar,
     Typography,
-    InputLabel,
-    FormControl,
     ToggleButton,
     ToggleButtonGroup,
 } from '@mui/material';
+import {DatePicker} from '@mui/x-date-pickers/DatePicker';
+import type {Dayjs} from 'dayjs';
+import dayjs from 'dayjs';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import HubIcon from '@mui/icons-material/Hub';
@@ -25,9 +24,6 @@ import type {GraphNodeData, GraphElements} from '@/types/graph';
 import type {FilterState} from '../types';
 import {useHashRouter} from '@/hooks/useHashRouter';
 
-const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({length: CURRENT_YEAR - 2009}, (_, i) => 2010 + i);
-
 export interface GraphToolbarProps {
     elements: GraphElements;
     filters: FilterState;
@@ -35,6 +31,14 @@ export interface GraphToolbarProps {
     onApplyFilters: (filters: FilterState) => void;
     onNodeSelect: (nodeId: string, data: GraphNodeData) => void;
     onBalanceGraph?: () => void;
+}
+
+function buildFilters(dateFrom: Dayjs | null, dateTo: Dayjs | null, minVal: string): FilterState {
+    const f: FilterState = {};
+    if (dateFrom?.isValid()) f.yearFrom = dateFrom.format('YYYY-MM-DD');
+    if (dateTo?.isValid()) f.yearTo = dateTo.format('YYYY-MM-DD');
+    if (minVal !== '') f.minContractValue = Number(minVal);
+    return f;
 }
 
 export function GraphToolbar({
@@ -46,11 +50,16 @@ export function GraphToolbar({
     onBalanceGraph,
 }: GraphToolbarProps) {
     const {navigate, params} = useHashRouter();
-    const [localYearFrom, setLocalYearFrom] = useState<number | ''>(
-        filters.yearFrom ? new Date(filters.yearFrom).getFullYear() : '',
+
+    const now = dayjs();
+    const defaultDateFrom = now.startOf('year');
+    const defaultDateTo = now;
+
+    const [dateFrom, setDateFrom] = useState<Dayjs | null>(
+        filters.yearFrom ? dayjs(filters.yearFrom) : defaultDateFrom,
     );
-    const [localYearTo, setLocalYearTo] = useState<number | ''>(
-        filters.yearTo ? new Date(filters.yearTo).getFullYear() : '',
+    const [dateTo, setDateTo] = useState<Dayjs | null>(
+        filters.yearTo ? dayjs(filters.yearTo) : defaultDateTo,
     );
     const [localMinValue, setLocalMinValue] = useState<string>(
         filters.minContractValue !== undefined ? String(filters.minContractValue) : '',
@@ -68,13 +77,9 @@ export function GraphToolbar({
         [navigate, params, viewMode],
     );
 
-    const now = new Date();
-    const DEFAULT_YEAR_FROM = now.getFullYear() - 1;
-    const DEFAULT_YEAR_TO = now.getFullYear();
-
     const isNonDefault =
-        (localYearFrom !== '' && localYearFrom !== DEFAULT_YEAR_FROM) ||
-        (localYearTo !== '' && localYearTo !== DEFAULT_YEAR_TO) ||
+        (dateFrom !== null && !dateFrom.isSame(defaultDateFrom, 'day')) ||
+        (dateTo !== null && !dateTo.isSame(defaultDateTo, 'day')) ||
         localMinValue !== '';
 
     const nodeOptions = useMemo(
@@ -85,26 +90,39 @@ export function GraphToolbar({
         [elements.nodes],
     );
 
-    const handleApply = useCallback(() => {
-        const newFilters: FilterState = {};
-        if (localYearFrom !== '') newFilters.yearFrom = `${localYearFrom}-01-01`;
-        if (localYearTo !== '') newFilters.yearTo = `${localYearTo}-12-31`;
-        if (localMinValue !== '') newFilters.minContractValue = Number(localMinValue);
-        onApplyFilters(newFilters);
-    }, [localYearFrom, localYearTo, localMinValue, onApplyFilters]);
+    const handleDateFromAccept = useCallback(
+        (newDate: Dayjs | null) => {
+            setDateFrom(newDate);
+            onApplyFilters(buildFilters(newDate, dateTo, localMinValue));
+        },
+        [dateTo, localMinValue, onApplyFilters],
+    );
+
+    const handleDateToAccept = useCallback(
+        (newDate: Dayjs | null) => {
+            setDateTo(newDate);
+            onApplyFilters(buildFilters(dateFrom, newDate, localMinValue));
+        },
+        [dateFrom, localMinValue, onApplyFilters],
+    );
+
+    const handleMinValueCommit = useCallback(() => {
+        onApplyFilters(buildFilters(dateFrom, dateTo, localMinValue));
+    }, [dateFrom, dateTo, localMinValue, onApplyFilters]);
 
     const handleReset = useCallback(() => {
-        setLocalYearFrom(DEFAULT_YEAR_FROM);
-        setLocalYearTo(DEFAULT_YEAR_TO);
+        setDateFrom(defaultDateFrom);
+        setDateTo(defaultDateTo);
         setLocalMinValue('');
-        onApplyFilters({});
-    }, [DEFAULT_YEAR_FROM, DEFAULT_YEAR_TO, onApplyFilters]);
+        onApplyFilters(buildFilters(defaultDateFrom, defaultDateTo, ''));
+    }, [defaultDateFrom, defaultDateTo, onApplyFilters]);
 
-    // Sync from external filter changes
+    // Sync from external filter changes (e.g. URL-driven)
     useEffect(() => {
-        setLocalYearFrom(filters.yearFrom ? new Date(filters.yearFrom).getFullYear() : '');
-        setLocalYearTo(filters.yearTo ? new Date(filters.yearTo).getFullYear() : '');
+        setDateFrom(filters.yearFrom ? dayjs(filters.yearFrom) : defaultDateFrom);
+        setDateTo(filters.yearTo ? dayjs(filters.yearTo) : defaultDateTo);
         setLocalMinValue(filters.minContractValue !== undefined ? String(filters.minContractValue) : '');
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters]);
 
     return (
@@ -137,65 +155,49 @@ export function GraphToolbar({
                     size="small"
                 />
 
-                {/* Year From */}
-                <FormControl size="small" sx={{minWidth: 110}}>
-                    <InputLabel sx={{fontSize: '0.75rem'}}>Year from</InputLabel>
-                    <Select
-                        label="Year from"
-                        value={localYearFrom}
-                        onChange={(e) => setLocalYearFrom(e.target.value as number | '')}
-                        SelectDisplayProps={{'data-testid': 'filter-year-from'} as React.HTMLAttributes<HTMLDivElement>}
-                        size="small"
-                    >
-                        <MenuItem value="">
-                            <em>Any</em>
-                        </MenuItem>
-                        {YEAR_OPTIONS.map((y) => (
-                            <MenuItem key={y} value={y}>
-                                {y}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                {/* Date From */}
+                <Box data-testid="filter-date-from">
+                    <DatePicker
+                        label="Date from"
+                        value={dateFrom}
+                        onChange={setDateFrom}
+                        onAccept={handleDateFromAccept}
+                        slotProps={{textField: {size: 'small', sx: {width: 150}}}}
+                    />
+                </Box>
 
-                {/* Year To */}
-                <FormControl size="small" sx={{minWidth: 110}}>
-                    <InputLabel sx={{fontSize: '0.75rem'}}>Year to</InputLabel>
-                    <Select
-                        label="Year to"
-                        value={localYearTo}
-                        onChange={(e) => setLocalYearTo(e.target.value as number | '')}
-                        SelectDisplayProps={{'data-testid': 'filter-year-to'} as React.HTMLAttributes<HTMLDivElement>}
-                        size="small"
-                    >
-                        <MenuItem value="">
-                            <em>Any</em>
-                        </MenuItem>
-                        {YEAR_OPTIONS.map((y) => (
-                            <MenuItem key={y} value={y}>
-                                {y}
-                            </MenuItem>
-                        ))}
-                    </Select>
-                </FormControl>
+                {/* Date To */}
+                <Box data-testid="filter-date-to">
+                    <DatePicker
+                        label="Date to"
+                        value={dateTo}
+                        onChange={setDateTo}
+                        onAccept={handleDateToAccept}
+                        slotProps={{textField: {size: 'small', sx: {width: 150}}}}
+                    />
+                </Box>
 
                 {/* Min contract value */}
                 <TextField
                     label="Min value (EUR)"
                     value={localMinValue}
                     onChange={(e) => setLocalMinValue(e.target.value)}
+                    onBlur={handleMinValueCommit}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleMinValueCommit();
+                    }}
                     size="small"
                     type="number"
                     slotProps={{input: {inputProps: {'data-testid': 'filter-min-value', min: 0}}}}
                     sx={{width: 140}}
                 />
 
-                {/* Apply */}
+                {/* Apply — for min value convenience */}
                 <Button
                     variant="contained"
                     size="small"
                     startIcon={<FilterListIcon />}
-                    onClick={handleApply}
+                    onClick={handleMinValueCommit}
                     data-testid="filter-apply"
                 >
                     Apply

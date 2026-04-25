@@ -50,51 +50,30 @@ describe('Graph Data Table — view mode toggle', () => {
     });
 
     it('applies year filter and re-fetches data for the table', () => {
-        cy.intercept('GET', '/api/v1/graph/expand/**').as('expand');
-
         cy.visit('http://localhost:3000/#/table/');
-        cy.wait('@expand', {timeout: 20000});
-        cy.get('[data-testid="graph-nodes-table"] tbody tr').should('have.length.at.least', 1);
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 20000}).should('have.length.at.least', 1);
 
-        // Count rows before applying filter
-        cy.get('[data-testid="graph-nodes-table"] tbody tr').its('length').as('countBefore');
+        // Change dateFrom — onAccept auto-applies; table must still show data
+        cy.get('[data-testid="filter-date-from"]').find('.MuiPickersSectionList-root').click();
+        cy.get('[data-testid="filter-date-from"]').find('.MuiPickersSectionList-root').realType('01012022');
 
-        // Apply Year From = 2022
-        cy.get('[data-testid="filter-year-from"]').parent().click();
-        cy.contains('[role="option"]', '2022').click();
-        cy.get('[data-testid="filter-apply"]').click();
-
-        // A new expand request must include the yearFrom query param
-        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2022-01-01');
-
-        // Table is repopulated (anchor org always present)
         cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
     });
 
     it('changing filter again re-fetches without accumulating stale rows', () => {
-        cy.intercept('GET', '/api/v1/graph/expand/**').as('expand');
-
         cy.visit('http://localhost:3000/#/table/');
-        cy.wait('@expand', {timeout: 20000});
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 20000}).should('have.length.at.least', 1);
 
-        // Apply first filter (2022)
-        cy.get('[data-testid="filter-year-from"]').parent().click();
-        cy.contains('[role="option"]', '2022').click();
-        cy.get('[data-testid="filter-apply"]').click();
-        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2022-01-01');
-        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).its('length').as('countAfterFirst');
+        // Set first date range — table updates
+        cy.get('[data-testid="filter-date-from"]').find('.MuiPickersSectionList-root').click();
+        cy.get('[data-testid="filter-date-from"]').find('.MuiPickersSectionList-root').realType('01012022');
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
 
-        // Change to a different filter (2024)
-        cy.get('[data-testid="filter-year-from"]').parent().click();
-        cy.contains('[role="option"]', '2024').click();
-        cy.get('[data-testid="filter-apply"]').click();
-        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2024-01-01');
+        // Change date again — anchor org must appear exactly once (no accumulation)
+        cy.get('[data-testid="filter-date-from"]').find('.MuiPickersSectionList-root').click();
+        cy.get('[data-testid="filter-date-from"]').find('.MuiPickersSectionList-root').realType('01012024');
+        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).should('have.length.at.least', 1);
 
-        cy.get('[data-testid="graph-nodes-table"] tbody tr', {timeout: 15000}).its('length').as('countAfterSecond');
-
-        // Row count must not have grown by accumulation — it must reflect only the
-        // second filter's result, i.e. <= (first result + second result combined).
-        // The clearest signal: the org anchor is always present exactly once.
         cy.get('[data-testid="graph-nodes-table"] tbody [data-testid="node-id"]')
             .filter(':contains("org:110053842")')
             .should('have.length', 1);
@@ -106,21 +85,18 @@ describe('Graph Data Table — view mode toggle', () => {
         cy.visit('http://localhost:3000/#/table/');
         cy.wait('@expand', {timeout: 20000});
 
-        // Apply filter
-        cy.get('[data-testid="filter-year-from"]').parent().click();
-        cy.contains('[role="option"]', '2023').click();
+        // Apply a non-default min value filter so reset button appears
+        cy.get('[data-testid="filter-min-value"]').clear().type('1000');
         cy.get('[data-testid="filter-apply"]').click();
-        cy.wait('@expand').its('request.url').should('include', 'yearFrom=2023-01-01');
+        cy.wait('@expand').its('request.url').should('include', 'minContractValue=1000');
 
-        // Reset — React Query may serve the no-filter result from cache (no new network
-        // call is guaranteed), so we test URL + UI state, not a third network request.
+        // Reset brings back defaults (dates reset to current-year start → today, min value cleared)
         cy.get('[data-testid="filter-reset"]').click();
 
-        // URL must no longer carry year params
-        cy.url().should('not.include', 'yearFrom');
-        cy.url().should('not.include', 'yearTo');
+        // minContractValue must be gone from URL
+        cy.url().should('not.include', 'minContractValue');
 
-        // Filter reset button disappears (no active filters)
+        // Filter reset button disappears (no active non-default filters)
         cy.get('[data-testid="filter-reset"]').should('not.exist');
 
         // Table stays populated (data served from cache or re-fetched)

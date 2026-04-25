@@ -4,6 +4,8 @@
 import React from 'react';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {QueryClient, QueryClientProvider} from '@tanstack/react-query';
+import {LocalizationProvider} from '@mui/x-date-pickers';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 
 // Mock SigmaCanvas (browser-only) and next/dynamic
 jest.mock('next/dynamic', () => () => {
@@ -40,7 +42,11 @@ afterEach(() => jest.clearAllMocks());
 
 function renderWithQuery(ui: React.ReactElement) {
     const qc = new QueryClient({defaultOptions: {queries: {retry: false}}});
-    return render(<QueryClientProvider client={qc}>{ui}</QueryClientProvider>);
+    return render(
+        <QueryClientProvider client={qc}>
+            <LocalizationProvider dateAdapter={AdapterDayjs}>{ui}</LocalizationProvider>
+        </QueryClientProvider>,
+    );
 }
 
 // Import after mocks

@@ -3,6 +3,8 @@
  */
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
+import {LocalizationProvider} from '@mui/x-date-pickers';
+import {AdapterDayjs} from '@mui/x-date-pickers/AdapterDayjs';
 import type {GraphElements} from '@/types/graph';
 
 const EMPTY_ELEMENTS: GraphElements = {nodes: [], edges: []};
@@ -31,6 +33,12 @@ const defaultProps = {
     onNodeSelect: jest.fn(),
 };
 
+function renderWithProviders(ui: React.ReactElement) {
+    return render(
+        <LocalizationProvider dateAdapter={AdapterDayjs}>{ui}</LocalizationProvider>,
+    );
+}
+
 beforeEach(() => {
     mockParams = new URLSearchParams();
     jest.clearAllMocks();
@@ -38,32 +46,32 @@ beforeEach(() => {
 
 describe('GraphToolbar — view mode toggle', () => {
     it('renders both toggle buttons', () => {
-        render(<GraphToolbar {...defaultProps} />);
+        renderWithProviders(<GraphToolbar {...defaultProps} />);
         expect(screen.getByTestId('view-mode-graph')).toBeInTheDocument();
         expect(screen.getByTestId('view-mode-table')).toBeInTheDocument();
     });
 
     it('clicking table toggle navigates to /table/', () => {
-        render(<GraphToolbar {...defaultProps} viewMode="graph" />);
+        renderWithProviders(<GraphToolbar {...defaultProps} viewMode="graph" />);
         fireEvent.click(screen.getByTestId('view-mode-table'));
         expect(mockNavigate).toHaveBeenCalledWith('/table/', undefined);
     });
 
     it('clicking graph toggle navigates to /graph/', () => {
-        render(<GraphToolbar {...defaultProps} viewMode="table" />);
+        renderWithProviders(<GraphToolbar {...defaultProps} viewMode="table" />);
         fireEvent.click(screen.getByTestId('view-mode-graph'));
         expect(mockNavigate).toHaveBeenCalledWith('/graph/', undefined);
     });
 
     it('clicking the active mode does not navigate', () => {
-        render(<GraphToolbar {...defaultProps} viewMode="graph" />);
+        renderWithProviders(<GraphToolbar {...defaultProps} viewMode="graph" />);
         fireEvent.click(screen.getByTestId('view-mode-graph'));
         expect(mockNavigate).not.toHaveBeenCalled();
     });
 
     it('preserves filter params when toggling', () => {
         mockParams = new URLSearchParams('yearFrom=2022&minContractValue=100000');
-        render(<GraphToolbar {...defaultProps} viewMode="graph" />);
+        renderWithProviders(<GraphToolbar {...defaultProps} viewMode="graph" />);
         fireEvent.click(screen.getByTestId('view-mode-table'));
         expect(mockNavigate).toHaveBeenCalledWith('/table/', {yearFrom: '2022', minContractValue: '100000'});
     });
