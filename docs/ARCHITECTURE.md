@@ -238,22 +238,24 @@ interface ContractEntity extends TemporalEntity {
 }
 
 /**
- * Relationship represents a directed edge between two entities.
+ * GraphEdgeData represents a directed edge between two entities.
  * Not an entity itself — identified by (source, target, type, fromDate).
  *
- * Note: 'Contract' is reserved for future use. Contracts are currently painted as ContractEntity nodes.
+ * Note: 'Contract' type is reserved for future direct org→org edges. Contracts are currently painted
+ * as ContractEntity nodes connected via 'Signed' edges.
  *
  * @example:
  *  type: 'Director', label: 'Korporatyvinių reikalų direktorius', fromDate: rysioPradzia
  */
-interface Relationship {
-    type: 'Contract' | 'Employment' | 'Spouse' | 'Official' | 'Shareholder' | 'Director';
+interface GraphEdgeData {
+    id: string;
     source: string; // entity id (namespaced)
     target: string; // entity id (namespaced)
+    type: 'Contract' | 'Employment' | 'Spouse' | 'Official' | 'Shareholder' | 'Director' | 'Signed' | string;
     label?: string; // display text (role name, contract value, etc.)
-    fromDate?: string; // ISO date string
-    tillDate?: string; // ISO date string
-    data?: Record<string, unknown>; // extra metadata (verte, pareigos, etc.)
+    fromDate?: string | null; // ISO date string
+    tillDate?: string | null; // ISO date string
+    [key: string]: unknown; // extra metadata (totalValue, synthesised, etc.)
 }
 ```
 
@@ -697,8 +699,10 @@ MUI `Drawer` (`anchor="right"`, `variant="persistent"`, width 300px) that slides
   `"Node Details"`.
 - **Metadata:** table of all available `nodeData` fields — `type`, `expanded`, `employees`, `avgSalary`,
   `contractTotal`, `contractCount`, dates.
-- **Risk Profile:** placeholder section (heading `"Risk Profile"`) reserved for future risk scoring. Shows `"—"` for all
-  scores in v1.
+- **Relationships:** lists all graph edges connected to the selected node (where `source` or `target` matches the node
+  ID), grouped by relationship type (e.g. `Employment`, `Director`, `Contract`). Each entry shows the relationship
+  label, `fromDate`, and `tillDate`. Shows `"No relationships"` when no edges are present. `GraphView` derives this
+  list by filtering `graphElements.edges` and passes it as the `edges` prop.
 - **"View Full Profile"** `Button` — navigates to `#/entities/{entityId}` where the full 360° entity profile is
   rendered.
 
