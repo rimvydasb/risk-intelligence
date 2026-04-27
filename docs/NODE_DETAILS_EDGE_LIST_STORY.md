@@ -120,35 +120,35 @@ sequenceDiagram
 
 **Phase 1: Type cleanup — eliminate `Relationship` dead code**
 
-- [ ] Ensure project compiles and existing tests are passing (`npm test -- --no-coverage`)
-- [ ] In `src/types/graph.ts`: remove `export interface Relationship { … }`; promote its explicitly-typed fields
+- [x] Ensure project compiles and existing tests are passing (`npm test -- --no-coverage`)
+- [x] In `src/types/graph.ts`: remove `export interface Relationship { … }`; promote its explicitly-typed fields
   (`type`, `label`, `fromDate`, `tillDate`) as named (optional) properties on `GraphEdgeData` directly
-- [ ] Verify `npm run build` and `npm test -- --no-coverage` still pass after the type change
-- [ ] Update `ARCHITECTURE.md` — remove `Relationship` from the data structures section and note it was merged into
+- [x] Verify `npm run build` and `npm test -- --no-coverage` still pass after the type change
+- [x] Update `ARCHITECTURE.md` — remove `Relationship` from the data structures section and note it was merged into
   `GraphEdgeData`
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Mark all checkboxes as done in this document once verified
 
 **Phase 2: NodeSidebar — replace Risk Profile with Relationships list**
 
-- [ ] Remove the `loading` prop from `NodeSidebarProps` (was only used for Risk Profile spinner)
-- [ ] Add `edges: GraphEdge[]` prop to `NodeSidebarProps`
-- [ ] Replace the "Risk Profile" `Box` section with a "Relationships" section that:
+- [x] Remove the `loading` prop from `NodeSidebarProps` (was only used for Risk Profile spinner)
+- [x] Add `edges: GraphEdge[]` prop to `NodeSidebarProps`
+- [x] Replace the "Risk Profile" `Box` section with a "Relationships" section that:
     - Groups edges by `edge.data.type`
     - Renders one `Typography` heading per group (e.g. `Employment (3)`)
     - Renders each edge as label + fromDate–tillDate row
     - Shows `"No relationships"` when `edges` is empty
-- [ ] Update `GraphView` to derive `nodeEdges` from `graphElements.edges` and pass it to `<NodeSidebar>`
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Update `GraphView` to derive `nodeEdges` from `graphElements.edges` and pass it to `<NodeSidebar>`
+- [x] Mark all checkboxes as done in this document once verified
 
 **Phase 3: Tests, docs, and review**
 
-- [ ] Update `NodeSidebar.test.tsx` — replace "Risk Profile" test with new Relationships tests:
+- [x] Update `NodeSidebar.test.tsx` — replace "Risk Profile" test with new Relationships tests:
     - renders "Relationships" heading when edges provided
     - groups edges by type with correct counts
     - shows "No relationships" when edges array is empty
     - renders fromDate and tillDate for each edge
-- [ ] Update `ARCHITECTURE.md` — `NodeSidebar` section: remove Risk Profile, describe Relationships section
-- [ ] Run `npm run lint` and fix any issues
-- [ ] Run full test suite (`npm test -- --no-coverage`) and confirm all pass
-- [ ] Review the implementation to ensure it meets the requirements and follows best practices
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Update `ARCHITECTURE.md` — `NodeSidebar` section: remove Risk Profile, describe Relationships section
+- [x] Run `npm run lint` and fix any issues
+- [x] Run full test suite (`npm test -- --no-coverage`) and confirm all pass
+- [x] Review the implementation to ensure it meets the requirements and follows best practices
+- [x] Mark all checkboxes as done in this document once verified

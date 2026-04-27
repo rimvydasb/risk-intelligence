@@ -2,6 +2,13 @@ import type {SutartisRaw} from '@/lib/viespirkiai/types';
 import type {GraphElements, GraphNode, GraphEdge} from '@/types/graph';
 import type {ContractSummary, FilterParams} from './types';
 
+function formatContractValue(verte?: number | null): string {
+    if (verte == null) return 'Contract';
+    if (verte >= 1_000_000) return `€${(verte / 1_000_000).toFixed(1)}M`;
+    if (verte >= 1_000) return `€${(verte / 1_000).toFixed(0)}K`;
+    return `€${verte.toFixed(0)}`;
+}
+
 /** Returns the earliest and latest ISO date strings from among all known date fields. */
 function contractDateRange(raw: SutartisRaw): {fromDate: string | null; tillDate: string | null} {
     const candidates = [raw.sudarymoData, raw.paskelbimoData, raw.galiojimoData, raw.faktineIvykdimoData].filter(
@@ -63,11 +70,11 @@ export function parseSutartis(raw: SutartisRaw): GraphElements {
     if (buyerCode) {
         edges.push({
             data: {
-                id: `edge:org:${buyerCode}:${contractId}:Signed`,
+                id: `edge:org:${buyerCode}:${contractId}:Order`,
                 source: `org:${buyerCode}`,
                 target: contractId,
-                type: 'Signed',
-                label: 'Buyer',
+                type: 'Order',
+                label: formatContractValue(raw.verte),
                 value: raw.verte ?? null,
             },
         });
@@ -76,11 +83,11 @@ export function parseSutartis(raw: SutartisRaw): GraphElements {
     if (supplierCode) {
         edges.push({
             data: {
-                id: `edge:org:${supplierCode}:${contractId}:Signed`,
+                id: `edge:org:${supplierCode}:${contractId}:Delivery`,
                 source: `org:${supplierCode}`,
                 target: contractId,
-                type: 'Signed',
-                label: 'Supplier',
+                type: 'Delivery',
+                label: formatContractValue(raw.verte),
                 value: raw.verte ?? null,
             },
         });
@@ -144,22 +151,22 @@ export function parseSutartisSummary(
 
         edges.push({
             data: {
-                id: `edge:${buyerId}:${contractId}:Signed`,
+                id: `edge:${buyerId}:${contractId}:Order`,
                 source: buyerId,
                 target: contractId,
-                type: 'Signed',
-                label: 'Buyer',
+                type: 'Order',
+                label: formatContractValue(s.value),
                 value: s.value,
             },
         });
 
         edges.push({
             data: {
-                id: `edge:${supplierId}:${contractId}:Signed`,
+                id: `edge:${supplierId}:${contractId}:Delivery`,
                 source: supplierId,
                 target: contractId,
-                type: 'Signed',
-                label: 'Supplier',
+                type: 'Delivery',
+                label: formatContractValue(s.value),
                 value: s.value,
             },
         });

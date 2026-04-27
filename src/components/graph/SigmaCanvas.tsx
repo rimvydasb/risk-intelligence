@@ -34,7 +34,8 @@ const DEFAULT_NODE = {color: '#cbd5e1', size: 10};
 // ── Edge color by type ────────────────────────────────────────────────────
 const EDGE_TYPE_CONFIG: Record<string, {color: string; size: number}> = {
     Contract: {color: '#94a3b8', size: 1.5},
-    Signed: {color: '#94a3b8', size: 1.5},
+    Order: {color: '#94a3b8', size: 1.5},
+    Delivery: {color: '#94a3b8', size: 1.5},
     Employment: {color: '#94a3b8', size: 1.0},
     Official: {color: '#94a3b8', size: 1.0},
     Director: {color: '#e11d48', size: 1.2},
@@ -401,7 +402,7 @@ function adjustOpacity(hex: string, opacity: number): string {
 }
 
 // Show the contract value as the edge label (e.g. "€1.2M", "€45,000").
-// For non-contract edges (Employment, Director, etc.) fall back to the role label.
+// For non-contract edges (Employment, Director, etc.) fall back to edge.data.label (job title, etc.).
 function formatEdgeLabel(data: Record<string, unknown>): string | null {
     const value = data.value;
     if (typeof value === 'number' && value > 0) {
@@ -413,6 +414,6 @@ function formatEdgeLabel(data: Record<string, unknown>): string | null {
         }
         return `€${Math.round(value)}`;
     }
-    // Non-monetary edges: show role label (Buyer/Supplier/Director/etc.)
+    // Non-monetary edges: show label (job title, relationship name, etc.)
     return (data.label as string | null) ?? null;
 }

@@ -4,7 +4,7 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {NodeSidebar} from '../NodeSidebar';
-import type {GraphNodeData} from '@/types/graph';
+import type {GraphEdge, GraphNodeData} from '@/types/graph';
 
 const mockNodeData: GraphNodeData = {
     id: 'org:110053842',
@@ -16,6 +16,42 @@ const mockNodeData: GraphNodeData = {
     contractTotal: 432081948,
     contractCount: 79,
 };
+
+const mockEdges: GraphEdge[] = [
+    {
+        data: {
+            id: 'edge:person:abc:org:110053842:Employment:abc',
+            source: 'person:abc',
+            target: 'org:110053842',
+            type: 'Employment',
+            label: 'Direktorius',
+            fromDate: '2018-01-01',
+            tillDate: null,
+        },
+    },
+    {
+        data: {
+            id: 'edge:person:xyz:org:110053842:Employment:xyz',
+            source: 'person:xyz',
+            target: 'org:110053842',
+            type: 'Employment',
+            label: 'Buhalteris',
+            fromDate: '2020-03-15',
+            tillDate: '2023-12-31',
+        },
+    },
+    {
+        data: {
+            id: 'edge:person:abc:person:spouse-abc:Spouse:abc',
+            source: 'person:abc',
+            target: 'person:spouse-abc',
+            type: 'Spouse',
+            label: 'Spouse',
+            fromDate: '2010-06-01',
+            tillDate: null,
+        },
+    },
+];
 
 describe('NodeSidebar', () => {
     it('does not render when nodeId is null', () => {
@@ -49,7 +85,7 @@ describe('NodeSidebar', () => {
         expect(screen.getByText('AB "Lietuvos geležinkeliai"')).toBeInTheDocument();
     });
 
-    it('renders Risk Profile section', () => {
+    it('renders "Relationships" heading', () => {
         render(
             <NodeSidebar
                 nodeId="org:110053842"
@@ -58,7 +94,75 @@ describe('NodeSidebar', () => {
                 onViewFullProfile={jest.fn()}
             />,
         );
-        expect(screen.getByText('Risk Profile')).toBeInTheDocument();
+        expect(screen.getByText('Relationships')).toBeInTheDocument();
+    });
+
+    it('shows "No relationships" when no edges provided', () => {
+        render(
+            <NodeSidebar
+                nodeId="org:110053842"
+                nodeData={mockNodeData}
+                edges={[]}
+                onClose={jest.fn()}
+                onViewFullProfile={jest.fn()}
+            />,
+        );
+        expect(screen.getByText('No relationships')).toBeInTheDocument();
+    });
+
+    it('groups edges by type with correct counts', () => {
+        render(
+            <NodeSidebar
+                nodeId="org:110053842"
+                nodeData={mockNodeData}
+                edges={mockEdges}
+                onClose={jest.fn()}
+                onViewFullProfile={jest.fn()}
+            />,
+        );
+        expect(screen.getByText('Employment (2)')).toBeInTheDocument();
+        expect(screen.getByText('Spouse (1)')).toBeInTheDocument();
+    });
+
+    it('renders edge labels', () => {
+        render(
+            <NodeSidebar
+                nodeId="org:110053842"
+                nodeData={mockNodeData}
+                edges={mockEdges}
+                onClose={jest.fn()}
+                onViewFullProfile={jest.fn()}
+            />,
+        );
+        expect(screen.getByText('Direktorius')).toBeInTheDocument();
+        expect(screen.getByText('Buhalteris')).toBeInTheDocument();
+    });
+
+    it('renders fromDate and tillDate for edges', () => {
+        render(
+            <NodeSidebar
+                nodeId="org:110053842"
+                nodeData={mockNodeData}
+                edges={mockEdges}
+                onClose={jest.fn()}
+                onViewFullProfile={jest.fn()}
+            />,
+        );
+        expect(screen.getByText(/2020-03-15/)).toBeInTheDocument();
+        expect(screen.getByText(/2023-12-31/)).toBeInTheDocument();
+    });
+
+    it('shows "present" when tillDate is null', () => {
+        render(
+            <NodeSidebar
+                nodeId="org:110053842"
+                nodeData={mockNodeData}
+                edges={[mockEdges[0]]}
+                onClose={jest.fn()}
+                onViewFullProfile={jest.fn()}
+            />,
+        );
+        expect(screen.getAllByText(/present/).length).toBeGreaterThan(0);
     });
 
     it('calls onClose when close button clicked', () => {

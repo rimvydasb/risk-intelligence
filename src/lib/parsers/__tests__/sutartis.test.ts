@@ -34,11 +34,12 @@ describe('parseSutartis', () => {
         expect(orgs.length).toBe(2);
     });
 
-    it('creates Signed edges from buyer and supplier to contract', () => {
+    it('creates Order and Delivery edges from buyer and supplier to contract', () => {
         const {edges} = parseSutartis(raw);
         expect(edges.length).toBe(2);
+        expect(edges.find((e) => e.data.type === 'Order')).toBeDefined();
+        expect(edges.find((e) => e.data.type === 'Delivery')).toBeDefined();
         for (const e of edges) {
-            expect(e.data.type).toBe('Signed');
             expect(e.data.target).toMatch(/^contract:/);
         }
     });
@@ -49,7 +50,7 @@ describe('parseSutartis', () => {
         expect(contract!.data.value).toBe(1200);
     });
 
-    it('propagates contract value onto both Signed edges', () => {
+    it('propagates contract value onto both Order/Delivery edges', () => {
         const {edges} = parseSutartis(raw);
         for (const e of edges) {
             expect(e.data.value).toBe(1200);
@@ -61,7 +62,7 @@ describe('parseSutartisSummary', () => {
     const anchorId = 'org:111111111';
     const partnerId = 'org:222222222';
 
-    it('creates Contract node and two Signed edges per summary', () => {
+    it('creates Contract node and two Order/Delivery edges per summary', () => {
         const {nodes, edges} = parseSutartisSummary([makeSummary()], anchorId, partnerId, true);
         const contract = nodes.find((n) => n.data.type === 'Contract');
         expect(contract).toBeDefined();
@@ -69,14 +70,14 @@ describe('parseSutartisSummary', () => {
         expect(contract!.data.tillDate).toBe('2024-12-31');
         expect(contract!.data.value).toBe(10000);
         expect(edges).toHaveLength(2);
-        expect(edges.find((e) => e.data.label === 'Buyer')!.data.source).toBe(anchorId);
-        expect(edges.find((e) => e.data.label === 'Supplier')!.data.source).toBe(partnerId);
+        expect(edges.find((e) => e.data.type === 'Order')!.data.source).toBe(anchorId);
+        expect(edges.find((e) => e.data.type === 'Delivery')!.data.source).toBe(partnerId);
     });
 
     it('swaps buyer/supplier when anchor is supplier (isAnchorBuyer=false)', () => {
         const {edges} = parseSutartisSummary([makeSummary()], anchorId, partnerId, false);
-        expect(edges.find((e) => e.data.label === 'Buyer')!.data.source).toBe(partnerId);
-        expect(edges.find((e) => e.data.label === 'Supplier')!.data.source).toBe(anchorId);
+        expect(edges.find((e) => e.data.type === 'Order')!.data.source).toBe(partnerId);
+        expect(edges.find((e) => e.data.type === 'Delivery')!.data.source).toBe(anchorId);
     });
 
     it('excludes contracts whose tillDate is before yearFrom', () => {

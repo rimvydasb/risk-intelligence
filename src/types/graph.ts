@@ -31,17 +31,6 @@ export interface ContractEntity extends TemporalEntity {
     value: number | null; // contract value in EUR
 }
 
-export interface Relationship {
-    // 'Contract' is reserved for future use when contracts are painted as edges instead of nodes.
-    type: 'Contract' | 'Employment' | 'Spouse' | 'Official' | 'Shareholder' | 'Director';
-    source: string;
-    target: string;
-    label?: string;
-    fromDate?: string;
-    tillDate?: string;
-    data?: Record<string, unknown>;
-}
-
 export interface GraphNodeData {
     id: string;
     label: string;
@@ -55,6 +44,8 @@ export interface GraphEdgeData {
     target: string;
     type: string;
     label?: string;
+    fromDate?: string | null;
+    tillDate?: string | null;
     [key: string]: unknown;
 }
 

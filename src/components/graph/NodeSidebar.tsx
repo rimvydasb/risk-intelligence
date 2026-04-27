@@ -4,7 +4,6 @@ import React from 'react';
 import {
     Box,
     Chip,
-    CircularProgress,
     Divider,
     Drawer,
     IconButton,
@@ -16,7 +15,7 @@ import {
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import type {GraphNodeData} from '@/types/graph';
+import type {GraphEdge, GraphNodeData} from '@/types/graph';
 
 const SIDEBAR_WIDTH = 320;
 
@@ -48,15 +47,20 @@ function formatValue(key: string, value: unknown): string {
     return String(value);
 }
 
+function formatDate(date: string | null | undefined): string {
+    if (!date) return '—';
+    return date;
+}
+
 export interface NodeSidebarProps {
     nodeId: string | null;
     nodeData: GraphNodeData | null;
-    loading?: boolean;
+    edges?: GraphEdge[];
     onClose: () => void;
     onViewFullProfile: (entityId: string) => void;
 }
 
-export function NodeSidebar({nodeId, nodeData, loading, onClose, onViewFullProfile}: NodeSidebarProps) {
+export function NodeSidebar({nodeId, nodeData, edges = [], onClose, onViewFullProfile}: NodeSidebarProps) {
     const open = !!nodeId;
     const typeColor = nodeData ? (TYPE_COLORS[nodeData.type] ?? 'default') : 'default';
     const metaKeys = nodeData
@@ -64,6 +68,14 @@ export function NodeSidebar({nodeId, nodeData, loading, onClose, onViewFullProfi
               (k) => nodeData[k] !== undefined && k !== 'id' && k !== 'label' && k !== 'type',
           )
         : [];
+
+    // Group edges by type
+    const edgesByType = edges.reduce<Record<string, GraphEdge[]>>((acc, edge) => {
+        const type = edge.data.type ?? 'Unknown';
+        (acc[type] ??= []).push(edge);
+        return acc;
+    }, {});
+    const edgeTypes = Object.keys(edgesByType).sort();
 
     return (
         <Drawer
@@ -82,7 +94,7 @@ export function NodeSidebar({nodeId, nodeData, loading, onClose, onViewFullProfi
             }}
         >
             {open && (
-                <Box sx={{p: 2, height: '100%', display: 'flex', flexDirection: 'column', gap: 1.5}}>
+                <Box sx={{p: 2, height: '100%', display: 'flex', flexDirection: 'column', gap: 1.5, overflow: 'auto'}}>
                     {/* Header */}
                     <Box sx={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
                         <Typography variant="subtitle2" color="text.secondary">
@@ -129,17 +141,39 @@ export function NodeSidebar({nodeId, nodeData, loading, onClose, onViewFullProfi
 
                             <Divider />
 
-                            {/* Risk Profile */}
+                            {/* Relationships */}
                             <Box>
                                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                    Risk Profile
+                                    Relationships
                                 </Typography>
-                                {loading ? (
-                                    <CircularProgress size={18} />
-                                ) : (
+                                {edgeTypes.length === 0 ? (
                                     <Typography variant="body2" color="text.disabled">
-                                        Risk scoring is not yet available in v1.
+                                        No relationships
                                     </Typography>
+                                ) : (
+                                    edgeTypes.map((type) => (
+                                        <Box key={type} sx={{mb: 1.5}}>
+                                            <Typography variant="caption" sx={{fontWeight: 600, color: 'text.secondary'}}>
+                                                {type} ({edgesByType[type].length})
+                                            </Typography>
+                                            <Table size="small" sx={{'& td': {py: 0.25, px: 0}}}>
+                                                <TableBody>
+                                                    {edgesByType[type].map((edge) => (
+                                                        <TableRow key={edge.data.id}>
+                                                            <TableCell sx={{border: 'none', fontWeight: 500, pr: 1}}>
+                                                                {edge.data.label || type}
+                                                            </TableCell>
+                                                            <TableCell sx={{border: 'none', color: 'text.secondary', whiteSpace: 'nowrap'}}>
+                                                                {formatDate(edge.data.fromDate)}
+                                                                {' – '}
+                                                                {edge.data.tillDate ? formatDate(edge.data.tillDate) : 'present'}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </Box>
+                                    ))
                                 )}
                             </Box>
 

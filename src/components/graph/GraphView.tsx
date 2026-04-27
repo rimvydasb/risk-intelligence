@@ -9,7 +9,7 @@ import {NodeSidebar} from './NodeSidebar';
 import {useExpandOrg} from '@/components/services/useExpandOrg';
 import {useHealthcheck} from '@/components/services/useHealthcheck';
 import {useHashRouter} from '@/hooks/useHashRouter';
-import type {GraphElements, GraphNodeData} from '@/types/graph';
+import type {GraphEdge, GraphElements, GraphNodeData} from '@/types/graph';
 import type {FilterState} from './types';
 
 const SigmaCanvas = dynamic(() => import('./SigmaCanvas'), {ssr: false});
@@ -36,6 +36,12 @@ export default function GraphView({viewMode = 'graph'}: GraphViewProps) {
     const [graphElements, setGraphElements] = useState<GraphElements>(EMPTY_ELEMENTS);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedNodeData, setSelectedNodeData] = useState<GraphNodeData | null>(null);
+
+    const nodeEdges: GraphEdge[] = selectedNodeId
+        ? graphElements.edges.filter(
+              (e) => e.data.source === selectedNodeId || e.data.target === selectedNodeId,
+          )
+        : [];
 const now = new Date();
     const defaultYearFrom = `${now.getFullYear()}-01-01`;
     const defaultYearTo = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -199,6 +205,7 @@ const now = new Date();
                     <NodeSidebar
                         nodeId={selectedNodeId}
                         nodeData={selectedNodeData}
+                        edges={nodeEdges}
                         onClose={handleBackgroundClick}
                         onViewFullProfile={handleViewFullProfile}
                     />

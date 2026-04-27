@@ -217,7 +217,7 @@ interface TenderEntity extends TemporalEntity {
 
 /**
  * ContractEntity represents a public procurement contract as a graph NODE (hub-and-spoke model).
- * One contract node sits between a buyer org and a supplier org, connected by Signed edges.
+ * One contract node sits between a buyer org and a supplier org, connected by Order/Delivery edges.
  * This lets one contract cleanly reference exactly one buyer and one supplier.
  *
  * id       - "contract:" + sutartiesUnikalusID
@@ -241,18 +241,21 @@ interface ContractEntity extends TemporalEntity {
  * GraphEdgeData represents a directed edge between two entities.
  * Not an entity itself — identified by (source, target, type, fromDate).
  *
- * Note: 'Contract' type is reserved for future direct org→org edges. Contracts are currently painted
- * as ContractEntity nodes connected via 'Signed' edges.
+ * Note: 'Contract' type is used for aggregated direct org→org edges (top buyers/suppliers summary).
+ * Individual contracts are painted as ContractEntity nodes connected via 'Order' / 'Delivery' edges.
+ *   - 'Order'    : buyer org → ContractEntity  (the org placed an order)
+ *   - 'Delivery' : supplier org → ContractEntity  (the org delivered under the contract)
  *
  * @example:
  *  type: 'Director', label: 'Korporatyvinių reikalų direktorius', fromDate: rysioPradzia
+ *  type: 'Order',    label: '€1.2M', value: 1200000
  */
 interface GraphEdgeData {
     id: string;
     source: string; // entity id (namespaced)
     target: string; // entity id (namespaced)
-    type: 'Contract' | 'Employment' | 'Spouse' | 'Official' | 'Shareholder' | 'Director' | 'Signed' | string;
-    label?: string; // display text (role name, contract value, etc.)
+    type: 'Contract' | 'Employment' | 'Spouse' | 'Official' | 'Shareholder' | 'Director' | 'Order' | 'Delivery' | string;
+    label?: string; // display text (formatted contract value, job title, etc.)
     fromDate?: string | null; // ISO date string
     tillDate?: string | null; // ISO date string
     [key: string]: unknown; // extra metadata (totalValue, synthesised, etc.)
@@ -435,7 +438,7 @@ flowchart TD
     I -->|"cache miss"| J["fetchSutartisList()\nviespirkiai/client.ts\n→ HTML scraping (all pages)"]
     J --> K["upsertSutartisContracts()\n→ StagingSutartis rows"]
     K --> L
-    I -->|"cached"| L["parseSutartisSummary()\n→ ContractEntity nodes + Signed edges"]
+    I -->|"cached"| L["parseSutartisSummary()\n→ ContractEntity nodes + Order/Delivery edges"]
     L -->|"next pair"| H
 
     H -->|"GraphElements"| M["GraphView.mergeElements()\n→ Graphology graph\nSigmaCanvas re-renders"]
@@ -509,7 +512,7 @@ sequenceDiagram
         else Cached (TTL 7 days)
             StgS -->> EXP: ContractSummary[]
         end
-        Note over EXP: parseSutartisSummary() →<br/>ContractEntity nodes + Signed edges
+        Note over EXP: parseSutartisSummary() →<br/>ContractEntity nodes + Order/Delivery edges
     end
 
     EXP -->> Route: ExpandResult { elements, meta }
@@ -594,17 +597,18 @@ at this container. `bin/run-api-tests.sh` manages its lifecycle automatically.
 
 **Edges:**
 
-| Entity       | Relationship Type | Edge Label       | Edge Width  | Edge Color (TBC)    | Edge Style |
-|--------------|-------------------|------------------|-------------|---------------------|------------|
-| Relationship | Employment        | role             | fixed width | risk score gradient | dashed     |
-| Relationship | Director          | role             | fixed width | risk score gradient | dashed     |
-| Relationship | Official          | role             | fixed width | risk score gradient | dashed     |
-| Relationship | Shareholder       | role             | fixed width | risk score gradient | dashed     |
-| Relationship | Spouse            | —                | fixed width | risk score gradient | dotted     |
-| Relationship | Signed            | Buyer / Supplier | fixed width | —                   | solid      |
+| Entity       | Relationship Type | Edge Label            | Edge Width  | Edge Color (TBC)    | Edge Style |
+|--------------|-------------------|-----------------------|-------------|---------------------|------------|
+| Relationship | Employment        | job title             | fixed width | risk score gradient | dashed     |
+| Relationship | Director          | job title             | fixed width | risk score gradient | dashed     |
+| Relationship | Official          | job title             | fixed width | risk score gradient | dashed     |
+| Relationship | Shareholder       | relationship name     | fixed width | risk score gradient | dashed     |
+| Relationship | Spouse            | —                     | fixed width | risk score gradient | dotted     |
+| Relationship | Order             | formatted value (€XM) | fixed width | —                   | solid      |
+| Relationship | Delivery          | formatted value (€XM) | fixed width | —                   | solid      |
 
-> **Note:** `Relationship.type = 'Contract'` (direct org→org edge) is reserved for future use.
-> Currently contracts are painted as `ContractEntity` nodes connected to both buyer and supplier via `Signed` edges.
+> **Note:** `Order` connects a buyer org → ContractEntity; `Delivery` connects a supplier org → ContractEntity.
+> `Relationship.type = 'Contract'` (aggregated direct org→org edge) is used in the asmuo top-buyers/suppliers summary and replaced by individual `Order`/`Delivery` edges after `enrichContractEdges()`.
 
 **Graph Data Model:**
 
@@ -627,8 +631,8 @@ On initial load a **ForceAtlas2** pass (via `graphology-layout-forceatlas2`) pos
 | Official    | Person → Organization   | `pinreg.darbovietes[]` or `pinreg.rysiaiSuJa[]` | dashed       |
 | Shareholder | Person → Organization   | `pinreg.rysiaiSuJa[]`                           | dashed       |
 | Spouse      | Person → Person         | `pinreg.sutuoktinioDarbovietes[]`               | dotted       |
-| Signed      | Organization → Contract | HTML scraping via `fetchSutartisList`           | solid        |
-| Signed      | Contract → Organization | HTML scraping via `fetchSutartisList`           | solid        |
+| Order       | Organization → Contract | HTML scraping via `fetchSutartisList`           | solid        |
+| Delivery    | Organization → Contract | HTML scraping via `fetchSutartisList`           | solid        |
 
 ### Filter Component (`GraphToolbar`)
 
