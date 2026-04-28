@@ -151,9 +151,9 @@ export function NodeSidebar({nodeId, nodeData, edges = [], onClose, onViewFullPr
                                         No relationships
                                     </Typography>
                                 ) : (
-                                    edgeTypes.map((type) => (
-                                        <Box key={type} sx={{mb: 1.5}}>
-                                            <Typography variant="caption" sx={{fontWeight: 600, color: 'text.secondary'}}>
+                                     edgeTypes.map((type) => (
+                                        <Box key={type} sx={{mb: 1.5}} data-testid={`relationship-group-${type}`}>
+                                            <Typography variant="caption" sx={{fontWeight: 600, color: 'text.secondary'}} data-testid="relationship-type">
                                                 {type} ({edgesByType[type].length})
                                             </Typography>
                                             <Table size="small" sx={{'& td': {py: 0.25, px: 0}}}>
@@ -164,9 +164,9 @@ export function NodeSidebar({nodeId, nodeData, edges = [], onClose, onViewFullPr
                                                                 {edge.data.label || type}
                                                             </TableCell>
                                                             <TableCell sx={{border: 'none', color: 'text.secondary', whiteSpace: 'nowrap'}}>
-                                                                {formatDate(edge.data.fromDate)}
+                                                                <span data-testid="edge-from-date">{formatDate(edge.data.fromDate)}</span>
                                                                 {' – '}
-                                                                {edge.data.tillDate ? formatDate(edge.data.tillDate) : 'present'}
+                                                                <span data-testid="edge-till-date">{edge.data.tillDate ? formatDate(edge.data.tillDate) : 'present'}</span>
                                                             </TableCell>
                                                         </TableRow>
                                                     ))}

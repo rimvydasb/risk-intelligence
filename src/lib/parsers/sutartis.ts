@@ -76,6 +76,8 @@ export function parseSutartis(raw: SutartisRaw): GraphElements {
                 type: 'Order',
                 label: formatContractValue(raw.verte),
                 value: raw.verte ?? null,
+                fromDate,
+                tillDate,
             },
         });
     }
@@ -89,6 +91,8 @@ export function parseSutartis(raw: SutartisRaw): GraphElements {
                 type: 'Delivery',
                 label: formatContractValue(raw.verte),
                 value: raw.verte ?? null,
+                fromDate,
+                tillDate,
             },
         });
     }
@@ -157,6 +161,8 @@ export function parseSutartisSummary(
                 type: 'Order',
                 label: formatContractValue(s.value),
                 value: s.value,
+                fromDate: s.fromDate,
+                tillDate: s.tillDate,
             },
         });
 
@@ -168,6 +174,8 @@ export function parseSutartisSummary(
                 type: 'Delivery',
                 label: formatContractValue(s.value),
                 value: s.value,
+                fromDate: s.fromDate,
+                tillDate: s.tillDate,
             },
         });
     }
