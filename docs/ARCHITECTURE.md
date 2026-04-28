@@ -92,26 +92,31 @@ graph TB
         subgraph RQ["Data Layer — React Query"]
             UEO["useExpandOrg\nGET /expand/{jarKodas}"]
             UED["useEntityDetail\nGET /entity/{entityId}"]
+            UPR["usePinregExpand\nPOST /person/pinreg"]
         end
     end
 
     subgraph NextJS["⚙️ Next.js Server — API Routes"]
         RE["GET /api/v1/graph/expand/[jarKodas]"]
         RN["GET /api/v1/entity/[entityId]"]
+        RP["POST /api/v1/person/pinreg"]
     end
 
     subgraph Lib["📦 src/lib — Business Logic"]
         EXP["graph/expand.ts\nexpandOrg()"]
+        PEX["graph/personExpand.ts\nexpandPerson()"]
         ENT["graph/entity.ts\ngetEntityDetail()"]
         CLI["viespirkiai/client.ts\nfetchAsmuo · fetchSutartisList\nfetchSutartis · fetchPirkimas"]
-        PAR["parsers/\nasmuo · sutartis · pirkimas\n(raw JSON → GraphElements)"]
-        STG["staging/\nasmuo · sutartis · pirkimas\n(cache read / write)"]
+        MCP["viespirkiai/mcpClient.ts\nfetchPinreg(vardas)"]
+        PAR["parsers/\nasmuo · sutartis · pirkimas · pinreg\n(raw JSON → GraphElements)"]
+        STG["staging/\nasmuo · sutartis · pirkimas · pinreg\n(cache read / write)"]
     end
 
     subgraph PG["🗄️ PostgreSQL"]
         SA[("StagingAsmuo\njarKodas · data · fetchedAt")]
         SS[("StagingSutartis\nsutartiesUnikalusID · name\nfromDate · tillDate · value\ndata? (lazy) · fetchedAt")]
         SP[("StagingPirkimas\npirkimoId · data · fetchedAt")]
+        SPin[("StagingPinreg\nvardas · data · fetchedAt")]
     end
 
     subgraph Ext["🌍 viespirkiai.org"]
@@ -119,6 +124,7 @@ graph TB
         EH["/?perkančiosios=X&tiekejoKodas=Y\n(HTML — contract list scraping)"]
         ES["/sutartis/{id}.json"]
         EP["/viesiejiPirkimai/{id}.json"]
+        EMCP["/mcp\n(SSE · get_pinreg_asmuo)"]
     end
 
     GV --> GT
@@ -127,22 +133,30 @@ graph TB
     GV --> GDT
     GV --> UEO
     NS --> UED
+    NS --> UPR
     UEO -->|HTTP GET| RE
     UED -->|HTTP GET| RN
+    UPR -->|HTTP POST| RP
     RE --> EXP
     RN --> ENT
+    RP --> PEX
     EXP --> STG
     EXP --> CLI
     EXP --> PAR
     ENT --> STG
     ENT --> CLI
+    PEX --> STG
+    PEX --> MCP
+    PEX --> PAR
     STG <-->|Prisma| SA
     STG <-->|Prisma| SS
     STG <-->|Prisma| SP
+    STG <-->|Prisma| SPin
     CLI -->|JSON| EA
     CLI -->|JSON| ES
     CLI -->|JSON| EP
     CLI -->|HTML scrape| EH
+    MCP -->|SSE POST| EMCP
 ```
 
 **Key flow:** On first load (or any node click) the browser calls `/expand/{jarKodas}`. `expandOrg()` checks
@@ -280,6 +294,13 @@ interface GraphEdgeData {
 - for scraping GUI: https://viespirkiai.org/viesiejiPirkimai?search=paslaugos&sort=paskelbimoData (for example "
   paslaugos" is a keyword)
 
+**Pinreg (Interest declarations — MCP)**
+
+- `POST https://viespirkiai.org/mcp` — MCP `tools/call` with `name: "get_pinreg_asmuo"`, `arguments.vardas` = full name
+- SSE stream response; payload in `result.content[0].text` (JSON)
+- Cache key: `arguments.vardas` (uppercased full name)
+- **@example:** [mcp_pinreg.json](examples/pinreg/mcp_pinreg.json)
+
 ## Data-to-Entity Mapping
 
 This section documents how graph entities and relationships are derived from viespirkiai.org API responses.
@@ -304,6 +325,12 @@ flowchart LR
 
     subgraph pirkimas["📄 viesiejiPirkimai / pirkimoId .json"]
         pRoot["root fields"]
+    end
+
+    subgraph pinreg["📄 MCP get_pinreg_asmuo\n(by full name)"]
+        prD["darbovietes[]"]
+        prR["rysiaiSuJa[]"]
+        prS["sutuoktinioDarbovietes[]"]
     end
 
     subgraph nodes["Nodes"]
@@ -340,6 +367,18 @@ flowchart LR
     sRoot -->|" pirkimoNumeris "| Ten
     pRoot -->|" pirkimoId, pavadinimas "| Ten
     pRoot -->|" jarKodas vykdytojas "| Org
+    prD -->|" jarKodas → stub org "| Org
+    prD -->|" pareiguTipas → Employment/Director/Official "| Employment
+    prD -->|" pareiguTipas → Employment/Director/Official "| Director
+    prD -->|" pareiguTipas → Employment/Director/Official "| Official
+    prR -->|" jarKodas → stub org "| Org
+    prR -->|" rysys → Director/Shareholder/Official "| Director
+    prR -->|" rysys → Director/Shareholder/Official "| Shareholder
+    prR -->|" rysys → Director/Shareholder/Official "| Official
+    prS -->|" spouse name → PersonEntity "| Per
+    prS -->|" declarant ↔ spouse "| Spouse
+    prS -->|" spouse jarKodas → stub org "| Org
+    prS -->|" spouse works at org "| Employment
 ```
 
 ### asmuo/{jarKodas}.json → Entities
@@ -532,6 +571,7 @@ during graph expansion — only on an explicit contract-node click via `/entity/
 | `StagingAsmuo`    | 24 hours | Employee/governance data changes infrequently            |
 | `StagingSutartis` | 7 days   | Contract data is essentially immutable after publication |
 | `StagingPirkimas` | 24 hours | Active tenders may update (new bids, status changes)     |
+| `StagingPinreg`   | 24 hours | Interest declarations updated infrequently               |
 
 ### Staging Storage Schema
 
@@ -563,6 +603,14 @@ model StagingSutartis {
 model StagingPirkimas {
   pirkimoId String   @id
   data      Json
+  fetchedAt DateTime @default(now())
+}
+
+// One row per person (by full name). Populated by MCP get_pinreg_asmuo call on first person node click.
+// Cache key is the uppercased full name (arguments.vardas) used in the MCP request.
+model StagingPinreg {
+  vardas    String   @id           // uppercased full name e.g. "ROBERTAS VYŠNIAUSKAS"
+  data      Json                   // raw PinregRaw JSON (full MCP response payload)
   fetchedAt DateTime @default(now())
 }
 
@@ -749,6 +797,9 @@ risk-intelligence/
 │   │   │       │   └── expand/
 │   │   │       │       └── [jarKodas]/
 │   │   │       │           └── route.ts     # GET — delegates to lib/graph/expand
+│   │   │       ├── person/
+│   │   │       │   └── pinreg/
+│   │   │       │       └── route.ts         # POST — delegates to lib/graph/personExpand
 │   │   │       └── entity/
 │   │   │           └── [entityId]/
 │   │   │               └── route.ts         # GET — delegates to lib/graph/entity
@@ -776,6 +827,7 @@ risk-intelligence/
 │   │   └── services/             # React Query hooks — browser → backend REST API
 │   │       ├── useExpandOrg.ts   # useQuery for GET /api/v1/graph/expand/{jarKodas}
 │   │       ├── useEntityDetail.ts# useQuery for GET /api/v1/entity/{entityId}
+│   │       ├── usePinregExpand.ts# useQuery for POST /api/v1/person/pinreg (person node click)
 │   │       └── __tests__/
 │   ├── hooks/
 │   │   ├── useHashRouter.ts      # SSR-safe hash routing hook (read/write)
@@ -787,27 +839,34 @@ risk-intelligence/
 │   │   ├── db.ts                 # Prisma singleton (reused across hot-reloads in dev)
 │   │   │
 │   │   ├── viespirkiai/          # Raw HTTP layer — viespirkiai.org API
-│   │   │   ├── types.ts          # AsmuoRaw, SutartisRaw, PirkamasRaw, ViespirkiaiError
+│   │   │   ├── types.ts          # AsmuoRaw, SutartisRaw, PirkamasRaw, PinregRaw, ViespirkiaiError
 │   │   │   ├── client.ts         # fetchAsmuo / fetchSutartis / fetchPirkimas / fetchSutartisList
+│   │   │   ├── mcpClient.ts      # fetchPinreg(vardas) — MCP POST + SSE stream parsing
 │   │   │   └── __tests__/
 │   │   │       └── client.test.ts
 │   │   ├── staging/              # PostgreSQL cache — stores raw API responses with TTL
 │   │   │   ├── types.ts          # CacheEntry<T>, isFresh(entry, ttlHours): bool
+│   │   │   ├── pinreg.ts         # getPinreg / upsertPinreg (TTL 24h)
 │   │   │   ├── ...
 │   │   │   └── __tests__/
 │   │   │       ├── asmuo.test.ts
+│   │   │       ├── pinreg.test.ts
 │   │   │       ├── ...
 │   │   ├── parsers/              # Pure functions: raw JSON → GraphElements (no I/O)
 │   │   │   ├── types.ts          # GraphNode, GraphEdge, GraphElements, FilterParams
+│   │   │   ├── pinreg.ts         # parsePinreg(raw, personId): GraphElements
 │   │   │   ├── ...
 │   │   │   └── __tests__/
 │   │   │       ├── asmuo.test.ts
+│   │   │       ├── pinreg.test.ts
 │   │   │       ├── ...
 │   │   └── graph/                # Orchestration — ties staging + viespirkiai + parsers
 │   │       ├── types.ts          # ExpandResult, EntityDetailResult, GraphFilters
+│   │       ├── personExpand.ts   # expandPerson(vardas, personId): GraphElements
 │   │       ├── ...
 │   │       └── __tests__/
 │   │           ├── expand.test.ts
+│   │           ├── personExpand.test.ts
 │   │
 │   └── types/
 │       └── graph.ts              # Shared interfaces: TemporalEntity, OrganizationEntity,
