@@ -58,3 +58,36 @@ nepotism, conflict-of-interest, and bid-rigging.
 - [`docs/BACKEND_REST_API_STORY.md`](../docs/BACKEND_REST_API_STORY.md) — backend story (✅ complete)
 - [`docs/GRAPH_VISUALIZATION_STORY.md`](../docs/GRAPH_VISUALIZATION_STORY.md) — frontend story (✅ complete)
 - [`docs/USE_CASES.md`](../docs/USE_CASES.md) — product use cases
+
+## Efficiency Rules (lessons learned)
+
+### Validate external API response shapes before writing types
+When integrating a new external API, fetch a **real live response** and inspect its shape before writing TypeScript types
+or parsers. Example trap: the `viespirkiai.org/mcp` pinreg endpoint returns an array of raw declaration objects, not the
+aggregated object shape assumed from the example file. Writing types from the example file and only discovering the
+mismatch at runtime cost multiple back-and-forth iterations.
+- **Rule**: `curl` the real endpoint first, pretty-print with `python3 -m json.tool`, verify top-level type (array vs
+  object) and field names before writing any types or parsers.
+
+### Query the DB directly when debugging parser/cache bugs
+When elements are missing from the UI, skip the browser and go straight to the DB:
+```sql
+docker compose exec postgres psql -U postgres -d risk_intelligence \
+  -c 'SELECT jsonb_typeof(data) FROM "StagingPinreg" WHERE vardas = ''NAME'';'
+```
+If `jsonb_typeof` returns `array` but your parser expects `object`, the cache format is wrong. Check this in one query
+before doing UI debugging.
+
+### Use `docker compose exec postgres psql` for DB inspection
+`psql` is not in PATH locally; always use `docker compose exec postgres psql -U postgres -d risk_intelligence`.
+Prisma Client cannot be run via `node -e` (requires constructor args); use `npx prisma studio` or raw SQL instead.
+
+### Start dev server once per session in a background node process
+Running `npm run dev &` in a bash session and then trying to `curl` in the same session fails because the background
+process is killed when the session exits. Instead, wrap the server + test in a single `node -e` script that spawns the
+server as a child process, polls until ready, then runs the test — all in one bash call.
+
+### Always wire toolbar search (`onNodeSelect`) alongside canvas clicks
+Any state set inside `handleNodeClick` must also be set in the `onNodeSelect` toolbar callback in `GraphView.tsx`.
+These are two independent entry points for node selection; forgetting one means toolbar-searched nodes behave
+differently from canvas-clicked nodes.

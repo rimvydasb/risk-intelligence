@@ -4,6 +4,7 @@ import React from 'react';
 import {
     Box,
     Chip,
+    CircularProgress,
     Divider,
     Drawer,
     IconButton,
@@ -58,9 +59,10 @@ export interface NodeSidebarProps {
     edges?: GraphEdge[];
     onClose: () => void;
     onViewFullProfile: (entityId: string) => void;
+    pinregLoading?: boolean;
 }
 
-export function NodeSidebar({nodeId, nodeData, edges = [], onClose, onViewFullProfile}: NodeSidebarProps) {
+export function NodeSidebar({nodeId, nodeData, edges = [], onClose, onViewFullProfile, pinregLoading = false}: NodeSidebarProps) {
     const open = !!nodeId;
     const typeColor = nodeData ? (TYPE_COLORS[nodeData.type] ?? 'default') : 'default';
     const metaKeys = nodeData
@@ -118,6 +120,15 @@ export function NodeSidebar({nodeId, nodeData, edges = [], onClose, onViewFullPr
                                 </Typography>
                                 <Chip label={nodeData.type} color={typeColor} size="small" sx={{fontWeight: 600}} />
                             </Box>
+
+                            {pinregLoading && nodeData.type === 'Person' && (
+                                <Box sx={{display: 'flex', alignItems: 'center', gap: 1}}>
+                                    <CircularProgress size={14} />
+                                    <Typography variant="caption" color="text.secondary">
+                                        Loading interest declarations…
+                                    </Typography>
+                                </Box>
+                            )}
 
                             <Divider />
 

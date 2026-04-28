@@ -32,3 +32,11 @@ model StagingPirkimas {
   data      Json
   fetchedAt DateTime @default(now())
 }
+
+// One row per person (by full name). Populated by MCP get_pinreg_asmuo call on first person node click.
+// Cache key is the uppercased full name (arguments.vardas) used in the MCP request.
+model StagingPinreg {
+  vardas    String   @id
+  data      Json
+  fetchedAt DateTime @default(now())
+}

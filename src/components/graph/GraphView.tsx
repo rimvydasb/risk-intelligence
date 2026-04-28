@@ -7,6 +7,7 @@ import {GraphToolbar} from './toolbar/GraphToolbar';
 import {GraphDataTable} from './GraphDataTable';
 import {NodeSidebar} from './NodeSidebar';
 import {useExpandOrg} from '@/components/services/useExpandOrg';
+import {usePinregExpand} from '@/components/services/usePinregExpand';
 import {useHealthcheck} from '@/components/services/useHealthcheck';
 import {useHashRouter} from '@/hooks/useHashRouter';
 import type {GraphEdge, GraphElements, GraphNodeData} from '@/types/graph';
@@ -36,6 +37,7 @@ export default function GraphView({viewMode = 'graph'}: GraphViewProps) {
     const [graphElements, setGraphElements] = useState<GraphElements>(EMPTY_ELEMENTS);
     const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
     const [selectedNodeData, setSelectedNodeData] = useState<GraphNodeData | null>(null);
+    const [pinregTarget, setPinregTarget] = useState<{vardas: string; personId: string} | null>(null);
 
     const nodeEdges: GraphEdge[] = selectedNodeId
         ? graphElements.edges.filter(
@@ -52,6 +54,10 @@ const now = new Date();
 
     const {data: health, isLoading: healthLoading, refetch: retryHealth} = useHealthcheck();
     const {data: expandData, error: expandError, isLoading} = useExpandOrg(expandTarget, filters);
+    const {data: pinregData, isLoading: pinregLoading} = usePinregExpand(
+        pinregTarget?.vardas ?? null,
+        pinregTarget?.personId ?? null,
+    );
 
     // Merge newly fetched elements into graph
     useEffect(() => {
@@ -60,11 +66,22 @@ const now = new Date();
         }
     }, [expandData]);
 
+    // Merge pinreg enrichment elements for person nodes
+    useEffect(() => {
+        if (pinregData?.elements) {
+            setGraphElements((prev) => mergeElements(prev, pinregData.elements));
+        }
+    }, [pinregData]);
+
     const handleNodeClick = useCallback((nodeId: string, nodeData: GraphNodeData) => {
         // If stub org node — expand it
         if (nodeData.expanded === false && nodeData.type !== 'Person') {
             const jarKodas = nodeId.replace('org:', '');
             setExpandTarget(jarKodas);
+        }
+        // If person node with a name — fetch pinreg enrichment
+        if (nodeData.type === 'Person' && nodeData.label) {
+            setPinregTarget({vardas: nodeData.label, personId: nodeId});
         }
         setSelectedNodeId(nodeId);
         setSelectedNodeData(nodeData);
@@ -162,6 +179,9 @@ const now = new Date();
                 onNodeSelect={(nodeId, data) => {
                     setSelectedNodeId(nodeId);
                     setSelectedNodeData(data);
+                    if (data.type === 'Person' && data.label) {
+                        setPinregTarget({vardas: data.label, personId: nodeId});
+                    }
                 }}
             />
 
@@ -208,6 +228,7 @@ const now = new Date();
                         edges={nodeEdges}
                         onClose={handleBackgroundClick}
                         onViewFullProfile={handleViewFullProfile}
+                        pinregLoading={pinregLoading}
                     />
                 )}
             </Box>

@@ -253,35 +253,35 @@ graph TB
 
 **Phase 1 — Backend: MCP client, staging, parser, API route**
 
-- [ ] Ensure project compiles and existing tests pass before starting
-- [ ] Add `StagingPinreg` model to `prisma/schema.prisma` (columns: `vardas String @id`, `data Json`, `fetchedAt DateTime`)
-- [ ] Run `npx prisma migrate dev --name add_staging_pinreg` to create migration
-- [ ] Create `src/lib/viespirkiai/mcpClient.ts` — `fetchPinreg(vardas: string): Promise<PinregRaw>` that POSTs to `https://viespirkiai.org/mcp`, parses SSE stream, extracts `result.content[0].text`
-- [ ] Add `PinregRaw` type to `src/lib/viespirkiai/types.ts`
-- [ ] Create `src/lib/staging/pinreg.ts` — `getPinreg(vardas)` / `upsertPinreg(vardas, raw)` with 24h TTL
-- [ ] Create `src/lib/parsers/pinreg.ts` — `parsePinreg(raw: PinregRaw, personId: string): GraphElements` (produces stub org nodes + typed edges from darbovietes, rysiaiSuJa, sutuoktinioDarbovietes)
-- [ ] Create `src/lib/graph/personExpand.ts` — `expandPerson(vardas: string, personId: string): Promise<GraphElements>` orchestrating staging → MCP → parser
-- [ ] Create `src/app/api/v1/person/pinreg/route.ts` — `POST` handler, validates `{ vardas, personId }` body, delegates to `expandPerson()`
-- [ ] Add unit tests for `parsePinreg` using `docs/examples/pinreg/mcp_pinreg.json` fixture
-- [ ] Add integration tests for the staging layer (`getPinreg` / `upsertPinreg`) and the API route
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Ensure project compiles and existing tests pass before starting
+- [x] Add `StagingPinreg` model to `prisma/schema.prisma` (columns: `vardas String @id`, `data Json`, `fetchedAt DateTime`)
+- [x] Run `npx prisma migrate dev --name add_staging_pinreg` to create migration
+- [x] Create `src/lib/viespirkiai/mcpClient.ts` — `fetchPinreg(vardas: string): Promise<PinregRaw>` that POSTs to `https://viespirkiai.org/mcp`, parses SSE stream, extracts `result.content[0].text`
+- [x] Add `PinregRaw` type to `src/lib/viespirkiai/types.ts`
+- [x] Create `src/lib/staging/pinreg.ts` — `getPinreg(vardas)` / `upsertPinreg(vardas, raw)` with 24h TTL
+- [x] Create `src/lib/parsers/pinreg.ts` — `parsePinreg(raw: PinregRaw, personId: string): GraphElements` (produces stub org nodes + typed edges from darbovietes, rysiaiSuJa, sutuoktinioDarbovietes)
+- [x] Create `src/lib/graph/personExpand.ts` — `expandPerson(vardas: string, personId: string): Promise<GraphElements>` orchestrating staging → MCP → parser
+- [x] Create `src/app/api/v1/person/pinreg/route.ts` — `POST` handler, validates `{ vardas, personId }` body, delegates to `expandPerson()`
+- [x] Add unit tests for `parsePinreg` using `docs/examples/pinreg/mcp_pinreg.json` fixture
+- [x] Add integration tests for the staging layer (`getPinreg` / `upsertPinreg`) and the API route
+- [x] Mark all checkboxes as done in this document once verified
 
 **Phase 2 — Frontend: person click triggers pinreg expansion**
 
-- [ ] Create `src/components/services/usePinregExpand.ts` — React Query `useMutation` or `useQuery` that POSTs to `/api/v1/person/pinreg` when called
-- [ ] Update `NodeSidebar` (or `GraphView`) to detect when a clicked node is a `PersonEntity` and trigger `usePinregExpand({ vardas, personId })`; merge returned `GraphElements` into the graph state
-- [ ] Show a loading indicator (spinner or node highlight) while pinreg fetch is in progress
-- [ ] Ensure graph `mergeElements()` is idempotent — repeated clicks on the same person do not duplicate nodes/edges (already cached; React Query deduplicates)
-- [ ] Add Cypress E2E test: click a person node → verify new org stub nodes and edges appear in the graph (use `GraphDataTable` for assertions)
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Create `src/components/services/usePinregExpand.ts` — React Query `useMutation` or `useQuery` that POSTs to `/api/v1/person/pinreg` when called
+- [x] Update `NodeSidebar` (or `GraphView`) to detect when a clicked node is a `PersonEntity` and trigger `usePinregExpand({ vardas, personId })`; merge returned `GraphElements` into the graph state
+- [x] Show a loading indicator (spinner or node highlight) while pinreg fetch is in progress
+- [x] Ensure graph `mergeElements()` is idempotent — repeated clicks on the same person do not duplicate nodes/edges (already cached; React Query deduplicates)
+- [x] Add Cypress E2E test: click a person node → verify new org stub nodes and edges appear in the graph (use `GraphDataTable` for assertions)
+- [x] Mark all checkboxes as done in this document once verified
 
 **Phase 3 — Finalise**
 
-- [ ] Update required documentation after the implementation is complete
-- [ ] Ensure new tests are added for the new feature and all tests are passing
-- [ ] Perform linting and formatting to maintain code quality and consistency
-- [ ] Review the implementation to ensure it meets the requirements and follows best practices
-- [ ] Mark all checkboxes as done in this document once verified
+- [x] Update required documentation after the implementation is complete
+- [x] Ensure new tests are added for the new feature and all tests are passing
+- [x] Perform linting and formatting to maintain code quality and consistency
+- [x] Review the implementation to ensure it meets the requirements and follows best practices
+- [x] Mark all checkboxes as done in this document once verified
 
 ---
 
